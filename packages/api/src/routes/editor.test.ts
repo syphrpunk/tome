@@ -175,7 +175,7 @@ describe("editor routes", () => {
       })),
     } as unknown as D1Database;
     const app = makeApp(db, bucket);
-    const res = await app.request("/api/editor/pages/pg1/publish", { method: "POST" });
+    await app.request("/api/editor/pages/pg1/publish", { method: "POST" });
     // Git sync will fail (no real GitHub App credentials) but R2 should NOT be written
     // Either fails (500 from GitHub) or succeeds — but bucket.put should NOT be called
     expect(bucket.put).not.toHaveBeenCalled();
