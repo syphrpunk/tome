@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "changelog": false,
   "commit": false,
-  "fixed": [["@tomehq/cli", "@tomehq/core", "@tomehq/theme", "@tomehq/components"]],
+  "fixed": [["@tomehq/cli", "@tomehq/core", "@tomehq/theme", "@tomehq/components", "@tomehq/editor"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
