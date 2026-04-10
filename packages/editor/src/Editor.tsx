@@ -3,7 +3,7 @@
  * Renders a Notion-like editing experience with Tome theme integration.
  */
 
-import React, { useCallback, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
