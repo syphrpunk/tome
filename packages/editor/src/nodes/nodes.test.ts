@@ -6,7 +6,7 @@
  * validate every node's name, attributes, parseHTML, renderHTML, and flags
  * without needing a live Tiptap editor instance.
  */
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 // Mock @tiptap/core before any node imports.
 // Node.create(config) just returns config with a _isMocked flag.
