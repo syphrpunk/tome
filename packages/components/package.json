@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./src/index.tsx",
   "scripts": {
-    "build": "tsup src/index.tsx --format esm --dts --external react",
+    "build": "tsdown src/index.tsx --format esm --dts --external react",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
@@ -18,7 +18,7 @@
     "@types/react": "catalog:",
     "jsdom": "catalog:",
     "react": "catalog:",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
   },
   "license": "MIT",
