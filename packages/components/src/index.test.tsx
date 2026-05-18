@@ -1,6 +1,18 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { Callout, Tabs, Card, CardGroup, Steps, Accordion, PackageManager, TypeTable, FileTree, LinkCard, CardGrid } from "./index.js";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import {
+  Accordion,
+  Callout,
+  Card,
+  CardGrid,
+  CardGroup,
+  FileTree,
+  LinkCard,
+  PackageManager,
+  Steps,
+  Tabs,
+  TypeTable,
+} from "./index.js";
 
 // ── Callout ───────────────────────────────────────────────
 
@@ -34,7 +46,8 @@ describe("Callout", () => {
     // info color is #3b82f6 — jsdom normalizes to rgb(59, 130, 246)
     const el = container.firstElementChild as HTMLElement;
     const border = el.style.borderLeft;
-    const hasInfoColor = border.includes("#3b82f6") || border.includes("rgb(59, 130, 246)");
+    const hasInfoColor =
+      border.includes("#3b82f6") || border.includes("rgb(59, 130, 246)");
     expect(hasInfoColor).toBe(true);
   });
 });
@@ -88,7 +101,7 @@ describe("Card", () => {
   });
 
   it("renders optional icon", () => {
-    render(<Card title="Card" icon="🚀" />);
+    render(<Card icon="🚀" title="Card" />);
     expect(screen.getByText("🚀")).toBeInTheDocument();
   });
 
@@ -98,7 +111,7 @@ describe("Card", () => {
   });
 
   it("wraps in anchor tag when href is provided", () => {
-    const { container } = render(<Card title="Card" href="/docs" />);
+    const { container } = render(<Card href="/docs" title="Card" />);
     const link = container.querySelector("a");
     expect(link).toBeTruthy();
     expect(link?.getAttribute("href")).toBe("/docs");
@@ -253,13 +266,25 @@ describe("PackageManager", () => {
 
 describe("TypeTable", () => {
   const fields = [
-    { name: "title", type: "string", required: true, default: undefined, description: "The page title" },
-    { name: "color", type: "string", required: false, default: '"blue"', description: "Primary color" },
+    {
+      name: "title",
+      type: "string",
+      required: true,
+      default: undefined,
+      description: "The page title",
+    },
+    {
+      name: "color",
+      type: "string",
+      required: false,
+      default: '"blue"',
+      description: "Primary color",
+    },
     { name: "count", type: "number", required: false },
   ];
 
   it("renders table with property name and type columns", () => {
-    render(<TypeTable name="Config" fields={fields} />);
+    render(<TypeTable fields={fields} name="Config" />);
     expect(screen.getByText("Property")).toBeInTheDocument();
     expect(screen.getByText("Type")).toBeInTheDocument();
     expect(screen.getByText("title")).toBeInTheDocument();
@@ -267,29 +292,29 @@ describe("TypeTable", () => {
   });
 
   it("shows required badge for required fields", () => {
-    render(<TypeTable name="Config" fields={fields} />);
+    render(<TypeTable fields={fields} name="Config" />);
     expect(screen.getByText("required")).toBeInTheDocument();
   });
 
   it("shows default value when provided", () => {
-    render(<TypeTable name="Config" fields={fields} />);
+    render(<TypeTable fields={fields} name="Config" />);
     expect(screen.getByText('"blue"')).toBeInTheDocument();
   });
 
   it("shows description when provided", () => {
-    render(<TypeTable name="Config" fields={fields} />);
+    render(<TypeTable fields={fields} name="Config" />);
     expect(screen.getByText("The page title")).toBeInTheDocument();
     expect(screen.getByText("Primary color")).toBeInTheDocument();
   });
 
   it('shows "—" for missing default value', () => {
-    render(<TypeTable name="Config" fields={fields} />);
+    render(<TypeTable fields={fields} name="Config" />);
     const dashes = screen.getAllByText("—");
     expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the type name heading", () => {
-    render(<TypeTable name="Config" fields={fields} />);
+    render(<TypeTable fields={fields} name="Config" />);
     expect(screen.getByText("Config")).toBeInTheDocument();
   });
 });
@@ -343,7 +368,7 @@ describe("FileTree", () => {
   it("FileTree.Folder with defaultOpen renders expanded initially", () => {
     render(
       <FileTree>
-        <FileTree.Folder name="lib" defaultOpen>
+        <FileTree.Folder defaultOpen name="lib">
           <FileTree.File name="utils.ts" />
         </FileTree.Folder>
       </FileTree>
@@ -356,7 +381,9 @@ describe("FileTree", () => {
 
 describe("LinkCard", () => {
   it("renders title and href", () => {
-    const { container } = render(<LinkCard href="/docs/config" title="Configuration" />);
+    const { container } = render(
+      <LinkCard href="/docs/config" title="Configuration" />
+    );
     const link = container.querySelector("a");
     expect(link).toBeTruthy();
     expect(link?.getAttribute("href")).toBe("/docs/config");
@@ -364,7 +391,9 @@ describe("LinkCard", () => {
   });
 
   it("renders description when provided", () => {
-    render(<LinkCard href="/docs" title="Guide" description="Learn the basics" />);
+    render(
+      <LinkCard description="Learn the basics" href="/docs" title="Guide" />
+    );
     expect(screen.getByText("Learn the basics")).toBeInTheDocument();
   });
 
@@ -374,26 +403,30 @@ describe("LinkCard", () => {
   });
 
   it("renders icon when provided", () => {
-    render(<LinkCard href="/docs" title="Guide" icon="📖" />);
+    render(<LinkCard href="/docs" icon="📖" title="Guide" />);
     expect(screen.getByText("📖")).toBeInTheDocument();
   });
 
   it("adds target=_blank for external links", () => {
-    const { container } = render(<LinkCard href="https://example.com" title="External" />);
+    const { container } = render(
+      <LinkCard href="https://example.com" title="External" />
+    );
     const link = container.querySelector("a");
     expect(link?.getAttribute("target")).toBe("_blank");
     expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
   it("does not add target=_blank for internal links", () => {
-    const { container } = render(<LinkCard href="/docs/intro" title="Internal" />);
+    const { container } = render(
+      <LinkCard href="/docs/intro" title="Internal" />
+    );
     const link = container.querySelector("a");
     expect(link?.getAttribute("target")).toBeNull();
     expect(link?.getAttribute("rel")).toBeNull();
   });
 
   it("respects explicit external prop", () => {
-    const { container } = render(<LinkCard href="/api" title="API" external />);
+    const { container } = render(<LinkCard external href="/api" title="API" />);
     const link = container.querySelector("a");
     expect(link?.getAttribute("target")).toBe("_blank");
   });

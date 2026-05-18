@@ -3,33 +3,33 @@ import { createHash } from "node:crypto";
 // ── EVENT TYPES ───────────────────────────────────────
 
 export interface PageViewEvent {
-  type: "pageview";
-  url: string;
   referrer: string;
-  timestamp: number;
+  screenWidth: number;
   sessionId: string;
   siteId: string;
+  timestamp: number;
+  type: "pageview";
+  url: string;
   userAgent: string;
-  screenWidth: number;
 }
 
 export interface SearchEvent {
-  type: "search";
   query: string;
   resultsCount: number;
-  timestamp: number;
   sessionId: string;
   siteId: string;
+  timestamp: number;
+  type: "search";
 }
 
 export interface FeedbackEvent {
-  type: "feedback";
+  comment?: string;
   pageId: string;
   rating: "up" | "down";
-  comment?: string;
-  timestamp: number;
   sessionId: string;
   siteId: string;
+  timestamp: number;
+  type: "feedback";
 }
 
 export type AnalyticsEvent = PageViewEvent | SearchEvent | FeedbackEvent;
@@ -37,16 +37,16 @@ export type AnalyticsEvent = PageViewEvent | SearchEvent | FeedbackEvent;
 // ── AGGREGATION ───────────────────────────────────────
 
 export interface AnalyticsSummary {
-  totalPageViews: number;
-  uniqueVisitors: number;
+  feedbackByRating: { up: number; down: number };
   topPages: Array<{ url: string; views: number }>;
   topReferrers: Array<{ referrer: string; count: number }>;
   topSearchQueries: Array<{ query: string; count: number }>;
-  viewsByDay: Array<{ date: string; views: number }>;
-  totalSearches: number;
-  zeroResultQueries: Array<{ query: string; count: number }>;
   totalFeedback: number;
-  feedbackByRating: { up: number; down: number };
+  totalPageViews: number;
+  totalSearches: number;
+  uniqueVisitors: number;
+  viewsByDay: Array<{ date: string; views: number }>;
+  zeroResultQueries: Array<{ query: string; count: number }>;
 }
 
 // ── CLIENT SCRIPT ─────────────────────────────────────
@@ -71,13 +71,13 @@ export function generateAnalyticsScript(options: {
  */
 export function aggregateEvents(events: AnalyticsEvent[]): AnalyticsSummary {
   const pageViews = events.filter(
-    (e): e is PageViewEvent => e.type === "pageview",
+    (e): e is PageViewEvent => e.type === "pageview"
   );
   const searchEvents = events.filter(
-    (e): e is SearchEvent => e.type === "search",
+    (e): e is SearchEvent => e.type === "search"
   );
   const feedbackEvents = events.filter(
-    (e): e is FeedbackEvent => e.type === "feedback",
+    (e): e is FeedbackEvent => e.type === "feedback"
   );
 
   // Total page views
@@ -100,10 +100,7 @@ export function aggregateEvents(events: AnalyticsEvent[]): AnalyticsSummary {
   const referrerCounts = new Map<string, number>();
   for (const e of pageViews) {
     if (e.referrer) {
-      referrerCounts.set(
-        e.referrer,
-        (referrerCounts.get(e.referrer) || 0) + 1,
-      );
+      referrerCounts.set(e.referrer, (referrerCounts.get(e.referrer) || 0) + 1);
     }
   }
   const topReferrers = Array.from(referrerCounts.entries())
@@ -143,8 +140,11 @@ export function aggregateEvents(events: AnalyticsEvent[]): AnalyticsSummary {
   // Feedback aggregation
   const feedbackByRating = { up: 0, down: 0 };
   for (const e of feedbackEvents) {
-    if (e.rating === "up") feedbackByRating.up++;
-    else if (e.rating === "down") feedbackByRating.down++;
+    if (e.rating === "up") {
+      feedbackByRating.up++;
+    } else if (e.rating === "down") {
+      feedbackByRating.down++;
+    }
   }
 
   return {

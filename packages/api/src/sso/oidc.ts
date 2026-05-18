@@ -17,11 +17,18 @@ export async function discoverOidcEndpoints(issuer: string): Promise<{
   const url = `${issuer.replace(/\/$/, "")}/.well-known/openid-configuration`;
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`OIDC discovery failed (${res.status}): ${await res.text()}`);
+    throw new Error(
+      `OIDC discovery failed (${res.status}): ${await res.text()}`
+    );
   }
 
   const config = (await res.json()) as Record<string, unknown>;
-  const required = ["authorization_endpoint", "token_endpoint", "userinfo_endpoint", "jwks_uri"] as const;
+  const required = [
+    "authorization_endpoint",
+    "token_endpoint",
+    "userinfo_endpoint",
+    "jwks_uri",
+  ] as const;
   for (const key of required) {
     if (typeof config[key] !== "string") {
       throw new Error(`OIDC discovery missing required field: ${key}`);
@@ -48,7 +55,10 @@ export function generateCodeVerifier(): string {
  * Generate a PKCE code challenge (SHA-256 hash of verifier, base64url encoded).
  */
 export async function generateCodeChallenge(verifier: string): Promise<string> {
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(verifier)
+  );
   return base64url(hash);
 }
 
@@ -106,7 +116,10 @@ export async function exchangeCode(params: {
   }
 
   const data = (await res.json()) as Record<string, unknown>;
-  if (typeof data.access_token !== "string" || typeof data.id_token !== "string") {
+  if (
+    typeof data.access_token !== "string" ||
+    typeof data.id_token !== "string"
+  ) {
     throw new Error("Token response missing required fields");
   }
 
@@ -124,19 +137,35 @@ export async function validateIdToken(
   idToken: string,
   jwksUri: string,
   clientId: string,
-  issuer: string,
+  issuer: string
 ): Promise<{ sub: string; email: string; name?: string; groups?: string[] }> {
   const parts = idToken.split(".");
-  if (parts.length !== 3) throw new Error("Invalid JWT format");
+  if (parts.length !== 3) {
+    throw new Error("Invalid JWT format");
+  }
 
-  const header = JSON.parse(atob(base64urlToBase64(parts[0]))) as { alg: string; kid?: string };
-  if (header.alg !== "RS256") throw new Error(`Unsupported JWT algorithm: ${header.alg}`);
+  const header = JSON.parse(atob(base64urlToBase64(parts[0]))) as {
+    alg: string;
+    kid?: string;
+  };
+  if (header.alg !== "RS256") {
+    throw new Error(`Unsupported JWT algorithm: ${header.alg}`);
+  }
 
-  const payload = JSON.parse(atob(base64urlToBase64(parts[1]))) as Record<string, unknown>;
+  const payload = JSON.parse(atob(base64urlToBase64(parts[1]))) as Record<
+    string,
+    unknown
+  >;
 
   // Validate standard claims
-  if (payload.iss !== issuer) throw new Error(`Invalid issuer: expected ${issuer}, got ${payload.iss}`);
-  if (payload.aud !== clientId) throw new Error(`Invalid audience: expected ${clientId}, got ${payload.aud}`);
+  if (payload.iss !== issuer) {
+    throw new Error(`Invalid issuer: expected ${issuer}, got ${payload.iss}`);
+  }
+  if (payload.aud !== clientId) {
+    throw new Error(
+      `Invalid audience: expected ${clientId}, got ${payload.aud}`
+    );
+  }
 
   const now = Math.floor(Date.now() / 1000);
   if (typeof payload.exp === "number" && payload.exp < now) {
@@ -145,43 +174,57 @@ export async function validateIdToken(
 
   // Fetch JWKS and verify signature
   const jwksRes = await fetch(jwksUri);
-  if (!jwksRes.ok) throw new Error(`Failed to fetch JWKS (${jwksRes.status})`);
+  if (!jwksRes.ok) {
+    throw new Error(`Failed to fetch JWKS (${jwksRes.status})`);
+  }
 
   const jwks = (await jwksRes.json()) as { keys: JwkKey[] };
   const matchingKey = header.kid
     ? jwks.keys.find((k) => k.kid === header.kid)
     : jwks.keys.find((k) => k.kty === "RSA" && k.use === "sig");
 
-  if (!matchingKey) throw new Error("No matching key found in JWKS");
+  if (!matchingKey) {
+    throw new Error("No matching key found in JWKS");
+  }
 
   const cryptoKey = await crypto.subtle.importKey(
     "jwk",
     matchingKey,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
-    ["verify"],
+    ["verify"]
   );
 
-  const sigBytes = Uint8Array.from(atob(base64urlToBase64(parts[2])), (c) => c.charCodeAt(0));
+  const sigBytes = Uint8Array.from(atob(base64urlToBase64(parts[2])), (c) =>
+    c.charCodeAt(0)
+  );
   const dataBytes = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
 
   const valid = await crypto.subtle.verify(
     { name: "RSASSA-PKCS1-v1_5" },
     cryptoKey,
     sigBytes,
-    dataBytes,
+    dataBytes
   );
 
-  if (!valid) throw new Error("Invalid JWT signature");
+  if (!valid) {
+    throw new Error("Invalid JWT signature");
+  }
 
-  if (typeof payload.sub !== "string") throw new Error("Missing sub claim");
-  if (typeof payload.email !== "string") throw new Error("Missing email claim");
+  if (typeof payload.sub !== "string") {
+    throw new Error("Missing sub claim");
+  }
+  if (typeof payload.email !== "string") {
+    throw new Error("Missing email claim");
+  }
 
   return {
     sub: payload.sub,
     email: payload.email as string,
     ...(typeof payload.name === "string" && { name: payload.name }),
-    ...(Array.isArray(payload.groups) && { groups: payload.groups as string[] }),
+    ...(Array.isArray(payload.groups) && {
+      groups: payload.groups as string[],
+    }),
   };
 }
 
@@ -190,7 +233,9 @@ export async function validateIdToken(
  */
 export function decodeJwtPayload(jwt: string): Record<string, unknown> {
   const parts = jwt.split(".");
-  if (parts.length !== 3) throw new Error("Invalid JWT format");
+  if (parts.length !== 3) {
+    throw new Error("Invalid JWT format");
+  }
   try {
     return JSON.parse(atob(base64urlToBase64(parts[1])));
   } catch {
@@ -201,11 +246,11 @@ export function decodeJwtPayload(jwt: string): Record<string, unknown> {
 // ── Helpers ──────────────────────────────────────
 
 interface JwkKey {
-  kty: string;
-  kid?: string;
-  use?: string;
-  n?: string;
   e?: string;
+  kid?: string;
+  kty: string;
+  n?: string;
+  use?: string;
   [key: string]: unknown;
 }
 

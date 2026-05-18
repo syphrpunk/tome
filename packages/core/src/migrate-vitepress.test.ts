@@ -1,15 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync, readFileSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
 import {
-  parseVitepressConfig,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { NavigationGroup } from "./migrate-vitepress.js";
+import {
+  convertFrontmatter,
   convertSidebarToNavigation,
   convertVitepressContent,
-  convertFrontmatter,
   migrateFromVitepress,
+  parseVitepressConfig,
 } from "./migrate-vitepress.js";
-import type { NavigationGroup } from "./migrate-vitepress.js";
 
 // ── parseVitepressConfig ─────────────────────────────────
 
@@ -152,9 +159,7 @@ describe("convertSidebarToNavigation", () => {
       },
       {
         text: "API",
-        items: [
-          { text: "Reference", link: "/api/reference" },
-        ],
+        items: [{ text: "Reference", link: "/api/reference" }],
       },
     ];
 
@@ -171,17 +176,13 @@ describe("convertSidebarToNavigation", () => {
       "/guide/": [
         {
           text: "Guide",
-          items: [
-            { text: "Intro", link: "/guide/intro" },
-          ],
+          items: [{ text: "Intro", link: "/guide/intro" }],
         },
       ],
       "/api/": [
         {
           text: "API",
-          items: [
-            { text: "Reference", link: "/api/reference" },
-          ],
+          items: [{ text: "Reference", link: "/api/reference" }],
         },
       ],
     };
@@ -214,9 +215,7 @@ describe("convertSidebarToNavigation", () => {
           { text: "Intro", link: "/guide/intro" },
           {
             text: "Advanced",
-            items: [
-              { text: "Plugins", link: "/guide/plugins" },
-            ],
+            items: [{ text: "Plugins", link: "/guide/plugins" }],
           },
         ],
       },
@@ -279,11 +278,11 @@ A helpful tip.
   });
 
   it("converts :::warning and :::danger containers", () => {
-    const warning = convertVitepressContent(`:::warning\nWatch out\n:::`);
+    const warning = convertVitepressContent(":::warning\nWatch out\n:::");
     expect(warning.converted).toContain('<Callout type="warning">');
     expect(warning.hasJsx).toBe(true);
 
-    const danger = convertVitepressContent(`:::danger\nDangerous\n:::`);
+    const danger = convertVitepressContent(":::danger\nDangerous\n:::");
     expect(danger.converted).toContain('<Callout type="danger">');
     expect(danger.hasJsx).toBe(true);
   });
@@ -340,7 +339,7 @@ const x: number = 1;
   });
 
   it("removes [[toc]] marker", () => {
-    const input = `# My Page\n\n[[toc]]\n\nContent here.`;
+    const input = "# My Page\n\n[[toc]]\n\nContent here.";
     const { converted, hasJsx } = convertVitepressContent(input);
     expect(hasJsx).toBe(false);
     expect(converted).not.toContain("[[toc]]");
@@ -348,7 +347,7 @@ const x: number = 1;
   });
 
   it("sets hasJsx=false when no VitePress syntax is present", () => {
-    const input = `# Hello World\n\nJust plain markdown.`;
+    const input = "# Hello World\n\nJust plain markdown.";
     const { converted, hasJsx } = convertVitepressContent(input);
     expect(hasJsx).toBe(false);
     expect(converted).toBe(input);
@@ -427,7 +426,7 @@ export default defineConfig({
     ]
   }
 })`,
-      "utf-8",
+      "utf-8"
     );
 
     // .vitepress/public/logo.png (dummy asset)
@@ -445,7 +444,7 @@ title: Home
 # Welcome
 
 Hello world.`,
-      "utf-8",
+      "utf-8"
     );
 
     const guideDir = join(sourceDir, "guide");
@@ -457,7 +456,7 @@ Hello world.`,
 [[toc]]
 
 Getting started with the project.`,
-      "utf-8",
+      "utf-8"
     );
 
     writeFileSync(
@@ -476,7 +475,7 @@ Make sure you have Node.js installed.
 - Node.js 18+
 - npm or pnpm
 :::`,
-      "utf-8",
+      "utf-8"
     );
   }
 
@@ -550,24 +549,17 @@ Make sure you have Node.js installed.
 
   it("warns when .vitepress/config is missing", async () => {
     // Create a bare source dir with just a markdown file.
-    writeFileSync(
-      join(sourceDir, "index.md"),
-      `# Hello\n\nWorld.`,
-      "utf-8",
-    );
+    writeFileSync(join(sourceDir, "index.md"), "# Hello\n\nWorld.", "utf-8");
 
     const result = await migrateFromVitepress(sourceDir, outDir);
 
     expect(result.warnings).toContain(
-      ".vitepress/config not found; using default settings.",
+      ".vitepress/config not found; using default settings."
     );
     expect(result.pages).toBe(1);
 
     // Config should use default title
-    const configContent = readFileSync(
-      join(outDir, "tome.config.js"),
-      "utf-8",
-    );
+    const configContent = readFileSync(join(outDir, "tome.config.js"), "utf-8");
     expect(configContent).toContain("Documentation");
   });
 });

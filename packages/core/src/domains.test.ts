@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  generateDnsRecords,
-  validateDomain,
-  checkDomainDns,
   addDomain,
-  removeDomain,
+  checkDomainDns,
+  generateDnsRecords,
   listDomains,
+  removeDomain,
+  validateDomain,
 } from "./domains.js";
 
 // ── generateDnsRecords ──────────────────────────────────
@@ -94,20 +94,32 @@ describe("checkDomainDns", () => {
           verified: true,
           sslStatus: "active",
           dnsRecords: [
-            { type: "CNAME", name: "docs", value: "my-project.tome.center", verified: true },
+            {
+              type: "CNAME",
+              name: "docs",
+              value: "my-project.tome.center",
+              verified: true,
+            },
           ],
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
     );
 
-    const status = await checkDomainDns("docs.example.com", "my-project", "https://api.tome.center", "test-token");
+    const status = await checkDomainDns(
+      "docs.example.com",
+      "my-project",
+      "https://api.tome.center",
+      "test-token"
+    );
 
     expect(status.verified).toBe(true);
     expect(status.sslStatus).toBe("active");
     expect(fetchSpy).toHaveBeenCalledWith(
       "https://api.tome.center/api/domains/docs.example.com/verify",
-      expect.objectContaining({ headers: { Authorization: "Bearer test-token" } }),
+      expect.objectContaining({
+        headers: { Authorization: "Bearer test-token" },
+      })
     );
 
     fetchSpy.mockRestore();
@@ -135,17 +147,27 @@ describe("addDomain", () => {
           verified: false,
           sslStatus: "pending",
           dnsRecords: [
-            { type: "CNAME", name: "docs", value: "my-project.tome.center", verified: false },
-            { type: "TXT", name: "_tome-verify.docs", value: "tome-verify=my-project", verified: false },
+            {
+              type: "CNAME",
+              name: "docs",
+              value: "my-project.tome.center",
+              verified: false,
+            },
+            {
+              type: "TXT",
+              name: "_tome-verify.docs",
+              value: "tome-verify=my-project",
+              verified: false,
+            },
           ],
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
     );
 
     const status = await addDomain(
       { domain: "docs.example.com", projectSlug: "my-project" },
-      "test-token",
+      "test-token"
     );
 
     expect(status.domain).toBe("docs.example.com");
@@ -156,11 +178,13 @@ describe("addDomain", () => {
 
   it("throws on API error", async () => {
     fetchSpy.mockResolvedValue(
-      new Response(JSON.stringify({ error: "Domain already registered" }), { status: 409 }),
+      new Response(JSON.stringify({ error: "Domain already registered" }), {
+        status: 409,
+      })
     );
 
     await expect(
-      addDomain({ domain: "taken.com", projectSlug: "p" }, "tok"),
+      addDomain({ domain: "taken.com", projectSlug: "p" }, "tok")
     ).rejects.toThrow("Failed to add domain: Domain already registered");
   });
 });
@@ -180,7 +204,7 @@ describe("removeDomain", () => {
 
   it("returns removed confirmation", async () => {
     fetchSpy.mockResolvedValue(
-      new Response(JSON.stringify({ removed: true }), { status: 200 }),
+      new Response(JSON.stringify({ removed: true }), { status: 200 })
     );
 
     const result = await removeDomain("docs.example.com", "test-token");
@@ -210,12 +234,17 @@ describe("listDomains", () => {
             verified: true,
             sslStatus: "active",
             dnsRecords: [
-              { type: "CNAME", name: "docs", value: "my-project.tome.center", verified: true },
+              {
+                type: "CNAME",
+                name: "docs",
+                value: "my-project.tome.center",
+                verified: true,
+              },
             ],
           },
         ]),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
     );
 
     const domains = await listDomains("my-project", "test-token");

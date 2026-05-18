@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, act } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Capture Shell props ──────────────────────────────────
 let capturedShellProps: any = null;
@@ -89,7 +89,11 @@ const mockLoadPage = vi.fn().mockResolvedValue({
   headings: [{ id: "intro", text: "Intro", depth: 2 }],
 });
 
-const mockComputeEditUrl = vi.fn().mockReturnValue("https://github.com/test/repo/edit/main/docs/pages/index.md");
+const mockComputeEditUrl = vi
+  .fn()
+  .mockReturnValue(
+    "https://github.com/test/repo/edit/main/docs/pages/index.md"
+  );
 const mockResolveInitialPageId = vi.fn().mockReturnValue("index");
 const mockDetectCurrentVersion = vi.fn().mockReturnValue(undefined);
 
@@ -114,7 +118,9 @@ class PageLoadError extends Error {
   constructor(pageId: string, cause?: unknown) {
     super(`Failed to load page: ${pageId}`);
     this.name = "PageLoadError";
-    if (cause) this.cause = cause;
+    if (cause) {
+      this.cause = cause;
+    }
   }
 }
 
@@ -134,7 +140,9 @@ vi.mock("./routing.js", () => ({
 }));
 
 // ── Mock @tomehq/components ──────────────────────────────
-const MockApiReference = (p: any) => <div data-testid="api-ref">{JSON.stringify(p)}</div>;
+const MockApiReference = (p: any) => (
+  <div data-testid="api-ref">{JSON.stringify(p)}</div>
+);
 
 vi.mock("@tomehq/components", () => ({
   Callout: (p: any) => <div>{p.children}</div>,
@@ -146,7 +154,10 @@ vi.mock("@tomehq/components", () => ({
   ChangelogTimeline: (p: any) => <div>{p.children}</div>,
   PackageManager: () => <div />,
   TypeTable: () => <div />,
-  FileTree: Object.assign(() => <div />, { File: () => <div />, Folder: () => <div /> }),
+  FileTree: Object.assign(() => <div />, {
+    File: () => <div />,
+    Folder: () => <div />,
+  }),
   CodeSamples: () => <div />,
   LinkCard: () => <div />,
   CardGrid: () => <div />,
@@ -205,7 +216,10 @@ describe("entry.tsx — Shell prop wiring", () => {
     expect(capturedShellProps).not.toBeNull();
     expect(capturedShellProps.config).toBeDefined();
     expect(capturedShellProps.config.name).toBe("Test Docs");
-    expect(capturedShellProps.config.theme).toEqual({ preset: "amber", mode: "light" });
+    expect(capturedShellProps.config.theme).toEqual({
+      preset: "amber",
+      mode: "light",
+    });
   });
 
   it("passes navigation from virtual:tome/routes", async () => {
@@ -448,7 +462,7 @@ describe("entry.tsx — initial load behavior", () => {
     expect(mockLoadPage).toHaveBeenCalledWith(
       "index",
       expect.any(Array),
-      expect.any(Function),
+      expect.any(Function)
     );
   });
 
@@ -478,7 +492,7 @@ describe("entry.tsx — navigation", () => {
     expect(mockLoadPage).toHaveBeenCalledWith(
       "quickstart",
       expect.any(Array),
-      expect.any(Function),
+      expect.any(Function)
     );
     expect(capturedShellProps.currentPageId).toBe("quickstart");
     expect(capturedShellProps.pageHtml).toBe("<p>Quick Start</p>");
@@ -520,7 +534,8 @@ describe("entry.tsx — navigation", () => {
     });
 
     // replaceState is called on initial mount too, so check the latest call
-    const calls = (window.history.replaceState as ReturnType<typeof vi.fn>).mock.calls;
+    const calls = (window.history.replaceState as ReturnType<typeof vi.fn>).mock
+      .calls;
     expect(calls.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -599,7 +614,7 @@ describe("entry.tsx — copy button injection", () => {
     mockLoadPage.mockResolvedValue({
       isMdx: false,
       isApiReference: false,
-      html: '<pre><code>const x = 1;</code></pre>',
+      html: "<pre><code>const x = 1;</code></pre>",
       frontmatter: { title: "Code Page", description: "Has code" },
       headings: [],
     });
@@ -718,9 +733,11 @@ describe("entry.tsx — history push after page load", () => {
     const loadCalls: number[] = [];
     let callOrder = 0;
 
-    (window.history.pushState as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      pushCalls.push(++callOrder);
-    });
+    (window.history.pushState as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        pushCalls.push(++callOrder);
+      }
+    );
 
     mockLoadPage.mockImplementation(async () => {
       loadCalls.push(++callOrder);
@@ -778,21 +795,22 @@ describe("entry.tsx — race condition protection", () => {
     let resolveFirst: ((v: any) => void) | null = null;
 
     // First navigation: hangs until we resolve it
-    mockLoadPage.mockImplementationOnce(() => {
-      return new Promise((resolve) => {
-        resolveFirst = resolve;
-      });
-    });
+    mockLoadPage.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirst = resolve;
+        })
+    );
 
     // Second navigation: resolves immediately
-    mockLoadPage.mockImplementationOnce(() => {
-      return Promise.resolve({
+    mockLoadPage.mockImplementationOnce(() =>
+      Promise.resolve({
         isMdx: false,
         html: "<p>Page 2</p>",
         frontmatter: { title: "Page 2", description: "" },
         headings: [],
-      });
-    });
+      })
+    );
 
     // Fire first navigation (will hang)
     act(() => {
@@ -833,12 +851,16 @@ describe("entry.tsx — race condition protection", () => {
     // entry.tsx injects a <style> tag with overflow: clip on html, body, and #tome-root
     const styleTags = document.querySelectorAll("style");
     const globalStyle = Array.from(styleTags).find(
-      (s) => s.textContent?.includes("overflow: clip") && s.textContent?.includes("#tome-root"),
+      (s) =>
+        s.textContent?.includes("overflow: clip") &&
+        s.textContent?.includes("#tome-root")
     );
     expect(globalStyle).not.toBeNull();
     expect(globalStyle!.textContent).toContain("html, body");
     expect(globalStyle!.textContent).toContain("overflow: clip");
-    expect(globalStyle!.textContent).toContain("#tome-root { height: 100%; overflow: clip; }");
+    expect(globalStyle!.textContent).toContain(
+      "#tome-root { height: 100%; overflow: clip; }"
+    );
   });
 
   it("stale navigation does not update state or push history", async () => {
@@ -850,22 +872,35 @@ describe("entry.tsx — race condition protection", () => {
     let resolveStale: ((v: any) => void) | null = null;
 
     // First navigation: hangs
-    mockLoadPage.mockImplementationOnce(() => new Promise((resolve) => { resolveStale = resolve; }));
+    mockLoadPage.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveStale = resolve;
+        })
+    );
 
     // Second navigation: resolves immediately
-    mockLoadPage.mockImplementationOnce(() => Promise.resolve({
-      isMdx: false,
-      html: "<p>Winner</p>",
-      frontmatter: { title: "Winner", description: "" },
-      headings: [],
-    }));
+    mockLoadPage.mockImplementationOnce(() =>
+      Promise.resolve({
+        isMdx: false,
+        html: "<p>Winner</p>",
+        frontmatter: { title: "Winner", description: "" },
+        headings: [],
+      })
+    );
 
     // Fire first (will hang)
-    act(() => { capturedShellProps.onNavigate("quickstart"); });
+    act(() => {
+      capturedShellProps.onNavigate("quickstart");
+    });
 
     // Fire second (supersedes first)
-    await act(async () => { await capturedShellProps.onNavigate("index"); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    await act(async () => {
+      await capturedShellProps.onNavigate("index");
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
 
     // Only one pushState call (from the second/winning navigation)
     expect(window.history.pushState).toHaveBeenCalledTimes(1);
@@ -873,9 +908,16 @@ describe("entry.tsx — race condition protection", () => {
 
     // Resolve the stale navigation — should be discarded
     if (resolveStale) {
-      resolveStale({ isMdx: false, html: "<p>Stale</p>", frontmatter: { title: "Stale" }, headings: [] });
+      resolveStale({
+        isMdx: false,
+        html: "<p>Stale</p>",
+        frontmatter: { title: "Stale" },
+        headings: [],
+      });
     }
-    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
 
     // Still only one pushState call, still showing winner
     expect(window.history.pushState).toHaveBeenCalledTimes(1);

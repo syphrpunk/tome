@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PLAN_LIMITS, PLAN_NAMES } from "./plan-limits.js";
 
 describe("PLAN_LIMITS", () => {
@@ -27,7 +27,7 @@ describe("PLAN_LIMITS", () => {
     expect(team.deployments).toBe(-1);
     expect(team.customDomains).toBe(-1);
     expect(team.teamMembers).toBe(-1);
-    expect(team.storage).toBe(10000);
+    expect(team.storage).toBe(10_000);
   });
 
   it("each plan has all required limit fields", () => {
@@ -61,6 +61,8 @@ describe("PLAN_NAMES", () => {
   });
 
   it("has matching keys with PLAN_LIMITS", () => {
-    expect(Object.keys(PLAN_NAMES).sort()).toEqual(Object.keys(PLAN_LIMITS).sort());
+    expect(Object.keys(PLAN_NAMES).sort()).toEqual(
+      Object.keys(PLAN_LIMITS).sort()
+    );
   });
 });

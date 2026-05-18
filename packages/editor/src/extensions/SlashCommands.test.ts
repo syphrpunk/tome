@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { filterSlashCommands, SLASH_COMMAND_DEFS } from "./slash-commands-data.js";
+import { describe, expect, it } from "vitest";
+import {
+  filterSlashCommands,
+  SLASH_COMMAND_DEFS,
+} from "./slash-commands-data.js";
 
 describe("SLASH_COMMAND_DEFS", () => {
   it("exports a non-empty list of commands", () => {

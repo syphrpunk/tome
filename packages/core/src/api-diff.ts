@@ -4,31 +4,41 @@
  * Detects breaking changes, additions, deprecations, and documentation updates.
  */
 
-import type { ApiManifest, ApiEndpoint, ApiParameter } from "./openapi.js";
+import type { ApiEndpoint, ApiManifest } from "./openapi.js";
 
 // ── TYPES ───────────────────────────────────────────────
 
 export type ChangeType = "added" | "removed" | "changed" | "deprecated";
-export type Severity = "breaking" | "non-breaking" | "deprecation" | "docs-only";
+export type Severity =
+  | "breaking"
+  | "non-breaking"
+  | "deprecation"
+  | "docs-only";
 
 export interface ApiChange {
-  /** Type of change */
-  type: ChangeType;
-  /** Severity classification */
-  severity: Severity;
   /** Human-readable description */
   description: string;
+  /** Specific field that changed */
+  field?: string;
   /** HTTP method (if endpoint-level) */
   method?: string;
   /** API path (if endpoint-level) */
   path?: string;
-  /** Specific field that changed */
-  field?: string;
+  /** Severity classification */
+  severity: Severity;
+  /** Type of change */
+  type: ChangeType;
 }
 
 export interface ApiDiffResult {
   /** Changes detected */
   changes: ApiChange[];
+  /** Whether any breaking changes were found */
+  hasBreaking: boolean;
+  /** New spec version */
+  newVersion: string;
+  /** Old spec version */
+  oldVersion: string;
   /** Summary counts */
   summary: {
     total: number;
@@ -37,17 +47,9 @@ export interface ApiDiffResult {
     deprecations: number;
     docsOnly: number;
   };
-  /** Whether any breaking changes were found */
-  hasBreaking: boolean;
-  /** Old spec version */
-  oldVersion: string;
-  /** New spec version */
-  newVersion: string;
 }
 
 export interface ChangelogEntry {
-  /** Version string */
-  version: string;
   /** ISO date string */
   date: string;
   /** Sections of the changelog */
@@ -58,6 +60,8 @@ export interface ChangelogEntry {
     removed: string[];
     breaking: string[];
   };
+  /** Version string */
+  version: string;
 }
 
 // ── DIFF ENGINE ─────────────────────────────────────────
@@ -67,7 +71,7 @@ export interface ChangelogEntry {
  */
 export function diffOpenApiSpecs(
   oldSpec: ApiManifest,
-  newSpec: ApiManifest,
+  newSpec: ApiManifest
 ): ApiDiffResult {
   const changes: ApiChange[] = [];
 
@@ -103,7 +107,9 @@ export function diffOpenApiSpecs(
   // Detect changes in existing endpoints
   for (const [key, oldEp] of oldEndpoints) {
     const newEp = newEndpoints.get(key);
-    if (!newEp) continue;
+    if (!newEp) {
+      continue;
+    }
 
     // Deprecation
     if (!oldEp.deprecated && newEp.deprecated) {
@@ -137,7 +143,10 @@ export function diffOpenApiSpecs(
     diffResponses(oldEp, newEp, changes);
 
     // Summary/description changes (docs-only)
-    if (oldEp.summary !== newEp.summary || oldEp.description !== newEp.description) {
+    if (
+      oldEp.summary !== newEp.summary ||
+      oldEp.description !== newEp.description
+    ) {
       changes.push({
         type: "changed",
         severity: "docs-only",
@@ -171,7 +180,7 @@ export function diffOpenApiSpecs(
  */
 export function generateChangelogEntry(
   diff: ApiDiffResult,
-  version?: string,
+  version?: string
 ): ChangelogEntry {
   const date = new Date().toISOString().slice(0, 10);
   const sections = {
@@ -183,7 +192,9 @@ export function generateChangelogEntry(
   };
 
   for (const change of diff.changes) {
-    if (change.severity === "docs-only") continue; // Skip docs-only in changelog
+    if (change.severity === "docs-only") {
+      continue; // Skip docs-only in changelog
+    }
 
     switch (change.type) {
       case "added":
@@ -273,9 +284,17 @@ function indexEndpoints(endpoints: ApiEndpoint[]): Map<string, ApiEndpoint> {
   return map;
 }
 
-function diffParameters(oldEp: ApiEndpoint, newEp: ApiEndpoint, changes: ApiChange[]) {
-  const oldParams = new Map(oldEp.parameters.map((p) => [`${p.in}:${p.name}`, p]));
-  const newParams = new Map(newEp.parameters.map((p) => [`${p.in}:${p.name}`, p]));
+function diffParameters(
+  oldEp: ApiEndpoint,
+  newEp: ApiEndpoint,
+  changes: ApiChange[]
+) {
+  const oldParams = new Map(
+    oldEp.parameters.map((p) => [`${p.in}:${p.name}`, p])
+  );
+  const newParams = new Map(
+    newEp.parameters.map((p) => [`${p.in}:${p.name}`, p])
+  );
 
   // Removed parameters
   for (const [key, oldParam] of oldParams) {
@@ -308,7 +327,9 @@ function diffParameters(oldEp: ApiEndpoint, newEp: ApiEndpoint, changes: ApiChan
   // Changed parameters (required flag change)
   for (const [key, oldParam] of oldParams) {
     const newParam = newParams.get(key);
-    if (!newParam) continue;
+    if (!newParam) {
+      continue;
+    }
 
     if (!oldParam.required && newParam.required) {
       changes.push({
@@ -345,7 +366,11 @@ function diffParameters(oldEp: ApiEndpoint, newEp: ApiEndpoint, changes: ApiChan
   }
 }
 
-function diffRequestBody(oldEp: ApiEndpoint, newEp: ApiEndpoint, changes: ApiChange[]) {
+function diffRequestBody(
+  oldEp: ApiEndpoint,
+  newEp: ApiEndpoint,
+  changes: ApiChange[]
+) {
   if (!oldEp.requestBody && newEp.requestBody) {
     changes.push({
       type: "added",
@@ -393,7 +418,11 @@ function diffRequestBody(oldEp: ApiEndpoint, newEp: ApiEndpoint, changes: ApiCha
   }
 }
 
-function diffResponses(oldEp: ApiEndpoint, newEp: ApiEndpoint, changes: ApiChange[]) {
+function diffResponses(
+  oldEp: ApiEndpoint,
+  newEp: ApiEndpoint,
+  changes: ApiChange[]
+) {
   const oldResponses = new Map(oldEp.responses.map((r) => [r.statusCode, r]));
   const newResponses = new Map(newEp.responses.map((r) => [r.statusCode, r]));
 

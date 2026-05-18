@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
-import { auth } from "./auth.js";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
+import { auth } from "./auth.js";
 
 // ── Helpers ──────────────────────────────────────────────
 

@@ -1,5 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
-import { extractHeadingsFromSource, processMarkdown, parseCodeMeta, enhanceCodeBlock } from "./markdown.js";
+import { describe, expect, it, vi } from "vitest";
+import {
+  enhanceCodeBlock,
+  extractHeadingsFromSource,
+  parseCodeMeta,
+  processMarkdown,
+} from "./markdown.js";
 
 describe("extractHeadingsFromSource", () => {
   it("returns empty array for empty source", () => {
@@ -10,7 +15,11 @@ describe("extractHeadingsFromSource", () => {
     const source = "# Title\n\n## Introduction\n\nSome text.";
     const headings = extractHeadingsFromSource(source);
     expect(headings).toHaveLength(1);
-    expect(headings[0]).toEqual({ depth: 2, text: "Introduction", id: "introduction" });
+    expect(headings[0]).toEqual({
+      depth: 2,
+      text: "Introduction",
+      id: "introduction",
+    });
   });
 
   it("extracts h2, h3, and h4 headings", () => {
@@ -56,45 +65,46 @@ describe("processMarkdown", () => {
     expect(result.html).toContain("Some content here");
     expect(result.frontmatter.title).toBe("Hello");
     expect(result.raw).toContain("Some content here");
-  }, 15000);
+  }, 15_000);
 
   it("extracts frontmatter title", async () => {
-    const source = "---\ntitle: My Page\ndescription: A test page\n---\n\n# Ignored\n\nBody.";
+    const source =
+      "---\ntitle: My Page\ndescription: A test page\n---\n\n# Ignored\n\nBody.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.title).toBe("My Page");
     expect(result.frontmatter.description).toBe("A test page");
-  }, 15000);
+  }, 15_000);
 
   it("falls back to first h1 for title when frontmatter has none", async () => {
     const source = "# Inferred Title\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.title).toBe("Inferred Title");
-  }, 15000);
+  }, 15_000);
 
   it("falls back to Untitled when no title available", async () => {
     const source = "Some content without a heading.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.title).toBe("Untitled");
-  }, 15000);
+  }, 15_000);
 
   it("defaults hidden to false", async () => {
     const source = "# Page\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.hidden).toBe(false);
-  }, 15000);
+  }, 15_000);
 
   it("respects hidden: true in frontmatter", async () => {
     const source = "---\nhidden: true\n---\n\n# Page\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.hidden).toBe(true);
-  }, 15000);
+  }, 15_000);
 
   it("warns but does not throw on invalid frontmatter fields", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const source = "---\nhidden: not-a-boolean\n---\n\n# Page\n\nContent.";
     await expect(processMarkdown(source)).resolves.toBeDefined();
     warnSpy.mockRestore();
-  }, 15000);
+  }, 15_000);
 
   it("emits headings for h2-h4 in the document", async () => {
     const source = "# Title\n\n## Section One\n\n### Subsection\n\nParagraph.";
@@ -102,7 +112,7 @@ describe("processMarkdown", () => {
     const ids = result.headings.map((h) => h.id);
     expect(ids).toContain("section-one");
     expect(ids).toContain("subsection");
-  }, 15000);
+  }, 15_000);
 
   it("includes optional filePath in validation warning", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -111,73 +121,80 @@ describe("processMarkdown", () => {
       expect(warnSpy.mock.calls[0][0]).toContain("/docs/page.md");
     }
     warnSpy.mockRestore();
-  }, 15000);
+  }, 15_000);
 
   it("processes GFM tables", async () => {
     const source = "# T\n\n| A | B |\n|---|---|\n| 1 | 2 |\n";
     const result = await processMarkdown(source);
     expect(result.html).toContain("<table");
-  }, 15000);
+  }, 15_000);
 
   it("defaults toc to true in frontmatter", async () => {
     const source = "# Page\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.toc).toBe(true);
-  }, 15000);
+  }, 15_000);
 
   it("respects toc: false in frontmatter", async () => {
     const source = "---\ntoc: false\n---\n\n# Page\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.toc).toBe(false);
-  }, 15000);
+  }, 15_000);
 
   it("respects toc: true in frontmatter", async () => {
     const source = "---\ntoc: true\n---\n\n# Page\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.toc).toBe(true);
-  }, 15000);
+  }, 15_000);
 
   it("parses type: changelog from frontmatter", async () => {
-    const source = "---\ntype: changelog\ntitle: Changelog\n---\n\n## [1.0.0] - 2025-01-15\n\n### Added\n- Feature";
+    const source =
+      "---\ntype: changelog\ntitle: Changelog\n---\n\n## [1.0.0] - 2025-01-15\n\n### Added\n- Feature";
     const result = await processMarkdown(source);
     expect(result.frontmatter.type).toBe("changelog");
-  }, 15000);
+  }, 15_000);
 
   it("defaults type to undefined when not set", async () => {
     const source = "---\ntitle: Normal Page\n---\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.type).toBeUndefined();
-  }, 15000);
+  }, 15_000);
 
   it("parses ogImage from frontmatter", async () => {
-    const source = "---\ntitle: Custom OG\nogImage: /images/custom-og.png\n---\n\nContent.";
+    const source =
+      "---\ntitle: Custom OG\nogImage: /images/custom-og.png\n---\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.ogImage).toBe("/images/custom-og.png");
-  }, 15000);
+  }, 15_000);
 
   it("defaults ogImage to undefined when not set", async () => {
     const source = "---\ntitle: Normal Page\n---\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.ogImage).toBeUndefined();
-  }, 15000);
+  }, 15_000);
 
   it("parses redirect_from as string array", async () => {
-    const source = "---\ntitle: New Page\nredirect_from:\n  - /old-path\n  - /legacy/path\n---\n\nContent.";
+    const source =
+      "---\ntitle: New Page\nredirect_from:\n  - /old-path\n  - /legacy/path\n---\n\nContent.";
     const result = await processMarkdown(source);
-    expect(result.frontmatter.redirect_from).toEqual(["/old-path", "/legacy/path"]);
-  }, 15000);
+    expect(result.frontmatter.redirect_from).toEqual([
+      "/old-path",
+      "/legacy/path",
+    ]);
+  }, 15_000);
 
   it("defaults redirect_from to undefined when not set", async () => {
     const source = "---\ntitle: Normal Page\n---\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.redirect_from).toBeUndefined();
-  }, 15000);
+  }, 15_000);
 
   it("parses access role from frontmatter", async () => {
-    const source = "---\ntitle: Admin Guide\naccess: admin\n---\n\nRestricted content.";
+    const source =
+      "---\ntitle: Admin Guide\naccess: admin\n---\n\nRestricted content.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.access).toBe("admin");
-  }, 15000);
+  }, 15_000);
 
   it("accepts all valid access roles", async () => {
     for (const role of ["viewer", "editor", "admin", "owner"]) {
@@ -185,42 +202,44 @@ describe("processMarkdown", () => {
       const result = await processMarkdown(source);
       expect(result.frontmatter.access).toBe(role);
     }
-  }, 15000);
+  }, 15_000);
 
   it("defaults access to undefined when not set", async () => {
     const source = "---\ntitle: Public Page\n---\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.frontmatter.access).toBeUndefined();
-  }, 15000);
+  }, 15_000);
 });
 
 // ── Entity decoding in code blocks ──────────────────────
 
 describe("code block entity decoding", () => {
   it("renders && correctly without double-encoding", async () => {
-    const source = "# T\n\n```bash\ncd my-docs && npm install && npm run dev\n```";
+    const source =
+      "# T\n\n```bash\ncd my-docs && npm install && npm run dev\n```";
     const result = await processMarkdown(source);
     // The highlighted HTML should not contain raw &#x26; entities
     expect(result.html).not.toContain("&#x26;&#x26;");
     // The raw text should preserve &&
     expect(result.raw).toContain("&&");
-  }, 15000);
+  }, 15_000);
 
   it("renders <script> in code blocks as escaped text (no XSS)", async () => {
     const source = "# T\n\n```html\n<script>alert('xss')</script>\n```";
     const result = await processMarkdown(source);
     // Should not contain an actual <script> tag outside of code context
     expect(result.html).not.toMatch(/<script>alert/);
-  }, 15000);
+  }, 15_000);
 
   it("decodes mixed named and hex entities in code blocks", async () => {
-    const source = "# T\n\n```js\nconst x = a && b;\nif (a < b && c > d) {}\n```";
+    const source =
+      "# T\n\n```js\nconst x = a && b;\nif (a < b && c > d) {}\n```";
     const result = await processMarkdown(source);
     // Should not contain raw hex entities
     expect(result.html).not.toContain("&#x26;");
     expect(result.html).not.toContain("&#x3C;");
     expect(result.html).not.toContain("&#x3E;");
-  }, 15000);
+  }, 15_000);
 });
 
 // ── Plugin system (TOM-57) ──────────────────────────────
@@ -245,7 +264,7 @@ describe("processMarkdown with plugins", () => {
       remarkPlugins: [[uppercasePlugin]],
     });
     expect(result.html).toContain("SOME CONTENT HERE.");
-  }, 15000);
+  }, 15_000);
 
   it("applies custom rehype plugin", async () => {
     // Create a simple rehype plugin that adds a class to all paragraphs
@@ -267,13 +286,13 @@ describe("processMarkdown with plugins", () => {
       rehypePlugins: [[addClassPlugin]],
     });
     expect(result.html).toContain('class="custom-paragraph"');
-  }, 15000);
+  }, 15_000);
 
   it("works without plugins (backward compatible)", async () => {
     const source = "# Hello\n\nContent.";
     const result = await processMarkdown(source);
     expect(result.html).toContain("Content.");
-  }, 15000);
+  }, 15_000);
 });
 
 // ── Mermaid support ─────────────────────────────────────
@@ -291,16 +310,18 @@ describe("processMarkdown mermaid support", () => {
     expect(match).not.toBeNull();
     const decoded = Buffer.from(match![1], "base64").toString("utf-8");
     expect(decoded).toBe(mermaidSrc);
-  }, 15000);
+  }, 15_000);
 
   it("does not apply syntax highlighting to mermaid blocks (no shiki output)", async () => {
     const source = "# T\n\n```mermaid\ngraph TD\n  X-->Y\n```\n";
     const result = await processMarkdown(source);
 
     // Shiki wraps highlighted code in <pre> with class "shiki"; mermaid should not have that
-    expect(result.html).not.toMatch(/<pre[^>]*class="[^"]*shiki[^"]*"[^>]*>[\s\S]*graph TD/);
+    expect(result.html).not.toMatch(
+      /<pre[^>]*class="[^"]*shiki[^"]*"[^>]*>[\s\S]*graph TD/
+    );
     expect(result.html).toContain('<div class="tome-mermaid"');
-  }, 15000);
+  }, 15_000);
 
   it("still processes other language code blocks normally alongside mermaid", async () => {
     const source = [
@@ -324,7 +345,7 @@ describe("processMarkdown mermaid support", () => {
 
     // Mermaid block should be a placeholder div
     expect(result.html).toContain('<div class="tome-mermaid"');
-  }, 15000);
+  }, 15_000);
 });
 
 // ── Expressive code blocks (Phase 2.1) ──────────────────
@@ -384,7 +405,9 @@ describe("parseCodeMeta", () => {
   });
 
   it("handles multiple attributes together", () => {
-    const meta = parseCodeMeta('ts title="app.ts" {1,3} showLineNumbers /useState/');
+    const meta = parseCodeMeta(
+      'ts title="app.ts" {1,3} showLineNumbers /useState/'
+    );
     expect(meta.lang).toBe("ts");
     expect(meta.title).toBe("app.ts");
     expect(meta.highlightLines).toEqual([1, 3]);
@@ -472,7 +495,7 @@ describe("processMarkdown expressive code blocks", () => {
     const source = "# T\n\n```ts {1}\nconst x = 1;\nconst y = 2;\n```";
     const result = await processMarkdown(source);
     expect(result.html).toContain("tome-line-highlight");
-  }, 15000);
+  }, 15_000);
 
   it("renders code block title from meta", async () => {
     const source = '# T\n\n```ts title="app.ts"\nconst x = 1;\n```';
@@ -480,20 +503,21 @@ describe("processMarkdown expressive code blocks", () => {
     expect(result.html).toContain("tome-code-block-wrapper");
     expect(result.html).toContain("tome-code-title");
     expect(result.html).toContain("app.ts");
-  }, 15000);
+  }, 15_000);
 
   it("adds line numbers attribute when showLineNumbers is in meta", async () => {
     const source = "# T\n\n```ts showLineNumbers\nconst x = 1;\n```";
     const result = await processMarkdown(source);
     expect(result.html).toContain("data-line-numbers");
-  }, 15000);
+  }, 15_000);
 
   it("processes inline diff markers in code blocks", async () => {
-    const source = "# T\n\n```ts\nconst x = 1; // [!code ++]\nconst y = 2; // [!code --]\n```";
+    const source =
+      "# T\n\n```ts\nconst x = 1; // [!code ++]\nconst y = 2; // [!code --]\n```";
     const result = await processMarkdown(source);
     expect(result.html).toContain("tome-line-added");
     expect(result.html).toContain("tome-line-removed");
-  }, 15000);
+  }, 15_000);
 });
 
 // ── Twoslash support (Phase 4.4) ─────────────────────────
@@ -534,7 +558,7 @@ describe("processMarkdown twoslash", () => {
       "# T",
       "",
       "```ts twoslash",
-      "const greeting = \"hello\";",
+      'const greeting = "hello";',
       "//    ^?",
       "```",
     ].join("\n");
@@ -542,16 +566,17 @@ describe("processMarkdown twoslash", () => {
     // Twoslash should produce hover-related markup (popup containers or data attributes)
     // The exact class names depend on the @shikijs/twoslash version, but the output
     // should differ from a normal code block by containing twoslash-specific elements.
-    const hasTwoslash = result.html.includes("twoslash") || result.html.includes("popup");
+    const hasTwoslash =
+      result.html.includes("twoslash") || result.html.includes("popup");
     expect(hasTwoslash).toBe(true);
-  }, 30000);
+  }, 30_000);
 
   it("does not add twoslash annotations to non-twoslash code blocks", async () => {
     const source = "# T\n\n```ts\nconst x = 1;\n```";
     const result = await processMarkdown(source);
     expect(result.html).not.toContain("twoslash-hover");
     expect(result.html).not.toContain("twoslash-popup");
-  }, 15000);
+  }, 15_000);
 
   it("gracefully handles twoslash blocks even if code has type errors", async () => {
     // Twoslash should not crash the pipeline on invalid TS
@@ -559,11 +584,11 @@ describe("processMarkdown twoslash", () => {
       "# T",
       "",
       "```ts twoslash",
-      "const x: number = \"not a number\";",
+      'const x: number = "not a number";',
       "```",
     ].join("\n");
     // Should not throw — either produces twoslash output or falls back gracefully
     const result = await processMarkdown(source);
     expect(result.html).toContain("const");
-  }, 30000);
+  }, 30_000);
 });

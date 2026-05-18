@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { mkdtempSync, writeFileSync, existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
+import { join } from "path";
+import { describe, expect, it } from "vitest";
 import {
-  parseMintConfig,
-  convertMintNavigation,
   convertMintConfig,
   convertMintlifyContent,
+  convertMintNavigation,
   migrateFromMintlify,
+  parseMintConfig,
 } from "./migrate-mintlify.js";
 
 // ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ describe("parseMintConfig", () => {
     expect(asString.logo).toBe("/logo.svg");
 
     const asObject = parseMintConfig(
-      JSON.stringify({ logo: { light: "/light.svg", dark: "/dark.svg" } }),
+      JSON.stringify({ logo: { light: "/light.svg", dark: "/dark.svg" } })
     );
     expect(typeof asObject.logo).toBe("object");
     expect((asObject.logo as { light: string }).light).toBe("/light.svg");
@@ -143,27 +143,25 @@ describe("convertMintConfig", () => {
 // ---------------------------------------------------------------------------
 
 describe("convertMintlifyContent", () => {
-  it("converts <Note>text</Note> to <Callout type=\"info\">text</Callout>", () => {
+  it('converts <Note>text</Note> to <Callout type="info">text</Callout>', () => {
     const { converted } = convertMintlifyContent("<Note>Important info</Note>");
     expect(converted).toBe('<Callout type="info">Important info</Callout>');
   });
 
   it("converts Warning, Info, Tip, Check components", () => {
     const { converted: warning } = convertMintlifyContent(
-      "<Warning>Danger ahead</Warning>",
+      "<Warning>Danger ahead</Warning>"
     );
     expect(warning).toBe('<Callout type="warning">Danger ahead</Callout>');
 
-    const { converted: info } = convertMintlifyContent(
-      "<Info>FYI</Info>",
-    );
+    const { converted: info } = convertMintlifyContent("<Info>FYI</Info>");
     expect(info).toBe('<Callout type="info">FYI</Callout>');
 
     const { converted: tip } = convertMintlifyContent("<Tip>Pro tip</Tip>");
     expect(tip).toBe('<Callout type="tip">Pro tip</Callout>');
 
     const { converted: check } = convertMintlifyContent(
-      "<Check>All good</Check>",
+      "<Check>All good</Check>"
     );
     expect(check).toBe('<Callout type="tip">All good</Callout>');
   });
@@ -189,11 +187,13 @@ describe("convertMintlifyContent", () => {
 
   it("strips AccordionGroup wrapper, keeps Accordion children", () => {
     const input =
-      "<AccordionGroup>\n<Accordion title=\"FAQ\">Answer here</Accordion>\n</AccordionGroup>";
+      '<AccordionGroup>\n<Accordion title="FAQ">Answer here</Accordion>\n</AccordionGroup>';
     const { converted } = convertMintlifyContent(input);
 
     expect(converted).not.toContain("AccordionGroup");
-    expect(converted).toContain('<Accordion title="FAQ">Answer here</Accordion>');
+    expect(converted).toContain(
+      '<Accordion title="FAQ">Answer here</Accordion>'
+    );
   });
 
   it("strips Frame wrapper", () => {
@@ -205,7 +205,9 @@ describe("convertMintlifyContent", () => {
   });
 
   it("always sets hasJsx=true", () => {
-    const { hasJsx } = convertMintlifyContent("Just plain text, no components.");
+    const { hasJsx } = convertMintlifyContent(
+      "Just plain text, no components."
+    );
     expect(hasJsx).toBe(true);
   });
 });
@@ -224,11 +226,11 @@ describe("migrateFromMintlify", () => {
         colors: { primary: "#1E90FF" },
         navigation: [{ group: "Guide", pages: ["intro"] }],
         redirects: [{ source: "/old", destination: "/new" }],
-      }),
+      })
     );
     writeFileSync(
       join(dir, "intro.mdx"),
-      "---\ntitle: Introduction\n---\n<Note>Welcome</Note>\n",
+      "---\ntitle: Introduction\n---\n<Note>Welcome</Note>\n"
     );
     return dir;
   }
@@ -255,11 +257,11 @@ describe("migrateFromMintlify", () => {
         name: "Docs JSON Project",
         colors: { primary: "#FF6600" },
         navigation: [{ group: "Guide", pages: ["intro"] }],
-      }),
+      })
     );
     writeFileSync(
       join(dir, "intro.mdx"),
-      "---\ntitle: Introduction\n---\n<Note>Hello</Note>\n",
+      "---\ntitle: Introduction\n---\n<Note>Hello</Note>\n"
     );
     const out = mkdtempSync(join(tmpdir(), "tome-out-"));
 
@@ -279,18 +281,18 @@ describe("migrateFromMintlify", () => {
       JSON.stringify({
         name: "From docs.json",
         navigation: [{ group: "Guide", pages: ["intro"] }],
-      }),
+      })
     );
     writeFileSync(
       join(dir, "mint.json"),
       JSON.stringify({
         name: "From mint.json",
         navigation: [{ group: "Guide", pages: ["intro"] }],
-      }),
+      })
     );
     writeFileSync(
       join(dir, "intro.mdx"),
-      "---\ntitle: Introduction\n---\nHello\n",
+      "---\ntitle: Introduction\n---\nHello\n"
     );
     const out = mkdtempSync(join(tmpdir(), "tome-out-"));
 

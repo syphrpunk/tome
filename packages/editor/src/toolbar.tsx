@@ -3,27 +3,32 @@
  * Styled to match Tome dashboard design tokens.
  */
 
-import React from "react";
 import type { Editor } from "@tiptap/react";
+import type React from "react";
 
 interface ToolbarProps {
   editor: Editor;
 }
 
 interface ToolbarButtonProps {
-  onClick: () => void;
   active?: boolean;
-  disabled?: boolean;
-  title: string;
   children: React.ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+  title: string;
 }
 
-function ToolbarButton({ onClick, active, disabled, title, children }: ToolbarButtonProps) {
+function ToolbarButton({
+  onClick,
+  active,
+  disabled,
+  title,
+  children,
+}: ToolbarButtonProps) {
   return (
     <button
-      onClick={onClick}
       disabled={disabled}
-      title={title}
+      onClick={onClick}
       style={{
         background: active ? "var(--coralD, rgba(139,58,47,0.1))" : "none",
         border: "1px solid transparent",
@@ -42,6 +47,7 @@ function ToolbarButton({ onClick, active, disabled, title, children }: ToolbarBu
         minWidth: 28,
         justifyContent: "center",
       }}
+      title={title}
     >
       {children}
     </button>
@@ -49,11 +55,22 @@ function ToolbarButton({ onClick, active, disabled, title, children }: ToolbarBu
 }
 
 function Divider() {
-  return <div style={{ width: 1, height: 20, background: "var(--bd, #ddd9d0)", margin: "0 4px" }} />;
+  return (
+    <div
+      style={{
+        width: 1,
+        height: 20,
+        background: "var(--bd, #ddd9d0)",
+        margin: "0 4px",
+      }}
+    />
+  );
 }
 
 export function EditorToolbar({ editor }: ToolbarProps) {
-  if (!editor) return null;
+  if (!editor) {
+    return null;
+  }
 
   return (
     <div
@@ -72,29 +89,29 @@ export function EditorToolbar({ editor }: ToolbarProps) {
     >
       {/* Text formatting */}
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBold().run()}
         active={editor.isActive("bold")}
+        onClick={() => editor.chain().focus().toggleBold().run()}
         title="Bold (Cmd+B)"
       >
         <strong>B</strong>
       </ToolbarButton>
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleItalic().run()}
         active={editor.isActive("italic")}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
         title="Italic (Cmd+I)"
       >
         <em>I</em>
       </ToolbarButton>
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleCode().run()}
         active={editor.isActive("code")}
+        onClick={() => editor.chain().focus().toggleCode().run()}
         title="Inline code (Cmd+E)"
       >
         <code style={{ fontSize: 11 }}>&lt;/&gt;</code>
       </ToolbarButton>
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleStrike().run()}
         active={editor.isActive("strike")}
+        onClick={() => editor.chain().focus().toggleStrike().run()}
         title="Strikethrough"
       >
         <s>S</s>
@@ -105,9 +122,9 @@ export function EditorToolbar({ editor }: ToolbarProps) {
       {/* Headings */}
       {([1, 2, 3, 4] as const).map((level) => (
         <ToolbarButton
+          active={editor.isActive("heading", { level })}
           key={level}
           onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
-          active={editor.isActive("heading", { level })}
           title={`Heading ${level}`}
         >
           H{level}
@@ -118,15 +135,15 @@ export function EditorToolbar({ editor }: ToolbarProps) {
 
       {/* Lists */}
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
         active={editor.isActive("bulletList")}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
         title="Bullet list"
       >
         &bull;
       </ToolbarButton>
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
         active={editor.isActive("orderedList")}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
         title="Numbered list"
       >
         1.
@@ -136,8 +153,8 @@ export function EditorToolbar({ editor }: ToolbarProps) {
 
       {/* Blocks */}
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
         active={editor.isActive("blockquote")}
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
         title="Blockquote"
       >
         &ldquo;
@@ -149,11 +166,13 @@ export function EditorToolbar({ editor }: ToolbarProps) {
         &#8212;
       </ToolbarButton>
       <ToolbarButton
+        active={editor.isActive("link")}
         onClick={() => {
           const url = window.prompt("Link URL:");
-          if (url) editor.chain().focus().setLink({ href: url }).run();
+          if (url) {
+            editor.chain().focus().setLink({ href: url }).run();
+          }
         }}
-        active={editor.isActive("link")}
         title="Add link"
       >
         &#128279;
@@ -163,15 +182,15 @@ export function EditorToolbar({ editor }: ToolbarProps) {
 
       {/* Undo/Redo */}
       <ToolbarButton
-        onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().undo()}
+        onClick={() => editor.chain().focus().undo().run()}
         title="Undo (Cmd+Z)"
       >
         &#8617;
       </ToolbarButton>
       <ToolbarButton
-        onClick={() => editor.chain().focus().redo().run()}
         disabled={!editor.can().redo()}
+        onClick={() => editor.chain().focus().redo().run()}
         title="Redo (Cmd+Shift+Z)"
       >
         &#8618;

@@ -8,16 +8,16 @@
  * - SHA inclusion when updating existing files
  * - Graceful null return on API errors
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the github-app module so getInstallationToken is controlled
 vi.mock("../github-app.js", () => ({
   getInstallationToken: vi.fn().mockResolvedValue("ghs_mock_token_123"),
 }));
 
-import { syncToGitHub } from "./editor-github.js";
 import { getInstallationToken } from "../github-app.js";
 import type { Env } from "../types.js";
+import { syncToGitHub } from "./editor-github.js";
 
 const mockedGetInstallationToken = vi.mocked(getInstallationToken);
 
@@ -76,7 +76,8 @@ describe("syncToGitHub", () => {
     const env = makeEnv();
 
     // Mock fetch: GET (file not found), PUT (success)
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: false, status: 404 }) // GET contents
       .mockResolvedValueOnce({
         ok: true,
@@ -89,7 +90,7 @@ describe("syncToGitHub", () => {
     expect(mockedGetInstallationToken).toHaveBeenCalledWith(
       42,
       "12345",
-      expect.stringContaining("fake-test-key"),
+      expect.stringContaining("fake-test-key")
     );
 
     vi.unstubAllGlobals();
@@ -98,7 +99,8 @@ describe("syncToGitHub", () => {
   it("creates a new file when it does not exist", async () => {
     const env = makeEnv();
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: false, status: 404 }) // GET — not found
       .mockResolvedValueOnce({
         ok: true,
@@ -127,7 +129,8 @@ describe("syncToGitHub", () => {
   it("includes SHA in PUT body when file already exists", async () => {
     const env = makeEnv();
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ sha: "existing_sha_789" }),
@@ -152,7 +155,8 @@ describe("syncToGitHub", () => {
   it("base64 encodes the content in the PUT body", async () => {
     const env = makeEnv();
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: false, status: 404 })
       .mockResolvedValueOnce({
         ok: true,
@@ -175,7 +179,8 @@ describe("syncToGitHub", () => {
   it("returns null on PUT API error", async () => {
     const env = makeEnv();
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: false, status: 404 }) // GET
       .mockResolvedValueOnce({
         ok: false,
@@ -201,7 +206,8 @@ describe("syncToGitHub", () => {
   it("sends correct headers including User-Agent and API version", async () => {
     const env = makeEnv();
 
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: false, status: 404 })
       .mockResolvedValueOnce({
         ok: true,

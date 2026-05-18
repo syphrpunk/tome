@@ -2,23 +2,32 @@
  * Integration test: API diff with real OpenAPI spec parsing.
  * Tests the full pipeline: parse specs → diff → changelog.
  */
-import { describe, it, expect, afterAll } from "vitest";
-import { resolve } from "path";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
-import { parseOpenApiSpec } from "./openapi.js";
-import { diffOpenApiSpecs, generateChangelogEntry, formatChangelogMarkdown } from "./api-diff.js";
 
-const TMP_DIR = resolve(__dirname, "../.test-tmp-api-diff");
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
+import { resolve } from "path";
+import { afterAll, describe, expect, it } from "vitest";
+import {
+  diffOpenApiSpecs,
+  formatChangelogMarkdown,
+  generateChangelogEntry,
+} from "./api-diff.js";
+import { parseOpenApiSpec } from "./openapi.js";
+
+const TMP_DIR = resolve(import.meta.dirname, "../.test-tmp-api-diff");
 
 function setup() {
-  if (existsSync(TMP_DIR)) rmSync(TMP_DIR, { recursive: true, force: true });
+  if (existsSync(TMP_DIR)) {
+    rmSync(TMP_DIR, { recursive: true, force: true });
+  }
   mkdirSync(TMP_DIR, { recursive: true });
 }
 
 setup();
 
 afterAll(() => {
-  if (existsSync(TMP_DIR)) rmSync(TMP_DIR, { recursive: true, force: true });
+  if (existsSync(TMP_DIR)) {
+    rmSync(TMP_DIR, { recursive: true, force: true });
+  }
 });
 
 function writeSpec(name: string, spec: object) {
@@ -37,7 +46,12 @@ const baseSpec = {
         operationId: "listUsers",
         tags: ["Users"],
         parameters: [
-          { name: "limit", in: "query", required: false, schema: { type: "integer" } },
+          {
+            name: "limit",
+            in: "query",
+            required: false,
+            schema: { type: "integer" },
+          },
         ],
         responses: { "200": { description: "OK" } },
       },
@@ -58,16 +72,29 @@ const baseSpec = {
         operationId: "getUser",
         tags: ["Users"],
         parameters: [
-          { name: "id", in: "path", required: true, schema: { type: "string" } },
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
         ],
-        responses: { "200": { description: "OK" }, "404": { description: "Not Found" } },
+        responses: {
+          "200": { description: "OK" },
+          "404": { description: "Not Found" },
+        },
       },
       delete: {
         summary: "Delete user",
         operationId: "deleteUser",
         tags: ["Users"],
         parameters: [
-          { name: "id", in: "path", required: true, schema: { type: "string" } },
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
         ],
         responses: { "204": { description: "Deleted" } },
       },
@@ -111,7 +138,9 @@ describe("API diff integration (real spec parsing)", () => {
     const cur = await parseOpenApiSpec(path2);
     const diff = diffOpenApiSpecs(old, cur);
 
-    expect(diff.changes.some((c) => c.type === "added" && c.path === "/health")).toBe(true);
+    expect(
+      diff.changes.some((c) => c.type === "added" && c.path === "/health")
+    ).toBe(true);
     expect(diff.hasBreaking).toBe(false);
     expect(diff.newVersion).toBe("1.1.0");
   });
@@ -134,7 +163,9 @@ describe("API diff integration (real spec parsing)", () => {
     const diff = diffOpenApiSpecs(old, cur);
 
     expect(diff.hasBreaking).toBe(true);
-    expect(diff.changes.some((c) => c.type === "removed" && c.path === "/users/{id}")).toBe(true);
+    expect(
+      diff.changes.some((c) => c.type === "removed" && c.path === "/users/{id}")
+    ).toBe(true);
   });
 
   it("generates valid changelog markdown from diff", async () => {

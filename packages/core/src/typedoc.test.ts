@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { extractDocEntriesFromSource, generateMarkdown } from "./typedoc.js";
+import { describe, expect, it } from "vitest";
 import type { DocEntry } from "./typedoc.js";
+import { extractDocEntriesFromSource, generateMarkdown } from "./typedoc.js";
 
 describe("typedoc", () => {
   describe("extractDocEntriesFromSource", () => {
@@ -152,7 +152,9 @@ export function parseConfig(path: string): object {
 `;
       const entries = extractDocEntriesFromSource(source);
       expect(entries).toHaveLength(1);
-      expect(entries[0].description).toBe("Parses a configuration file.\n\nThis supports JSON and YAML formats.");
+      expect(entries[0].description).toBe(
+        "Parses a configuration file.\n\nThis supports JSON and YAML formats."
+      );
     });
 
     it("only includes exported declarations when filtering", () => {
@@ -176,9 +178,15 @@ export interface PublicType {
       const exported = entries.filter((e) => e.exported);
       const nonExported = entries.filter((e) => !e.exported);
       expect(exported).toHaveLength(2);
-      expect(exported.map((e) => e.name).sort()).toEqual(["PublicType", "publicFn"]);
+      expect(exported.map((e) => e.name).sort()).toEqual([
+        "PublicType",
+        "publicFn",
+      ]);
       expect(nonExported).toHaveLength(2);
-      expect(nonExported.map((e) => e.name).sort()).toEqual(["InternalType", "helper"]);
+      expect(nonExported.map((e) => e.name).sort()).toEqual([
+        "InternalType",
+        "helper",
+      ]);
     });
 
     it("extracts optional function parameters", () => {
@@ -213,12 +221,21 @@ export const TIMEOUT: number = 5000;
         kind: "function",
         description: "Parses a configuration file.",
         signature: "parseConfig(path: string): object",
-        parameters: [{ name: "path", type: "string", optional: false, description: "File path" }],
+        parameters: [
+          {
+            name: "path",
+            type: "string",
+            optional: false,
+            description: "File path",
+          },
+        ],
         returnType: "object",
         exported: true,
       };
       const md = generateMarkdown(entry);
-      expect(md).toContain("---\ntitle: parseConfig\ndescription: Parses a configuration file.\n---");
+      expect(md).toContain(
+        "---\ntitle: parseConfig\ndescription: Parses a configuration file.\n---"
+      );
     });
 
     it("produces a parameter table for functions", () => {
@@ -228,8 +245,18 @@ export const TIMEOUT: number = 5000;
         description: "Connect to a database.",
         signature: "connect(host: string, port?: number): Promise<void>",
         parameters: [
-          { name: "host", type: "string", optional: false, description: "Database host" },
-          { name: "port", type: "number", optional: true, description: "Port number" },
+          {
+            name: "host",
+            type: "string",
+            optional: false,
+            description: "Database host",
+          },
+          {
+            name: "port",
+            type: "number",
+            optional: true,
+            description: "Port number",
+          },
         ],
         returnType: "Promise<void>",
         exported: true,
@@ -261,8 +288,18 @@ export const TIMEOUT: number = 5000;
         kind: "interface",
         description: "A user object.",
         members: [
-          { name: "name", type: "string", optional: false, description: "User name" },
-          { name: "age", type: "number", optional: true, description: "User age" },
+          {
+            name: "name",
+            type: "string",
+            optional: false,
+            description: "User name",
+          },
+          {
+            name: "age",
+            type: "number",
+            optional: true,
+            description: "User age",
+          },
         ],
         exported: true,
       };

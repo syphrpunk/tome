@@ -7,17 +7,17 @@
  */
 
 import {
-  readFileSync,
-  existsSync,
-  writeFileSync,
-  mkdirSync,
   copyFileSync,
+  existsSync,
+  mkdirSync,
   readdirSync,
+  readFileSync,
   statSync,
+  writeFileSync,
 } from "fs";
-import { resolve, join, relative, dirname, basename, extname } from "path";
-import yaml from "yaml";
 import matter from "gray-matter";
+import { basename, dirname, extname, join, relative, resolve } from "path";
+import yaml from "yaml";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +55,7 @@ type GitbookConfig = {
  *  - 2- or 4-space indentation for nesting
  */
 export function parseSummaryNavigation(
-  summaryContent: string,
+  summaryContent: string
 ): NavigationGroup[] {
   const lines = summaryContent.split("\n");
   const groups: NavigationGroup[] = [];
@@ -64,11 +64,11 @@ export function parseSummaryNavigation(
   let currentGroup: NavigationGroup = { group: "Documentation", pages: [] };
 
   // Regex for a markdown link inside a list item.
-  const linkRe = /^(\s*)[\*\-]\s+\[([^\]]+)\]\(([^)]+)\)/;
+  const linkRe = /^(\s*)[*-]\s+\[([^\]]+)\]\(([^)]+)\)/;
   // Regex for a heading-based group separator.
   const headingRe = /^#{1,6}\s+(.+)/;
   // Regex for an unlinked list item used as a group header.
-  const unlinkRe = /^(\s*)[\*\-]\s+([^\[].+)/;
+  const unlinkRe = /^(\s*)[*-]\s+([^[].+)/;
 
   for (const line of lines) {
     // -- heading-based group --
@@ -233,12 +233,12 @@ export function convertGitbookContent(content: string): {
 
       // Strip endtab markers once before extracting tab bodies to avoid
       // repeated regex application per tab.
-      const innerNoEndtabs = converted.slice(innerStart, endTabsIdx)
+      const innerNoEndtabs = converted
+        .slice(innerStart, endTabsIdx)
         .replace(/\{%\s*endtab\s*%\}/g, "");
       hasJsx = true;
 
-      const tabRe =
-        /\{%\s*tab\s+title="([^"]+)"\s*%\}/g;
+      const tabRe = /\{%\s*tab\s+title="([^"]+)"\s*%\}/g;
       const titles: string[] = [];
       const bodies: string[] = [];
       let tabInnerMatch: RegExpExecArray | null;
@@ -284,9 +284,7 @@ export function convertGitbookContent(content: string): {
   // {% code title="file.js" %} followed by a code fence → merge title.
   converted = converted.replace(
     /\{%\s*code\s+title="([^"]+)"\s*%\}\s*\n(```\w*)/g,
-    (_match, title: string, fence: string) => {
-      return `${fence} title="${title}"`;
-    },
+    (_match, title: string, fence: string) => `${fence} title="${title}"`
   );
   // Remove any stray {% endcode %} markers.
   converted = converted.replace(/\{%\s*endcode\s*%\}/g, "");
@@ -294,17 +292,13 @@ export function convertGitbookContent(content: string): {
   // ---- Embed blocks → markdown link -----------------------------------
   converted = converted.replace(
     /\{%\s*embed\s+url="([^"]+)"(?:\s+[^%]*)?\s*%\}/g,
-    (_match, url: string) => {
-      return `[Embedded content](${url})`;
-    },
+    (_match, url: string) => `[Embedded content](${url})`
   );
 
   // ---- Content-ref blocks → markdown link -----------------------------
   converted = converted.replace(
     /\{%\s*content-ref\s+url="([^"]+)"\s*%\}[\s\S]*?\{%\s*endcontent-ref\s*%\}/g,
-    (_match, url: string) => {
-      return `[See page](${url})`;
-    },
+    (_match, url: string) => `[See page](${url})`
   );
 
   return { converted, hasJsx };
@@ -354,7 +348,9 @@ export function parseGitbookConfig(yamlContent: string): GitbookConfig {
 /** Recursively collect all files under `dir` matching the given extensions. */
 function walkFiles(dir: string, extensions: string[]): string[] {
   const results: string[] = [];
-  if (!existsSync(dir)) return results;
+  if (!existsSync(dir)) {
+    return results;
+  }
 
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
@@ -371,7 +367,9 @@ function walkFiles(dir: string, extensions: string[]): string[] {
 
 /** Copy a directory tree from `src` to `dest`, creating directories as needed. */
 function copyDirRecursive(src: string, dest: string): void {
-  if (!existsSync(src)) return;
+  if (!existsSync(src)) {
+    return;
+  }
   mkdirSync(dest, { recursive: true });
 
   for (const entry of readdirSync(src)) {
@@ -409,7 +407,7 @@ function buildTitleMap(summaryContent: string): Map<string, string> {
 
 function generateTomeConfig(
   navigation: NavigationGroup[],
-  redirects: Array<{ from: string; to: string }>,
+  redirects: Array<{ from: string; to: string }>
 ): string {
   const navJson = JSON.stringify(navigation, null, 2);
 
@@ -418,7 +416,7 @@ function generateTomeConfig(
       ? `\n  redirects: ${JSON.stringify(
           Object.fromEntries(redirects.map((r) => [r.from, r.to])),
           null,
-          2,
+          2
         )},`
       : "";
 
@@ -444,7 +442,7 @@ export default {
 export async function migrateFromGitbook(
   sourceDir: string,
   outDir: string,
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean } = {}
 ): Promise<MigrationResult> {
   const warnings: string[] = [];
   const convertedFiles: string[] = [];
@@ -459,15 +457,10 @@ export async function migrateFromGitbook(
   }
 
   // Resolve the content root directory.
-  const contentRoot = config.root
-    ? resolve(sourceDir, config.root)
-    : sourceDir;
+  const contentRoot = config.root ? resolve(sourceDir, config.root) : sourceDir;
 
   // 2. Parse SUMMARY.md for navigation.
-  const summaryFile = resolve(
-    contentRoot,
-    config.summaryPath ?? "SUMMARY.md",
-  );
+  const summaryFile = resolve(contentRoot, config.summaryPath ?? "SUMMARY.md");
   let navigation: NavigationGroup[] = [];
   let summaryContent = "";
 
@@ -488,7 +481,9 @@ export async function migrateFromGitbook(
     const relPath = relative(contentRoot, mdFile);
 
     // Skip SUMMARY.md itself.
-    if (basename(mdFile) === "SUMMARY.md") continue;
+    if (basename(mdFile) === "SUMMARY.md") {
+      continue;
+    }
 
     // Read and convert content.
     const raw = readFileSync(mdFile, "utf-8");
@@ -506,8 +501,7 @@ export async function migrateFromGitbook(
 
     // Determine output extension.
     const outExt = hasJsx ? ".mdx" : ".md";
-    const outFileName =
-      basename(relPath, extname(relPath)) + outExt;
+    const outFileName = basename(relPath, extname(relPath)) + outExt;
     const outPath = join(pagesDir, dirname(relPath), outFileName);
 
     if (!options.dryRun) {

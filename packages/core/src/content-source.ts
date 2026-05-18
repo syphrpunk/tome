@@ -5,22 +5,21 @@
 // ── TYPES ────────────────────────────────────────────────
 
 export interface ContentPage {
-  /** Unique page identifier (e.g., "getting-started") */
-  id: string;
   /** Raw markdown/MDX content including frontmatter */
   content: string;
   /** File extension: "md" or "mdx" */
   format: "md" | "mdx";
+  /** Unique page identifier (e.g., "getting-started") */
+  id: string;
   /** Last modified date (ISO 8601) */
   lastModified?: string;
 }
 
 export interface ContentSource {
-  /** Unique name for this source */
-  name: string;
-
   /** Fetch all pages from this source */
   fetchPages(): Promise<ContentPage[]>;
+  /** Unique name for this source */
+  name: string;
 
   /** Optional: watch for changes (returns cleanup function) */
   watch?(onChange: (pages: ContentPage[]) => void): () => void;
@@ -34,11 +33,11 @@ export function defineContentSource(source: ContentSource): ContentSource {
 // ── GITHUB CONTENT SOURCE ────────────────────────────────
 
 export interface GitHubSourceOptions {
-  owner: string;
-  repo: string;
   branch?: string;
+  owner: string;
   /** Path within the repo to look for docs (e.g., "docs/pages") */
   path?: string;
+  repo: string;
   /** GitHub token for private repos */
   token?: string;
 }
@@ -53,21 +52,27 @@ export function githubSource(options: GitHubSourceOptions): ContentSource {
       const headers: Record<string, string> = {
         Accept: "application/vnd.github.v3+json",
       };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
 
       // Use GitHub Trees API to list all files recursively
       const apiUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`;
       const res = await fetch(apiUrl, { headers });
-      if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`GitHub API error: ${res.status}`);
+      }
 
-      const data = (await res.json()) as { tree: Array<{ path: string; type: string }> };
+      const data = (await res.json()) as {
+        tree: Array<{ path: string; type: string }>;
+      };
       const prefix = path.endsWith("/") ? path : path + "/";
 
       const mdFiles = data.tree.filter(
         (f) =>
           f.path.startsWith(prefix) &&
           (f.path.endsWith(".md") || f.path.endsWith(".mdx")) &&
-          f.type === "blob",
+          f.type === "blob"
       );
 
       const pages: ContentPage[] = [];
@@ -75,9 +80,11 @@ export function githubSource(options: GitHubSourceOptions): ContentSource {
       for (const file of mdFiles) {
         const contentRes = await fetch(
           `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${file.path}`,
-          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
-        if (!contentRes.ok) continue;
+        if (!contentRes.ok) {
+          continue;
+        }
 
         const content = await contentRes.text();
         const relativePath = file.path.slice(prefix.length);
@@ -114,9 +121,11 @@ export function notionSource(options: NotionSourceOptions): ContentSource {
 
       const res = await fetch(
         `https://api.notion.com/v1/databases/${options.databaseId}/query`,
-        { method: "POST", headers, body: JSON.stringify({}) },
+        { method: "POST", headers, body: JSON.stringify({}) }
       );
-      if (!res.ok) throw new Error(`Notion API error: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Notion API error: ${res.status}`);
+      }
 
       const data = (await res.json()) as { results: any[] };
       const pages: ContentPage[] = [];
@@ -125,9 +134,11 @@ export function notionSource(options: NotionSourceOptions): ContentSource {
         // Fetch child blocks for each page
         const blocksRes = await fetch(
           `https://api.notion.com/v1/blocks/${page.id}/children`,
-          { headers },
+          { headers }
         );
-        if (!blocksRes.ok) continue;
+        if (!blocksRes.ok) {
+          continue;
+        }
 
         const blocks = (await blocksRes.json()) as { results: any[] };
 
@@ -194,14 +205,24 @@ export function notionBlocksToMarkdown(title: string, blocks: any[]): string {
 }
 
 export function richTextToMd(richText: any[]): string {
-  if (!richText) return "";
+  if (!richText) {
+    return "";
+  }
   return richText
     .map((t: any) => {
       let text: string = t.plain_text || "";
-      if (t.annotations?.bold) text = `**${text}**`;
-      if (t.annotations?.italic) text = `*${text}*`;
-      if (t.annotations?.code) text = `\`${text}\``;
-      if (t.href) text = `[${text}](${t.href})`;
+      if (t.annotations?.bold) {
+        text = `**${text}**`;
+      }
+      if (t.annotations?.italic) {
+        text = `*${text}*`;
+      }
+      if (t.annotations?.code) {
+        text = `\`${text}\``;
+      }
+      if (t.href) {
+        text = `[${text}](${t.href})`;
+      }
       return text;
     })
     .join("");
@@ -211,7 +232,7 @@ export function richTextToMd(richText: any[]): string {
 // Used by the vite plugin to pull pages from all configured content sources.
 
 export async function fetchRemoteContent(
-  sources: ContentSource[],
+  sources: ContentSource[]
 ): Promise<ContentPage[]> {
   const allPages: ContentPage[] = [];
 
@@ -221,7 +242,7 @@ export async function fetchRemoteContent(
       allPages.push(...pages);
     } catch (err) {
       console.warn(
-        `[tome] Failed to fetch from content source "${source.name}": ${err instanceof Error ? err.message : String(err)}`,
+        `[tome] Failed to fetch from content source "${source.name}": ${err instanceof Error ? err.message : String(err)}`
       );
     }
   }

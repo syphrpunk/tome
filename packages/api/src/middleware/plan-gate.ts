@@ -30,7 +30,7 @@ export function requirePlan(minPlan: "cloud" | "team") {
           requiredPlan: minPlan,
           currentPlan: user.plan,
         },
-        403,
+        403
       );
     }
 

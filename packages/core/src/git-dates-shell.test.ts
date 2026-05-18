@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // Hoisted mock — in place before git-dates.ts static import resolves.
 vi.mock("child_process", () => ({
   execFileSync: vi.fn().mockReturnValue("2024-01-15T10:30:00Z\n"),
 }));
 
-import { getGitLastUpdated } from "./git-dates.js";
 import { execFileSync } from "child_process";
+import { getGitLastUpdated } from "./git-dates.js";
 
 const mockedExecFileSync = vi.mocked(execFileSync);
 
@@ -18,7 +18,10 @@ describe("getGitLastUpdated - shell option (Windows compatibility)", () => {
 
   it("passes shell: false on Linux/macOS", () => {
     const original = process.platform;
-    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    Object.defineProperty(process, "platform", {
+      value: "linux",
+      configurable: true,
+    });
 
     getGitLastUpdated("/absolute/path/file.ts");
 
@@ -28,12 +31,18 @@ describe("getGitLastUpdated - shell option (Windows compatibility)", () => {
       expect.objectContaining({ shell: false })
     );
 
-    Object.defineProperty(process, "platform", { value: original, configurable: true });
+    Object.defineProperty(process, "platform", {
+      value: original,
+      configurable: true,
+    });
   });
 
   it("passes shell: true on Windows (fixes ENOENT for git.cmd)", () => {
     const original = process.platform;
-    Object.defineProperty(process, "platform", { value: "win32", configurable: true });
+    Object.defineProperty(process, "platform", {
+      value: "win32",
+      configurable: true,
+    });
 
     getGitLastUpdated("/absolute/path/file.ts");
 
@@ -43,12 +52,18 @@ describe("getGitLastUpdated - shell option (Windows compatibility)", () => {
       expect.objectContaining({ shell: true })
     );
 
-    Object.defineProperty(process, "platform", { value: original, configurable: true });
+    Object.defineProperty(process, "platform", {
+      value: original,
+      configurable: true,
+    });
   });
 
   it("passes shell: false on macOS (darwin)", () => {
     const original = process.platform;
-    Object.defineProperty(process, "platform", { value: "darwin", configurable: true });
+    Object.defineProperty(process, "platform", {
+      value: "darwin",
+      configurable: true,
+    });
 
     getGitLastUpdated("/absolute/path/file.ts");
 
@@ -58,7 +73,10 @@ describe("getGitLastUpdated - shell option (Windows compatibility)", () => {
       expect.objectContaining({ shell: false })
     );
 
-    Object.defineProperty(process, "platform", { value: original, configurable: true });
+    Object.defineProperty(process, "platform", {
+      value: original,
+      configurable: true,
+    });
   });
 
   it("returns the trimmed ISO date string on success", () => {

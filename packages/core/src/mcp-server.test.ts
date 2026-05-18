@@ -1,10 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { writeFileSync, mkdirSync, rmSync } from "fs";
-import { resolve, join } from "path";
-import { tmpdir } from "os";
-import { loadManifest, searchPages, getPage, listPages, createMcpServer, type McpManifest, type McpPage } from "./mcp-server.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { mkdirSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join, resolve } from "path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  createMcpServer,
+  getPage,
+  listPages,
+  loadManifest,
+  type McpManifest,
+  type McpPage,
+  searchPages,
+} from "./mcp-server.js";
 
 // ── FIXTURES ────────────────────────────────────────────
 
@@ -202,7 +210,8 @@ describe("createMcpServer (integration)", () => {
 
   beforeEach(async () => {
     const server = createMcpServer(sampleManifest);
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
 
     client = new Client({ name: "test-client", version: "1.0" });
 
@@ -260,14 +269,20 @@ describe("createMcpServer (integration)", () => {
   // ── tools/call: search_docs ───────────────────────────
 
   it("search_docs finds pages matching query", async () => {
-    const result = await client.callTool({ name: "search_docs", arguments: { query: "quickstart" } });
+    const result = await client.callTool({
+      name: "search_docs",
+      arguments: { query: "quickstart" },
+    });
     const results = JSON.parse((result.content as any)[0].text);
     expect(results.length).toBeGreaterThanOrEqual(1);
     expect(results[0].url).toBe("/quickstart");
   });
 
   it("search_docs returns empty array for no match", async () => {
-    const result = await client.callTool({ name: "search_docs", arguments: { query: "xyznonexistent" } });
+    const result = await client.callTool({
+      name: "search_docs",
+      arguments: { query: "xyznonexistent" },
+    });
     const results = JSON.parse((result.content as any)[0].text);
     expect(results).toHaveLength(0);
   });
@@ -275,7 +290,10 @@ describe("createMcpServer (integration)", () => {
   // ── tools/call: get_page ──────────────────────────────
 
   it("get_page returns full page content", async () => {
-    const result = await client.callTool({ name: "get_page", arguments: { url: "/quickstart" } });
+    const result = await client.callTool({
+      name: "get_page",
+      arguments: { url: "/quickstart" },
+    });
     expect(result.isError).toBeFalsy();
     const page = JSON.parse((result.content as any)[0].text);
     expect(page.title).toBe("Quickstart");
@@ -283,7 +301,10 @@ describe("createMcpServer (integration)", () => {
   });
 
   it("get_page returns error for unknown URL", async () => {
-    const result = await client.callTool({ name: "get_page", arguments: { url: "/nonexistent" } });
+    const result = await client.callTool({
+      name: "get_page",
+      arguments: { url: "/nonexistent" },
+    });
     expect(result.isError).toBe(true);
     expect((result.content as any)[0].text).toContain("Page not found");
   });

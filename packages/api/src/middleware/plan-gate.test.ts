@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
 import { Hono } from "hono";
-import { requirePlan } from "./plan-gate.js";
+import { describe, expect, it } from "vitest";
 import type { Env, User } from "../types.js";
+import { requirePlan } from "./plan-gate.js";
 
 function makeApp(minPlan: "cloud" | "team") {
   const app = new Hono<{ Bindings: Env; Variables: { user: User } }>();

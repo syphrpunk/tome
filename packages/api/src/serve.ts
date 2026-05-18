@@ -31,20 +31,24 @@ export function isApiHost(hostname: string): boolean {
  */
 export async function resolveHostname(
   hostname: string,
-  db: D1Database,
+  db: D1Database
 ): Promise<string | null> {
   const bare = hostname.replace(/:\d+$/, "");
 
   // Subdomain extraction for *.tome.center
   if (bare.endsWith(".tome.center")) {
-    const sub = bare.slice(0, -(".tome.center".length));
+    const sub = bare.slice(0, -".tome.center".length);
     // Reject multi-level subdomains (e.g. "a.b.tome.center")
-    if (!sub || sub.includes(".")) return null;
+    if (!sub || sub.includes(".")) {
+      return null;
+    }
     return sub;
   }
 
   // Bare platform domain — no slug
-  if (bare === "tome.center") return null;
+  if (bare === "tome.center") {
+    return null;
+  }
 
   // Custom domain — D1 lookup
   const row = await db
@@ -52,7 +56,7 @@ export async function resolveHostname(
       `SELECT p.slug FROM domains d
        JOIN projects p ON d.project_id = p.id
        WHERE d.domain = ? AND d.verified = 1
-       LIMIT 1`,
+       LIMIT 1`
     )
     .bind(bare)
     .first<{ slug: string }>();
@@ -96,7 +100,7 @@ function r2Headers(object: R2Object, path: string): Headers {
   const headers = new Headers();
   headers.set(
     "Content-Type",
-    object.httpMetadata?.contentType ?? guessContentType(path),
+    object.httpMetadata?.contentType ?? guessContentType(path)
   );
   headers.set("Cache-Control", "public, max-age=60, s-maxage=600");
   headers.set("ETag", object.etag);
@@ -116,11 +120,13 @@ function r2Headers(object: R2Object, path: string): Headers {
 export async function serveFromR2(
   slug: string,
   path: string,
-  bucket: R2Bucket,
+  bucket: R2Bucket
 ): Promise<Response> {
   // Strip leading slash and default empty to index.html
   let clean = path.replace(/^\/+/, "");
-  if (!clean) clean = "index.html";
+  if (!clean) {
+    clean = "index.html";
+  }
 
   // Path traversal protection
   if (clean.includes("..")) {

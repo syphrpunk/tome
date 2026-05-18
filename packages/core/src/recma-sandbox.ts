@@ -8,37 +8,58 @@
  * pass through untouched.
  */
 
-import type { Program, Node } from "estree";
-import { visit, SKIP } from "estree-util-visit";
+import type { Node, Program } from "estree";
+import { SKIP, visit } from "estree-util-visit";
 
 // ── BLOCKED IDENTIFIERS ──────────────────────────────────
 
 /** Globals that must never be referenced as standalone identifiers or MemberExpression roots */
 const BLOCKED_GLOBALS = new Set([
   // Network
-  "fetch", "XMLHttpRequest", "WebSocket", "EventSource",
+  "fetch",
+  "XMLHttpRequest",
+  "WebSocket",
+  "EventSource",
   // Eval / code generation
-  "eval", "Function",
+  "eval",
+  "Function",
   // DOM
-  "window", "document", "navigator",
+  "window",
+  "document",
+  "navigator",
   // Storage
-  "localStorage", "sessionStorage", "indexedDB",
+  "localStorage",
+  "sessionStorage",
+  "indexedDB",
   // Scope escape
-  "globalThis", "self", "top", "parent", "frames",
+  "globalThis",
+  "self",
+  "top",
+  "parent",
+  "frames",
   // Timer-based eval (string arg form)
-  "setTimeout", "setInterval",
+  "setTimeout",
+  "setInterval",
   // Worker spawning
-  "Worker", "SharedWorker",
+  "Worker",
+  "SharedWorker",
   // Tome-specific secret
   "__TOME_AI_API_KEY__",
 ]);
 
 /** Identifiers that @mdx-js/mdx generates internally — always allowed */
 const MDX_INTERNALS = new Set([
-  "_jsx", "_jsxs", "_jsxDEV", "_Fragment",
-  "_createMdxContent", "_components", "_provideComponents",
-  "MDXLayout", "_missingMdxReference",
-  "props", "children",
+  "_jsx",
+  "_jsxs",
+  "_jsxDEV",
+  "_Fragment",
+  "_createMdxContent",
+  "_components",
+  "_provideComponents",
+  "MDXLayout",
+  "_missingMdxReference",
+  "props",
+  "children",
 ]);
 
 // ── HELPERS ──────────────────────────────────────────────
@@ -49,8 +70,12 @@ export interface RecmaSandboxOptions {
 }
 
 function isBlocked(name: string, allowed: Set<string>): boolean {
-  if (allowed.has(name)) return false;
-  if (MDX_INTERNALS.has(name)) return false;
+  if (allowed.has(name)) {
+    return false;
+  }
+  if (MDX_INTERNALS.has(name)) {
+    return false;
+  }
   return BLOCKED_GLOBALS.has(name);
 }
 
@@ -59,14 +84,22 @@ function isBlocked(name: string, allowed: Set<string>): boolean {
  * e.g. `window.location.href` → "window"
  */
 function resolveRootIdentifier(node: any): string | null {
-  if (node.type === "Identifier") return node.name;
-  if (node.type === "MemberExpression") return resolveRootIdentifier(node.object);
+  if (node.type === "Identifier") {
+    return node.name;
+  }
+  if (node.type === "MemberExpression") {
+    return resolveRootIdentifier(node.object);
+  }
   return null; // chain terminates in a call/other expression — can't statically resolve
 }
 
 function loc(node: any): string {
-  if (node.start != null) return ` (offset ${node.start})`;
-  if (node.loc?.start) return ` (${node.loc.start.line}:${node.loc.start.column})`;
+  if (node.start != null) {
+    return ` (offset ${node.start})`;
+  }
+  if (node.loc?.start) {
+    return ` (${node.loc.start.line}:${node.loc.start.column})`;
+  }
   return "";
 }
 
@@ -127,7 +160,11 @@ export function recmaSandbox(options: RecmaSandboxOptions = {}) {
         }
 
         // Skip: object keys in ObjectExpression/Property
-        if (parent?.type === "Property" && parent.key === node && !parent.computed) {
+        if (
+          parent?.type === "Property" &&
+          parent.key === node &&
+          !parent.computed
+        ) {
           return;
         }
 
@@ -145,9 +182,10 @@ export function recmaSandbox(options: RecmaSandboxOptions = {}) {
         if (root && isBlocked(root, allowed)) {
           // For computed properties on blocked roots, always fail (can't know the property)
           const n = node as any;
-          const propName = !n.computed && n.property?.type === "Identifier"
-            ? `${root}.${n.property.name}`
-            : root;
+          const propName =
+            !n.computed && n.property?.type === "Identifier"
+              ? `${root}.${n.property.name}`
+              : root;
           file.fail(
             `MDX sandbox: access to '${propName}' is not allowed${loc(node)}`,
             node

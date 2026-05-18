@@ -3,32 +3,32 @@ import { useState } from "react";
 // ── TYPES (mirrored for components package independence) ──
 
 export interface AsyncApiParameter {
-  name: string;
   description?: string;
+  name: string;
   schema?: { type?: string; [key: string]: unknown };
 }
 
 export interface AsyncApiMessage {
-  name?: string;
-  title?: string;
-  summary?: string;
-  description?: string;
   contentType?: string;
-  payload?: Record<string, unknown>;
+  description?: string;
   examples?: Array<{ name?: string; payload?: unknown }>;
+  name?: string;
+  payload?: Record<string, unknown>;
+  summary?: string;
+  title?: string;
 }
 
 export interface AsyncApiOperation {
-  operationId?: string;
-  summary?: string;
   description?: string;
   message?: AsyncApiMessage;
+  operationId?: string;
+  summary?: string;
   tags?: Array<{ name: string }>;
 }
 
 export interface AsyncApiChannel {
-  name: string;
   description?: string;
+  name: string;
   parameters?: AsyncApiParameter[];
   publish?: AsyncApiOperation;
   subscribe?: AsyncApiOperation;
@@ -36,19 +36,19 @@ export interface AsyncApiChannel {
 }
 
 export interface AsyncApiServer {
-  name: string;
-  url: string;
-  protocol: string;
   description?: string;
+  name: string;
+  protocol: string;
+  url: string;
 }
 
 export interface AsyncApiManifest {
-  title: string;
-  version: string;
+  channels: AsyncApiChannel[];
   description?: string;
   servers: AsyncApiServer[];
-  channels: AsyncApiChannel[];
   tags: Array<{ name: string; description?: string }>;
+  title: string;
+  version: string;
 }
 
 // ── PROTOCOL BADGE ─────────────────────────────────────
@@ -131,7 +131,9 @@ export interface AsyncParameterTableProps {
 }
 
 export function AsyncParameterTable({ parameters }: AsyncParameterTableProps) {
-  if (parameters.length === 0) return null;
+  if (parameters.length === 0) {
+    return null;
+  }
   return (
     <div style={{ overflowX: "auto", marginBottom: 16 }}>
       <table
@@ -149,9 +151,33 @@ export function AsyncParameterTable({ parameters }: AsyncParameterTableProps) {
               textAlign: "left",
             }}
           >
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>Name</th>
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>Type</th>
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>Description</th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              Name
+            </th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              Type
+            </th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              Description
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -199,7 +225,14 @@ export interface MessageBlockProps {
 export function MessageBlock({ message }: MessageBlockProps) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
         {message.name && (
           <span
             style={{
@@ -228,23 +261,54 @@ export function MessageBlock({ message }: MessageBlockProps) {
         )}
       </div>
       {message.title && (
-        <h5 style={{ fontSize: 14, fontWeight: 600, marginTop: 0, marginBottom: 4, color: "var(--tx)" }}>
+        <h5
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            marginTop: 0,
+            marginBottom: 4,
+            color: "var(--tx)",
+          }}
+        >
           {message.title}
         </h5>
       )}
       {message.summary && (
-        <p style={{ fontSize: 13, color: "var(--tx2)", marginTop: 0, marginBottom: 4 }}>
+        <p
+          style={{
+            fontSize: 13,
+            color: "var(--tx2)",
+            marginTop: 0,
+            marginBottom: 4,
+          }}
+        >
           {message.summary}
         </p>
       )}
       {message.description && (
-        <p style={{ fontSize: 13, color: "var(--tx2)", marginTop: 0, marginBottom: 8 }}>
+        <p
+          style={{
+            fontSize: 13,
+            color: "var(--tx2)",
+            marginTop: 0,
+            marginBottom: 8,
+          }}
+        >
           {message.description}
         </p>
       )}
       {message.payload && (
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--txM)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--txM)",
+              marginBottom: 4,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
             Payload Schema
           </div>
           <pre
@@ -266,13 +330,26 @@ export function MessageBlock({ message }: MessageBlockProps) {
       )}
       {message.examples && message.examples.length > 0 && (
         <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--txM)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--txM)",
+              marginBottom: 4,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
             Examples
           </div>
           {message.examples.map((ex, i) => (
             <div key={i} style={{ marginBottom: 8 }}>
               {ex.name && (
-                <div style={{ fontSize: 12, color: "var(--tx2)", marginBottom: 2 }}>{ex.name}</div>
+                <div
+                  style={{ fontSize: 12, color: "var(--tx2)", marginBottom: 2 }}
+                >
+                  {ex.name}
+                </div>
               )}
               <pre
                 style={{
@@ -301,18 +378,20 @@ export function MessageBlock({ message }: MessageBlockProps) {
 
 export interface ChannelCardProps {
   channel: AsyncApiChannel;
-  servers?: AsyncApiServer[];
   defaultExpanded?: boolean;
+  servers?: AsyncApiServer[];
 }
 
-export function ChannelCard({ channel, servers, defaultExpanded = false }: ChannelCardProps) {
+export function ChannelCard({
+  channel,
+  servers,
+  defaultExpanded = false,
+}: ChannelCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const channelId = channel.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   // Determine protocols from servers
-  const protocols = servers
-    ? [...new Set(servers.map((s) => s.protocol))]
-    : [];
+  const protocols = servers ? [...new Set(servers.map((s) => s.protocol))] : [];
 
   const hasDetails =
     !!channel.description ||
@@ -412,14 +491,29 @@ export function ChannelCard({ channel, servers, defaultExpanded = false }: Chann
           }}
         >
           {channel.description && (
-            <p style={{ fontSize: 14, color: "var(--tx2)", lineHeight: 1.65, marginTop: 0, marginBottom: 16 }}>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--tx2)",
+                lineHeight: 1.65,
+                marginTop: 0,
+                marginBottom: 16,
+              }}
+            >
               {channel.description}
             </p>
           )}
 
           {channel.parameters && channel.parameters.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+              <h4
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                  color: "var(--tx)",
+                }}
+              >
                 Parameters
               </h4>
               <AsyncParameterTable parameters={channel.parameters} />
@@ -428,35 +522,74 @@ export function ChannelCard({ channel, servers, defaultExpanded = false }: Chann
 
           {channel.publish && (
             <div style={{ marginBottom: 16 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+              <h4
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                  color: "var(--tx)",
+                }}
+              >
                 Publish
               </h4>
               {channel.publish.description && (
-                <p style={{ fontSize: 13, color: "var(--tx2)", marginTop: 0, marginBottom: 8 }}>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "var(--tx2)",
+                    marginTop: 0,
+                    marginBottom: 8,
+                  }}
+                >
                   {channel.publish.description}
                 </p>
               )}
-              {channel.publish.message && <MessageBlock message={channel.publish.message} />}
+              {channel.publish.message && (
+                <MessageBlock message={channel.publish.message} />
+              )}
             </div>
           )}
 
           {channel.subscribe && (
             <div style={{ marginBottom: 16 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+              <h4
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                  color: "var(--tx)",
+                }}
+              >
                 Subscribe
               </h4>
               {channel.subscribe.description && (
-                <p style={{ fontSize: 13, color: "var(--tx2)", marginTop: 0, marginBottom: 8 }}>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "var(--tx2)",
+                    marginTop: 0,
+                    marginBottom: 8,
+                  }}
+                >
                   {channel.subscribe.description}
                 </p>
               )}
-              {channel.subscribe.message && <MessageBlock message={channel.subscribe.message} />}
+              {channel.subscribe.message && (
+                <MessageBlock message={channel.subscribe.message} />
+              )}
             </div>
           )}
 
           {/* Code samples section */}
           <div>
-            <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+            <h4
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+                color: "var(--tx)",
+              }}
+            >
               Code Examples
             </h4>
             <AsyncCodeExamples channel={channel} servers={servers} />
@@ -474,15 +607,17 @@ function generateWsCode(channel: AsyncApiChannel): string {
   lines.push(`const ws = new WebSocket("wss://example.com${channel.name}");`);
   lines.push("");
   if (channel.subscribe) {
-    lines.push("ws.addEventListener(\"message\", (event) => {");
+    lines.push('ws.addEventListener("message", (event) => {');
     lines.push("  console.log(JSON.parse(event.data));");
     lines.push("});");
     lines.push("");
   }
   if (channel.publish) {
-    lines.push("ws.addEventListener(\"open\", () => {");
+    lines.push('ws.addEventListener("open", () => {');
     if (channel.publish.message?.payload) {
-      lines.push(`  ws.send(JSON.stringify(${JSON.stringify(channel.publish.message.payload, null, 2).replace(/\n/g, "\n  ")}));`);
+      lines.push(
+        `  ws.send(JSON.stringify(${JSON.stringify(channel.publish.message.payload, null, 2).replace(/\n/g, "\n  ")}));`
+      );
     } else {
       lines.push("  ws.send(JSON.stringify({ /* payload */ }));");
     }
@@ -493,22 +628,26 @@ function generateWsCode(channel: AsyncApiChannel): string {
 
 function generateMqttCode(channel: AsyncApiChannel): string {
   const lines: string[] = [];
-  lines.push("import mqtt from \"mqtt\";");
+  lines.push('import mqtt from "mqtt";');
   lines.push("");
-  lines.push("const client = mqtt.connect(\"mqtt://broker.example.com\");");
+  lines.push('const client = mqtt.connect("mqtt://broker.example.com");');
   lines.push("");
   if (channel.subscribe) {
     lines.push(`client.subscribe("${channel.name}");`);
-    lines.push("client.on(\"message\", (topic, message) => {");
+    lines.push('client.on("message", (topic, message) => {');
     lines.push("  console.log(JSON.parse(message.toString()));");
     lines.push("});");
     lines.push("");
   }
   if (channel.publish) {
     if (channel.publish.message?.payload) {
-      lines.push(`client.publish("${channel.name}", JSON.stringify(${JSON.stringify(channel.publish.message.payload)}));`);
+      lines.push(
+        `client.publish("${channel.name}", JSON.stringify(${JSON.stringify(channel.publish.message.payload)}));`
+      );
     } else {
-      lines.push(`client.publish("${channel.name}", JSON.stringify({ /* payload */ }));`);
+      lines.push(
+        `client.publish("${channel.name}", JSON.stringify({ /* payload */ }));`
+      );
     }
   }
   return lines.join("\n");
@@ -530,7 +669,15 @@ function AsyncCodeExamples({ channel, servers }: AsyncCodeExamplesProps) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--bd)", overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          borderBottom: "1px solid var(--bd)",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch" as any,
+        }}
+      >
         {tabs.map((tab, i) => (
           <button
             key={tab}
@@ -539,7 +686,8 @@ function AsyncCodeExamples({ channel, servers }: AsyncCodeExamplesProps) {
               padding: "6px 14px",
               background: "none",
               border: "none",
-              borderBottom: active === i ? "2px solid var(--ac)" : "2px solid transparent",
+              borderBottom:
+                active === i ? "2px solid var(--ac)" : "2px solid transparent",
               color: active === i ? "var(--ac)" : "var(--txM)",
               fontWeight: active === i ? 600 : 400,
               fontSize: 12,
@@ -582,17 +730,23 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
   const grouped = new Map<string, AsyncApiChannel[]>();
   for (const ch of manifest.channels) {
     const tag = ch.tags.length > 0 ? ch.tags[0] : "Other";
-    if (!grouped.has(tag)) grouped.set(tag, []);
+    if (!grouped.has(tag)) {
+      grouped.set(tag, []);
+    }
     grouped.get(tag)!.push(ch);
   }
 
   // Order tags by manifest tag order, then any remaining
   const orderedTags: string[] = [];
   for (const t of manifest.tags) {
-    if (grouped.has(t.name)) orderedTags.push(t.name);
+    if (grouped.has(t.name)) {
+      orderedTags.push(t.name);
+    }
   }
   for (const key of grouped.keys()) {
-    if (!orderedTags.includes(key)) orderedTags.push(key);
+    if (!orderedTags.includes(key)) {
+      orderedTags.push(key);
+    }
   }
 
   const tagDescriptions = new Map<string, string | undefined>();
@@ -615,7 +769,16 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
           overflowY: "auto",
         }}
       >
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--txM)", marginBottom: 12, letterSpacing: "0.05em" }}>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            color: "var(--txM)",
+            marginBottom: 12,
+            letterSpacing: "0.05em",
+          }}
+        >
           Channels
         </div>
         {orderedTags.map((tag) => {
@@ -626,7 +789,9 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
                 href={`#${tagId}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  document.getElementById(tagId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document
+                    .getElementById(tagId)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
                 style={{
                   display: "block",
@@ -643,11 +808,14 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
                 const chId = ch.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
                 return (
                   <a
-                    key={ch.name}
                     href={`#${chId}`}
+                    key={ch.name}
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById(chId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      document.getElementById(chId)?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                     }}
                     style={{
                       display: "flex",
@@ -677,7 +845,14 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
             {manifest.title}
           </h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
             <span
               style={{
                 padding: "2px 8px",
@@ -692,7 +867,14 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
             </span>
           </div>
           {manifest.description && (
-            <p style={{ fontSize: 14, color: "var(--tx2)", lineHeight: 1.65, marginTop: 0 }}>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--tx2)",
+                lineHeight: 1.65,
+                marginTop: 0,
+              }}
+            >
               {manifest.description}
             </p>
           )}
@@ -701,7 +883,9 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
         {/* Servers section */}
         {manifest.servers.length > 0 && (
           <div data-testid="servers-section" style={{ marginBottom: 32 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>Servers</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
+              Servers
+            </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {manifest.servers.map((server) => (
                 <div
@@ -750,21 +934,31 @@ export function AsyncApiReference({ manifest }: AsyncApiReferenceProps) {
         {/* Channel groups */}
         {orderedTags.map((tag) => (
           <section
-            key={tag}
-            id={tag.toLowerCase().replace(/\s+/g, "-")}
             data-testid="tag-section"
+            id={tag.toLowerCase().replace(/\s+/g, "-")}
+            key={tag}
             style={{ marginBottom: 40 }}
           >
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{tag}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
+              {tag}
+            </h2>
             {tagDescriptions.get(tag) && (
-              <p style={{ fontSize: 14, color: "var(--tx2)", lineHeight: 1.65, marginTop: 0, marginBottom: 16 }}>
+              <p
+                style={{
+                  fontSize: 14,
+                  color: "var(--tx2)",
+                  lineHeight: 1.65,
+                  marginTop: 0,
+                  marginBottom: 16,
+                }}
+              >
                 {tagDescriptions.get(tag)}
               </p>
             )}
             {(grouped.get(tag) || []).map((ch) => (
               <ChannelCard
-                key={ch.name}
                 channel={ch}
+                key={ch.name}
                 servers={manifest.servers}
               />
             ))}

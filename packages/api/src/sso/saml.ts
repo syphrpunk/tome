@@ -9,13 +9,13 @@
 export function buildAuthnRequest(
   entityId: string,
   acsUrl: string,
-  idpSsoUrl: string,
+  idpSsoUrl: string
 ): string {
   const id = `_${generateId()}`;
   const issueInstant = new Date().toISOString();
 
   return [
-    `<samlp:AuthnRequest`,
+    "<samlp:AuthnRequest",
     `  xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"`,
     `  xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"`,
     `  ID="${id}"`,
@@ -25,10 +25,10 @@ export function buildAuthnRequest(
     `  AssertionConsumerServiceURL="${acsUrl}"`,
     `  ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST">`,
     `  <saml:Issuer>${entityId}</saml:Issuer>`,
-    `  <samlp:NameIDPolicy`,
+    "  <samlp:NameIDPolicy",
     `    Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"`,
     `    AllowCreate="true" />`,
-    `</samlp:AuthnRequest>`,
+    "</samlp:AuthnRequest>",
   ].join("\n");
 }
 
@@ -37,7 +37,7 @@ export function buildAuthnRequest(
  */
 export function buildSamlRedirectUrl(
   idpSsoUrl: string,
-  authnRequest: string,
+  authnRequest: string
 ): string {
   const encoded = btoa(authnRequest);
   const param = encodeURIComponent(encoded);
@@ -63,14 +63,23 @@ export function parseSamlResponse(responseB64: string): {
     throw new Error("Invalid base64 in SAML response");
   }
 
-  const assertion = extractTag(xml, "saml:Assertion") ?? extractTag(xml, "Assertion");
-  if (!assertion) throw new Error("No Assertion found in SAML response");
+  const assertion =
+    extractTag(xml, "saml:Assertion") ?? extractTag(xml, "Assertion");
+  if (!assertion) {
+    throw new Error("No Assertion found in SAML response");
+  }
 
-  const issuer = extractTagContent(xml, "saml:Issuer") ?? extractTagContent(xml, "Issuer");
-  if (!issuer) throw new Error("No Issuer found in SAML response");
+  const issuer =
+    extractTagContent(xml, "saml:Issuer") ?? extractTagContent(xml, "Issuer");
+  if (!issuer) {
+    throw new Error("No Issuer found in SAML response");
+  }
 
-  const nameId = extractTagContent(xml, "saml:NameID") ?? extractTagContent(xml, "NameID");
-  if (!nameId) throw new Error("No NameID found in SAML response");
+  const nameId =
+    extractTagContent(xml, "saml:NameID") ?? extractTagContent(xml, "NameID");
+  if (!nameId) {
+    throw new Error("No NameID found in SAML response");
+  }
 
   const attributes = extractAttributes(xml);
 
@@ -82,14 +91,20 @@ export function parseSamlResponse(responseB64: string): {
  */
 export async function validateSamlSignature(
   xml: string,
-  certificatePem: string,
+  certificatePem: string
 ): Promise<boolean> {
-  const signatureValue = extractTagContent(xml, "ds:SignatureValue")
-    ?? extractTagContent(xml, "SignatureValue");
-  if (!signatureValue) return false;
+  const signatureValue =
+    extractTagContent(xml, "ds:SignatureValue") ??
+    extractTagContent(xml, "SignatureValue");
+  if (!signatureValue) {
+    return false;
+  }
 
-  const signedInfo = extractTag(xml, "ds:SignedInfo") ?? extractTag(xml, "SignedInfo");
-  if (!signedInfo) return false;
+  const signedInfo =
+    extractTag(xml, "ds:SignedInfo") ?? extractTag(xml, "SignedInfo");
+  if (!signedInfo) {
+    return false;
+  }
 
   try {
     const certDer = pemToDer(certificatePem);
@@ -98,17 +113,20 @@ export async function validateSamlSignature(
       certDer,
       { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
       false,
-      ["verify"],
+      ["verify"]
     );
 
-    const sigBytes = Uint8Array.from(atob(signatureValue.replace(/\s/g, "")), (c) => c.charCodeAt(0));
+    const sigBytes = Uint8Array.from(
+      atob(signatureValue.replace(/\s/g, "")),
+      (c) => c.charCodeAt(0)
+    );
     const dataBytes = new TextEncoder().encode(signedInfo);
 
     return await crypto.subtle.verify(
       { name: "RSASSA-PKCS1-v1_5" },
       key,
       sigBytes,
-      dataBytes,
+      dataBytes
     );
   } catch {
     return false;
@@ -150,13 +168,21 @@ export function extractSamlClaims(attributes: Record<string, string>): {
 
   let email = "";
   for (const key of emailKeys) {
-    if (attributes[key]) { email = attributes[key]; break; }
+    if (attributes[key]) {
+      email = attributes[key];
+      break;
+    }
   }
-  if (!email) throw new Error("No email attribute found in SAML claims");
+  if (!email) {
+    throw new Error("No email attribute found in SAML claims");
+  }
 
   let name: string | undefined;
   for (const key of nameKeys) {
-    if (attributes[key]) { name = attributes[key]; break; }
+    if (attributes[key]) {
+      name = attributes[key];
+      break;
+    }
   }
 
   let groups: string[] | undefined;
@@ -176,21 +202,21 @@ export function extractSamlClaims(attributes: Record<string, string>): {
 export function buildSpMetadata(entityId: string, acsUrl: string): string {
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<md:EntityDescriptor`,
+    "<md:EntityDescriptor",
     `  xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"`,
     `  entityID="${entityId}">`,
-    `  <md:SPSSODescriptor`,
+    "  <md:SPSSODescriptor",
     `    AuthnRequestsSigned="false"`,
     `    WantAssertionsSigned="true"`,
     `    protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">`,
-    `    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>`,
-    `    <md:AssertionConsumerService`,
+    "    <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>",
+    "    <md:AssertionConsumerService",
     `      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"`,
     `      Location="${acsUrl}"`,
     `      index="0"`,
     `      isDefault="true" />`,
-    `  </md:SPSSODescriptor>`,
-    `</md:EntityDescriptor>`,
+    "  </md:SPSSODescriptor>",
+    "</md:EntityDescriptor>",
   ].join("\n");
 }
 
@@ -198,7 +224,9 @@ export function buildSpMetadata(entityId: string, acsUrl: string): string {
 
 function generateId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function extractTag(xml: string, tagName: string): string | null {
@@ -216,7 +244,8 @@ function extractTagContent(xml: string, tagName: string): string | null {
 
 function extractAttributes(xml: string): Record<string, string> {
   const attrs: Record<string, string> = {};
-  const attrRe = /<(?:saml:)?Attribute\s+Name="([^"]+)"[^>]*>\s*<(?:saml:)?AttributeValue[^>]*>([^<]*)<\/(?:saml:)?AttributeValue>/gi;
+  const attrRe =
+    /<(?:saml:)?Attribute\s+Name="([^"]+)"[^>]*>\s*<(?:saml:)?AttributeValue[^>]*>([^<]*)<\/(?:saml:)?AttributeValue>/gi;
   let match: RegExpExecArray | null;
   while ((match = attrRe.exec(xml)) !== null) {
     attrs[match[1]] = match[2].trim();

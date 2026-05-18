@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { buildSystemPrompt, getDefaultModel } from "../ai-api.js";
 
 describe("buildSystemPrompt", () => {
@@ -14,9 +14,9 @@ describe("buildSystemPrompt", () => {
   });
 
   it("truncates long context", () => {
-    const longContext = "x".repeat(200000);
+    const longContext = "x".repeat(200_000);
     const prompt = buildSystemPrompt(longContext);
-    expect(prompt.length).toBeLessThan(200000);
+    expect(prompt.length).toBeLessThan(200_000);
     expect(prompt).toContain("[Documentation truncated...]");
   });
 

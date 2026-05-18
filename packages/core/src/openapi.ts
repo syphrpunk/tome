@@ -4,58 +4,58 @@ import type { OpenAPIV3 } from "openapi-types";
 // ── TYPES ───────────────────────────────────────────────
 
 export interface ApiParameter {
-  name: string;
-  in: "query" | "path" | "header" | "cookie";
   description?: string;
-  required: boolean;
-  type: string;
-  schema?: unknown;
   example?: unknown;
+  in: "query" | "path" | "header" | "cookie";
+  name: string;
+  required: boolean;
+  schema?: unknown;
+  type: string;
 }
 
 export interface ApiRequestBody {
-  description?: string;
-  required: boolean;
   contentType: string;
-  schema?: unknown;
+  description?: string;
   example?: unknown;
+  required: boolean;
+  schema?: unknown;
 }
 
 export interface ApiResponse {
-  statusCode: string;
-  description: string;
   contentType?: string;
+  description: string;
   schema?: unknown;
+  statusCode: string;
 }
 
 export interface CodeSample {
-  language: string;
-  label: string;
   code: string;
+  label: string;
+  language: string;
 }
 
 export interface ApiEndpoint {
-  method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options";
-  path: string;
-  operationId?: string;
-  summary?: string;
+  codeSamples?: CodeSample[];
+  deprecated: boolean;
   description?: string;
-  tags: string[];
+  method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options";
+  operationId?: string;
   parameters: ApiParameter[];
+  path: string;
   requestBody?: ApiRequestBody;
   responses: ApiResponse[];
-  deprecated: boolean;
   security?: unknown[];
-  codeSamples?: CodeSample[];
+  summary?: string;
+  tags: string[];
 }
 
 export interface ApiManifest {
+  description?: string;
+  endpoints: ApiEndpoint[];
+  servers: Array<{ url: string; description?: string }>;
+  tags: Array<{ name: string; description?: string }>;
   title: string;
   version: string;
-  description?: string;
-  servers: Array<{ url: string; description?: string }>;
-  endpoints: ApiEndpoint[];
-  tags: Array<{ name: string; description?: string }>;
 }
 
 // ── CODE SAMPLE GENERATION ─────────────────────────────
@@ -63,14 +63,14 @@ export interface ApiManifest {
 function buildFullUrl(
   baseUrl: string,
   path: string,
-  parameters?: Array<{ name: string; in: string; example?: unknown }>,
+  parameters?: Array<{ name: string; in: string; example?: unknown }>
 ): string {
   let resolvedPath = path;
 
   // Substitute path parameters with example values
   const pathParams = (parameters || []).filter((p) => p.in === "path");
   for (const p of pathParams) {
-    const value = p.example != null ? String(p.example) : `{${p.name}}`;
+    const value = p.example == null ? `{${p.name}}` : String(p.example);
     resolvedPath = resolvedPath.replace(`{${p.name}}`, value);
   }
 
@@ -81,7 +81,7 @@ function buildFullUrl(
   if (queryParams.length > 0) {
     const qs = queryParams
       .map((p) => {
-        const val = p.example != null ? String(p.example) : "VALUE";
+        const val = p.example == null ? "VALUE" : String(p.example);
         return `${encodeURIComponent(p.name)}=${encodeURIComponent(val)}`;
       })
       .join("&");
@@ -97,7 +97,12 @@ export function generateCodeSamples(endpoint: {
   method: string;
   path: string;
   baseUrl?: string;
-  parameters?: Array<{ name: string; in: string; required?: boolean; example?: unknown }>;
+  parameters?: Array<{
+    name: string;
+    in: string;
+    required?: boolean;
+    example?: unknown;
+  }>;
   requestBody?: { contentType?: string; example?: unknown };
   auth?: { type: string; header?: string };
 }): CodeSample[] {
@@ -111,7 +116,8 @@ export function generateCodeSamples(endpoint: {
 
   // Build auth header info
   const authHeaderName = endpoint.auth
-    ? endpoint.auth.header || (endpoint.auth.type === "bearer" ? "Authorization" : "X-API-Key")
+    ? endpoint.auth.header ||
+      (endpoint.auth.type === "bearer" ? "Authorization" : "X-API-Key")
     : null;
   const authHeaderValue = endpoint.auth
     ? endpoint.auth.type === "bearer"
@@ -147,12 +153,14 @@ export function generateCodeSamples(endpoint: {
     jsOpts.push(`  headers: {\n${jsHeaders.join("\n")}\n  },`);
   }
   if (hasBody && bodyExample) {
-    jsOpts.push(`  body: JSON.stringify(${JSON.stringify(bodyExample, null, 2).replace(/\n/g, "\n  ")}),`);
+    jsOpts.push(
+      `  body: JSON.stringify(${JSON.stringify(bodyExample, null, 2).replace(/\n/g, "\n  ")}),`
+    );
   }
   jsLines.push(`const response = await fetch("${url}", {`);
   jsLines.push(jsOpts.join("\n"));
-  jsLines.push(`});`);
-  jsLines.push(`const data = await response.json();`);
+  jsLines.push("});");
+  jsLines.push("const data = await response.json();");
   const jsCode = jsLines.join("\n");
 
   // ── Python (requests) ──
@@ -177,34 +185,36 @@ export function generateCodeSamples(endpoint: {
   }
   pyLines.push(`response = requests.${methodLower}(`);
   pyLines.push(pyArgs.join("\n"));
-  pyLines.push(`)`);
-  pyLines.push(`data = response.json()`);
+  pyLines.push(")");
+  pyLines.push("data = response.json()");
   const pyCode = pyLines.join("\n");
 
   // ── Go (net/http) ──
   const goLines: string[] = [];
   if (hasBody && bodyExample) {
     goLines.push(`payload, _ := json.Marshal(${JSON.stringify(bodyExample)})`);
-    goLines.push(`req, err := http.NewRequest("${method}", "${url}", bytes.NewBuffer(payload))`);
+    goLines.push(
+      `req, err := http.NewRequest("${method}", "${url}", bytes.NewBuffer(payload))`
+    );
   } else {
     goLines.push(`req, err := http.NewRequest("${method}", "${url}", nil)`);
   }
-  goLines.push(`if err != nil {`);
-  goLines.push(`    log.Fatal(err)`);
-  goLines.push(`}`);
+  goLines.push("if err != nil {");
+  goLines.push("    log.Fatal(err)");
+  goLines.push("}");
   if (authHeaderName && authHeaderValue) {
     goLines.push(`req.Header.Set("${authHeaderName}", "${authHeaderValue}")`);
   }
   if (hasBody) {
     goLines.push(`req.Header.Set("Content-Type", "${contentType}")`);
   }
-  goLines.push(``);
-  goLines.push(`client := &http.Client{}`);
-  goLines.push(`resp, err := client.Do(req)`);
-  goLines.push(`if err != nil {`);
-  goLines.push(`    log.Fatal(err)`);
-  goLines.push(`}`);
-  goLines.push(`defer resp.Body.Close()`);
+  goLines.push("");
+  goLines.push("client := &http.Client{}");
+  goLines.push("resp, err := client.Do(req)");
+  goLines.push("if err != nil {");
+  goLines.push("    log.Fatal(err)");
+  goLines.push("}");
+  goLines.push("defer resp.Body.Close()");
   const goCode = goLines.join("\n");
 
   return [
@@ -218,25 +228,27 @@ export function generateCodeSamples(endpoint: {
 // ── PARSER ──────────────────────────────────────────────
 
 function resolveSchemaType(
-  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject | undefined,
+  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject | undefined
 ): string {
-  if (!schema) return "unknown";
-  if ("$ref" in schema) return schema.$ref.split("/").pop() || "unknown";
+  if (!schema) {
+    return "unknown";
+  }
+  if ("$ref" in schema) {
+    return schema.$ref.split("/").pop() || "unknown";
+  }
   if (schema.type === "array" && schema.items) {
-    const itemType = resolveSchemaType(
-      schema.items as OpenAPIV3.SchemaObject,
-    );
+    const itemType = resolveSchemaType(schema.items as OpenAPIV3.SchemaObject);
     return `${itemType}[]`;
   }
   return (schema.type as string) || "unknown";
 }
 
 function extractParameters(
-  params:
-    | (OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject)[]
-    | undefined,
+  params: (OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject)[] | undefined
 ): ApiParameter[] {
-  if (!params) return [];
+  if (!params) {
+    return [];
+  }
   return params
     .filter((p): p is OpenAPIV3.ParameterObject => !("$ref" in p))
     .map((p) => ({
@@ -246,14 +258,17 @@ function extractParameters(
       required: p.required ?? false,
       type: resolveSchemaType(p.schema as OpenAPIV3.SchemaObject),
       schema: p.schema,
-      example: p.example ?? (p.schema as OpenAPIV3.SchemaObject | undefined)?.example,
+      example:
+        p.example ?? (p.schema as OpenAPIV3.SchemaObject | undefined)?.example,
     }));
 }
 
 function extractRequestBody(
-  body: OpenAPIV3.RequestBodyObject | OpenAPIV3.ReferenceObject | undefined,
+  body: OpenAPIV3.RequestBodyObject | OpenAPIV3.ReferenceObject | undefined
 ): ApiRequestBody | undefined {
-  if (!body || "$ref" in body) return undefined;
+  if (!body || "$ref" in body) {
+    return;
+  }
   const contentTypes = Object.keys(body.content || {});
   const contentType = contentTypes[0] || "application/json";
   const mediaType = body.content?.[contentType];
@@ -262,23 +277,25 @@ function extractRequestBody(
     required: body.required ?? false,
     contentType,
     schema: mediaType?.schema,
-    example: mediaType?.example ?? (mediaType?.schema as OpenAPIV3.SchemaObject | undefined)?.example,
+    example:
+      mediaType?.example ??
+      (mediaType?.schema as OpenAPIV3.SchemaObject | undefined)?.example,
   };
 }
 
 function extractResponses(
-  responses: OpenAPIV3.ResponsesObject | undefined,
+  responses: OpenAPIV3.ResponsesObject | undefined
 ): ApiResponse[] {
-  if (!responses) return [];
+  if (!responses) {
+    return [];
+  }
   return Object.entries(responses)
     .filter(([, v]) => v && !("$ref" in v))
     .map(([code, response]) => {
       const res = response as OpenAPIV3.ResponseObject;
       const contentTypes = Object.keys(res.content || {});
       const contentType = contentTypes[0];
-      const mediaType = contentType
-        ? res.content?.[contentType]
-        : undefined;
+      const mediaType = contentType ? res.content?.[contentType] : undefined;
       return {
         statusCode: code,
         description: res.description || "",
@@ -298,39 +315,39 @@ const HTTP_METHODS = [
   "options",
 ] as const;
 
-export async function parseOpenApiSpec(
-  specPath: string,
-): Promise<ApiManifest> {
+export async function parseOpenApiSpec(specPath: string): Promise<ApiManifest> {
   const api = (await SwaggerParser.validate(specPath)) as OpenAPIV3.Document;
 
   const baseUrl = api.servers?.[0]?.url || "https://api.example.com";
   const endpoints: ApiEndpoint[] = [];
 
   for (const [path, pathItem] of Object.entries(api.paths || {})) {
-    if (!pathItem) continue;
+    if (!pathItem) {
+      continue;
+    }
     const item = pathItem as OpenAPIV3.PathItemObject;
 
     for (const method of HTTP_METHODS) {
       const operation = item[method];
-      if (!operation) continue;
+      if (!operation) {
+        continue;
+      }
 
       const parameters = [
         ...extractParameters(
           item.parameters as
             | (OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject)[]
-            | undefined,
+            | undefined
         ),
         ...extractParameters(
           operation.parameters as
             | (OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject)[]
-            | undefined,
+            | undefined
         ),
       ];
 
       const requestBody = extractRequestBody(
-        operation.requestBody as
-          | OpenAPIV3.RequestBodyObject
-          | undefined,
+        operation.requestBody as OpenAPIV3.RequestBodyObject | undefined
       );
 
       const codeSamples = generateCodeSamples({
@@ -339,7 +356,10 @@ export async function parseOpenApiSpec(
         baseUrl,
         parameters,
         requestBody: requestBody
-          ? { contentType: requestBody.contentType, example: requestBody.example }
+          ? {
+              contentType: requestBody.contentType,
+              example: requestBody.example,
+            }
           : undefined,
       });
 

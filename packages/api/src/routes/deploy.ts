@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import type { Env, User } from "../types.js";
 import { PLAN_LIMITS, PLAN_NAMES } from "../plan-limits.js";
+import type { Env, User } from "../types.js";
 
 const deploy = new Hono<{ Bindings: Env; Variables: { user: User } }>();
 
@@ -12,7 +12,7 @@ deploy.post("/start", async (c) => {
     files: Record<string, string>; // { relativePath: sha256Hash }
   }>();
 
-  if (!body.slug || !body.files) {
+  if (!(body.slug && body.files)) {
     return c.json({ error: "Missing slug or files manifest" }, 400);
   }
 
@@ -42,7 +42,7 @@ deploy.post("/start", async (c) => {
           requiredPlan: "cloud",
           currentPlan: user.plan,
         },
-        403,
+        403
       );
     }
   }
@@ -69,7 +69,7 @@ deploy.post("/start", async (c) => {
           requiredPlan: user.plan === "community" ? "cloud" : "team",
           currentPlan: user.plan,
         },
-        403,
+        403
       );
     }
   }
@@ -90,7 +90,12 @@ deploy.post("/start", async (c) => {
       .first();
 
     if (existing) {
-      return c.json({ error: `Slug "${body.slug}" is already taken. Please choose a different project name.` }, 409);
+      return c.json(
+        {
+          error: `Slug "${body.slug}" is already taken. Please choose a different project name.`,
+        },
+        409
+      );
     }
 
     const projectId = crypto.randomUUID();
@@ -143,7 +148,7 @@ deploy.post("/upload", async (c) => {
   const filePath = c.req.header("X-File-Path");
   const fileHash = c.req.header("X-File-Hash");
 
-  if (!deploymentId || !filePath || !fileHash) {
+  if (!(deploymentId && filePath && fileHash)) {
     return c.json({ error: "Missing deployment headers" }, 400);
   }
 
@@ -238,7 +243,10 @@ deploy.get("/status/:id", async (c) => {
     status: deployment.status,
     fileCount: deployment.file_count,
     totalSize: deployment.total_size,
-    url: deployment.status === "live" ? `https://${deployment.slug}.tome.center` : null,
+    url:
+      deployment.status === "live"
+        ? `https://${deployment.slug}.tome.center`
+        : null,
     createdAt: deployment.created_at,
     finalizedAt: deployment.finalized_at,
   });
@@ -342,7 +350,7 @@ deploy.delete("/projects/:slug/deployments/:id", async (c) => {
     statements.push(
       c.env.TOME_DB.prepare(
         "UPDATE projects SET active_deployment_id = NULL, updated_at = datetime('now') WHERE id = ?"
-      ).bind(project.id),
+      ).bind(project.id)
     );
   }
 
@@ -379,7 +387,7 @@ deploy.delete("/projects/:slug", async (c) => {
 
     if (listed.objects.length > 0) {
       await Promise.all(
-        listed.objects.map((obj) => c.env.TOME_BUCKET.delete(obj.key)),
+        listed.objects.map((obj) => c.env.TOME_BUCKET.delete(obj.key))
       );
     }
 
@@ -401,7 +409,7 @@ deploy.delete("/projects/:slug", async (c) => {
           {
             method: "DELETE",
             headers: { Authorization: `Bearer ${c.env.CLOUDFLARE_API_TOKEN}` },
-          },
+          }
         );
       } catch {
         // Best-effort cleanup
@@ -411,8 +419,12 @@ deploy.delete("/projects/:slug", async (c) => {
 
   // 3. Delete DB records (order matters — no CASCADE)
   await c.env.TOME_DB.batch([
-    c.env.TOME_DB.prepare("DELETE FROM domains WHERE project_id = ?").bind(project.id),
-    c.env.TOME_DB.prepare("DELETE FROM deployments WHERE project_id = ?").bind(project.id),
+    c.env.TOME_DB.prepare("DELETE FROM domains WHERE project_id = ?").bind(
+      project.id
+    ),
+    c.env.TOME_DB.prepare("DELETE FROM deployments WHERE project_id = ?").bind(
+      project.id
+    ),
     c.env.TOME_DB.prepare("DELETE FROM projects WHERE id = ?").bind(project.id),
   ]);
 
@@ -451,14 +463,16 @@ deploy.post("/protect", async (c) => {
   const user = c.get("user");
   const body = await c.req.json<{ slug: string; passwordHash: string }>();
 
-  if (!body.slug || !body.passwordHash) {
+  if (!(body.slug && body.passwordHash)) {
     return c.json({ error: "Missing slug or passwordHash" }, 400);
   }
 
   // Verify the project belongs to this user
   const project = await c.env.TOME_DB.prepare(
     "SELECT id FROM projects WHERE slug = ? AND user_id = ?"
-  ).bind(body.slug, user.id).first<{ id: string }>();
+  )
+    .bind(body.slug, user.id)
+    .first<{ id: string }>();
 
   if (!project) {
     return c.json({ error: "Project not found or not owned by you" }, 404);
@@ -466,7 +480,9 @@ deploy.post("/protect", async (c) => {
 
   await c.env.TOME_DB.prepare(
     "UPDATE projects SET password_required = 1, password_hash = ? WHERE id = ?"
-  ).bind(body.passwordHash, project.id).run();
+  )
+    .bind(body.passwordHash, project.id)
+    .run();
 
   return c.json({ ok: true, message: "Password protection enabled" });
 });
@@ -482,7 +498,9 @@ deploy.delete("/protect", async (c) => {
 
   const project = await c.env.TOME_DB.prepare(
     "SELECT id FROM projects WHERE slug = ? AND user_id = ?"
-  ).bind(body.slug, user.id).first<{ id: string }>();
+  )
+    .bind(body.slug, user.id)
+    .first<{ id: string }>();
 
   if (!project) {
     return c.json({ error: "Project not found or not owned by you" }, 404);
@@ -490,7 +508,9 @@ deploy.delete("/protect", async (c) => {
 
   await c.env.TOME_DB.prepare(
     "UPDATE projects SET password_required = 0, password_hash = NULL WHERE id = ?"
-  ).bind(project.id).run();
+  )
+    .bind(project.id)
+    .run();
 
   return c.json({ ok: true, message: "Password protection removed" });
 });

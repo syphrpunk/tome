@@ -1,20 +1,20 @@
-import { describe, it, expect, vi } from "vitest";
-import { checkSitePassword } from "./site-password.js";
 import { Hono } from "hono";
-import type { Env } from "../types.js";
+import { describe, expect, it, vi } from "vitest";
 import { generateSessionToken } from "../password.js";
+import type { Env } from "../types.js";
+import { checkSitePassword } from "./site-password.js";
 
 const TEST_SECRET = "test-secret-key-for-hmac-signing";
 
 // ── Helpers ──────────────────────────────────────────────
 
-function mockDb(passwordRequired: boolean = false) {
+function mockDb(passwordRequired = false) {
   return {
     prepare: vi.fn().mockReturnValue({
       bind: vi.fn().mockReturnValue({
-        first: vi.fn().mockResolvedValue(
-          { password_required: passwordRequired ? 1 : 0 },
-        ),
+        first: vi
+          .fn()
+          .mockResolvedValue({ password_required: passwordRequired ? 1 : 0 }),
       }),
     }),
   } as unknown as D1Database;
@@ -45,7 +45,9 @@ describe("site-password middleware", () => {
     const app = makeApp("my-docs", mockDb(true));
     const res = await app.request("/");
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toContain("/api/sites/my-docs/password");
+    expect(res.headers.get("location")).toContain(
+      "/api/sites/my-docs/password"
+    );
   });
 
   it("allows access with valid session cookie", async () => {

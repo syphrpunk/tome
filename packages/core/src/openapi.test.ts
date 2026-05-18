@@ -1,12 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, rmSync } from "fs";
-import { join } from "path";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { parseOpenApiSpec, generateCodeSamples } from "./openapi.js";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { generateCodeSamples, parseOpenApiSpec } from "./openapi.js";
 
 // ── HELPERS ──────────────────────────────────────────────
 
-function makeSpec(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function makeSpec(
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
   return {
     openapi: "3.0.0",
     info: { title: "Test API", version: "1.0.0", description: "A test API" },
@@ -88,7 +90,11 @@ function makeSpec(overrides: Record<string, unknown> = {}): Record<string, unkno
   };
 }
 
-function writeSpec(dir: string, spec: Record<string, unknown>, filename = "spec.json"): string {
+function writeSpec(
+  dir: string,
+  spec: Record<string, unknown>,
+  filename = "spec.json"
+): string {
   const filePath = join(dir, filename);
   writeFileSync(filePath, JSON.stringify(spec, null, 2));
   return filePath;
@@ -165,7 +171,7 @@ describe("endpoint extraction", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const getUsers = manifest.endpoints.find(
-      (e) => e.method === "get" && e.path === "/users",
+      (e) => e.method === "get" && e.path === "/users"
     );
     expect(getUsers).toBeDefined();
     expect(getUsers!.summary).toBe("List all users");
@@ -176,7 +182,7 @@ describe("endpoint extraction", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const postUsers = manifest.endpoints.find(
-      (e) => e.method === "post" && e.path === "/users",
+      (e) => e.method === "post" && e.path === "/users"
     );
     expect(postUsers).toBeDefined();
     expect(postUsers!.requestBody).toBeDefined();
@@ -188,7 +194,7 @@ describe("endpoint extraction", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const usersEndpoints = manifest.endpoints.filter(
-      (e) => e.path === "/users",
+      (e) => e.path === "/users"
     );
     expect(usersEndpoints).toHaveLength(2);
     const methods = usersEndpoints.map((e) => e.method).sort();
@@ -199,7 +205,7 @@ describe("endpoint extraction", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const getUsers = manifest.endpoints.find(
-      (e) => e.operationId === "listUsers",
+      (e) => e.operationId === "listUsers"
     );
     expect(getUsers).toBeDefined();
     expect(getUsers!.tags).toContain("users");
@@ -213,15 +219,13 @@ describe("endpoint extraction", () => {
   it("marks deprecated endpoints", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
-    const getUser = manifest.endpoints.find(
-      (e) => e.operationId === "getUser",
-    );
+    const getUser = manifest.endpoints.find((e) => e.operationId === "getUser");
     expect(getUser).toBeDefined();
     expect(getUser!.deprecated).toBe(true);
 
     // Non-deprecated endpoints should be false
     const listUsers = manifest.endpoints.find(
-      (e) => e.operationId === "listUsers",
+      (e) => e.operationId === "listUsers"
     );
     expect(listUsers!.deprecated).toBe(false);
   });
@@ -233,9 +237,7 @@ describe("parameter extraction", () => {
   it("extracts path parameters with type", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
-    const getUser = manifest.endpoints.find(
-      (e) => e.operationId === "getUser",
-    );
+    const getUser = manifest.endpoints.find((e) => e.operationId === "getUser");
     expect(getUser).toBeDefined();
     const idParam = getUser!.parameters.find((p) => p.name === "id");
     expect(idParam).toBeDefined();
@@ -249,12 +251,10 @@ describe("parameter extraction", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const listUsers = manifest.endpoints.find(
-      (e) => e.operationId === "listUsers",
+      (e) => e.operationId === "listUsers"
     );
     expect(listUsers).toBeDefined();
-    const limitParam = listUsers!.parameters.find(
-      (p) => p.name === "limit",
-    );
+    const limitParam = listUsers!.parameters.find((p) => p.name === "limit");
     expect(limitParam).toBeDefined();
     expect(limitParam!.in).toBe("query");
     expect(limitParam!.required).toBe(false);
@@ -288,11 +288,11 @@ describe("parameter extraction", () => {
     const specPath = writeSpec(tmpDir, spec);
     const manifest = await parseOpenApiSpec(specPath);
     const endpoint = manifest.endpoints.find(
-      (e) => e.operationId === "secureEndpoint",
+      (e) => e.operationId === "secureEndpoint"
     );
     expect(endpoint).toBeDefined();
     const headerParam = endpoint!.parameters.find(
-      (p) => p.name === "X-Api-Key",
+      (p) => p.name === "X-Api-Key"
     );
     expect(headerParam).toBeDefined();
     expect(headerParam!.in).toBe("header");
@@ -308,7 +308,7 @@ describe("request/response bodies", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const createUser = manifest.endpoints.find(
-      (e) => e.operationId === "createUser",
+      (e) => e.operationId === "createUser"
     );
     expect(createUser).toBeDefined();
     expect(createUser!.requestBody).toBeDefined();
@@ -322,9 +322,7 @@ describe("request/response bodies", () => {
   it("extracts response status codes and descriptions", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
-    const getUser = manifest.endpoints.find(
-      (e) => e.operationId === "getUser",
-    );
+    const getUser = manifest.endpoints.find((e) => e.operationId === "getUser");
     expect(getUser).toBeDefined();
     expect(getUser!.responses).toHaveLength(2);
     const r200 = getUser!.responses.find((r) => r.statusCode === "200");
@@ -339,14 +337,12 @@ describe("request/response bodies", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const createUser = manifest.endpoints.find(
-      (e) => e.operationId === "createUser",
+      (e) => e.operationId === "createUser"
     );
     expect(createUser).toBeDefined();
     expect(createUser!.responses).toHaveLength(2);
 
-    const statusCodes = createUser!.responses
-      .map((r) => r.statusCode)
-      .sort();
+    const statusCodes = createUser!.responses.map((r) => r.statusCode).sort();
     expect(statusCodes).toEqual(["201", "400"]);
   });
 
@@ -354,7 +350,7 @@ describe("request/response bodies", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const listUsers = manifest.endpoints.find(
-      (e) => e.operationId === "listUsers",
+      (e) => e.operationId === "listUsers"
     );
     expect(listUsers).toBeDefined();
     const r200 = listUsers!.responses.find((r) => r.statusCode === "200");
@@ -411,7 +407,7 @@ describe("edge cases", () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
     const listUsers = manifest.endpoints.find(
-      (e) => e.operationId === "listUsers",
+      (e) => e.operationId === "listUsers"
     );
     const r200 = listUsers!.responses.find((r) => r.statusCode === "200");
     const schema = r200!.schema as Record<string, unknown>;
@@ -444,7 +440,7 @@ describe("generateCodeSamples", () => {
       },
     });
     const curl = samples.find((s) => s.language === "curl")!;
-    expect(curl.code).toContain('curl -X POST');
+    expect(curl.code).toContain("curl -X POST");
     expect(curl.code).toContain('-H "Content-Type: application/json"');
     expect(curl.code).toContain("-d '");
     expect(curl.code).toContain('"name":"Alice"');
@@ -507,7 +503,9 @@ describe("generateCodeSamples", () => {
     expect(py.code).toContain('"Authorization": "Bearer YOUR_TOKEN"');
 
     const go = samples.find((s) => s.language === "go")!;
-    expect(go.code).toContain('req.Header.Set("Authorization", "Bearer YOUR_TOKEN")');
+    expect(go.code).toContain(
+      'req.Header.Set("Authorization", "Bearer YOUR_TOKEN")'
+    );
   });
 
   it("includes custom auth header when specified", () => {
@@ -532,7 +530,9 @@ describe("generateCodeSamples", () => {
       ],
     });
     const curl = samples.find((s) => s.language === "curl")!;
-    expect(curl.code).toContain("https://api.example.com/users/abc-123/posts/42");
+    expect(curl.code).toContain(
+      "https://api.example.com/users/abc-123/posts/42"
+    );
     expect(curl.code).not.toContain("{id}");
     expect(curl.code).not.toContain("{postId}");
   });
@@ -584,7 +584,12 @@ describe("generateCodeSamples", () => {
       path: "/test",
     });
     expect(samples).toHaveLength(4);
-    expect(samples.map((s) => s.language)).toEqual(["curl", "javascript", "python", "go"]);
+    expect(samples.map((s) => s.language)).toEqual([
+      "curl",
+      "javascript",
+      "python",
+      "go",
+    ]);
   });
 });
 
@@ -606,7 +611,9 @@ describe("code samples in parsed endpoints", () => {
   it("uses server URL as baseUrl in code samples", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseOpenApiSpec(specPath);
-    const listUsers = manifest.endpoints.find((e) => e.operationId === "listUsers")!;
+    const listUsers = manifest.endpoints.find(
+      (e) => e.operationId === "listUsers"
+    )!;
     const curl = listUsers.codeSamples!.find((s) => s.language === "curl")!;
     expect(curl.code).toContain("https://api.example.com/users");
   });

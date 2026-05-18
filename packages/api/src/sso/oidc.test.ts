@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { base64url } from "../utils";
 import {
-  generateCodeVerifier,
-  generateCodeChallenge,
   buildAuthorizationUrl,
   decodeJwtPayload,
   discoverOidcEndpoints,
   exchangeCode,
+  generateCodeChallenge,
+  generateCodeVerifier,
 } from "./oidc";
-import { base64url } from "../utils";
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -71,7 +71,9 @@ describe("OIDC utilities", () => {
 
       expect(parsed.searchParams.get("response_type")).toBe("code");
       expect(parsed.searchParams.get("client_id")).toBe("my-client-id");
-      expect(parsed.searchParams.get("redirect_uri")).toBe("https://app.example.com/callback");
+      expect(parsed.searchParams.get("redirect_uri")).toBe(
+        "https://app.example.com/callback"
+      );
       expect(parsed.searchParams.get("state")).toBe("random-state");
       expect(parsed.searchParams.get("code_challenge")).toBe("challenge123");
       expect(parsed.searchParams.get("code_challenge_method")).toBe("S256");
@@ -84,7 +86,10 @@ describe("OIDC utilities", () => {
     });
 
     it("allows custom scope", () => {
-      const url = buildAuthorizationUrl({ ...baseParams, scope: "openid groups" });
+      const url = buildAuthorizationUrl({
+        ...baseParams,
+        scope: "openid groups",
+      });
       const parsed = new URL(url);
       expect(parsed.searchParams.get("scope")).toBe("openid groups");
     });
@@ -93,7 +98,9 @@ describe("OIDC utilities", () => {
   describe("decodeJwtPayload", () => {
     it("decodes a valid JWT payload", () => {
       const header = base64url(JSON.stringify({ alg: "RS256" }));
-      const payload = base64url(JSON.stringify({ sub: "123", email: "a@b.com" }));
+      const payload = base64url(
+        JSON.stringify({ sub: "123", email: "a@b.com" })
+      );
       const jwt = `${header}.${payload}.fakesig`;
 
       const result = decodeJwtPayload(jwt);
@@ -162,7 +169,7 @@ describe("OIDC utilities", () => {
           code: "bad",
           redirectUri: "https://app.example.com/callback",
           codeVerifier: "v",
-        }),
+        })
       ).rejects.toThrow("Token exchange failed (400)");
     });
 
@@ -180,7 +187,7 @@ describe("OIDC utilities", () => {
           code: "code",
           redirectUri: "https://app.example.com/callback",
           codeVerifier: "v",
-        }),
+        })
       ).rejects.toThrow("missing required fields");
     });
   });
@@ -200,10 +207,14 @@ describe("OIDC utilities", () => {
       const endpoints = await discoverOidcEndpoints("https://idp.example.com");
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://idp.example.com/.well-known/openid-configuration",
+        "https://idp.example.com/.well-known/openid-configuration"
       );
-      expect(endpoints.authorization_endpoint).toBe("https://idp.example.com/authorize");
-      expect(endpoints.jwks_uri).toBe("https://idp.example.com/.well-known/jwks.json");
+      expect(endpoints.authorization_endpoint).toBe(
+        "https://idp.example.com/authorize"
+      );
+      expect(endpoints.jwks_uri).toBe(
+        "https://idp.example.com/.well-known/jwks.json"
+      );
     });
 
     it("strips trailing slash from issuer", async () => {
@@ -219,7 +230,7 @@ describe("OIDC utilities", () => {
 
       await discoverOidcEndpoints("https://idp.example.com/");
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://idp.example.com/.well-known/openid-configuration",
+        "https://idp.example.com/.well-known/openid-configuration"
       );
     });
 
@@ -230,9 +241,9 @@ describe("OIDC utilities", () => {
         text: async () => "not found",
       });
 
-      await expect(discoverOidcEndpoints("https://bad.example.com")).rejects.toThrow(
-        "OIDC discovery failed (404)",
-      );
+      await expect(
+        discoverOidcEndpoints("https://bad.example.com")
+      ).rejects.toThrow("OIDC discovery failed (404)");
     });
 
     it("throws when required field is missing", async () => {
@@ -244,9 +255,9 @@ describe("OIDC utilities", () => {
         }),
       });
 
-      await expect(discoverOidcEndpoints("https://idp.example.com")).rejects.toThrow(
-        "missing required field",
-      );
+      await expect(
+        discoverOidcEndpoints("https://idp.example.com")
+      ).rejects.toThrow("missing required field");
     });
   });
 });

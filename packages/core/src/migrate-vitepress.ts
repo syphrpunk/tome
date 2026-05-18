@@ -7,16 +7,16 @@
  */
 
 import {
-  readFileSync,
-  existsSync,
-  writeFileSync,
-  mkdirSync,
   copyFileSync,
+  existsSync,
+  mkdirSync,
   readdirSync,
+  readFileSync,
   statSync,
+  writeFileSync,
 } from "fs";
-import { resolve, join, relative, dirname, basename, extname } from "path";
 import matter from "gray-matter";
+import { basename, dirname, extname, join, relative, resolve } from "path";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -60,11 +60,15 @@ type VitepressSidebarItem = {
  */
 function findConfigFile(sourceDir: string): string | null {
   const vitepressDir = resolve(sourceDir, ".vitepress");
-  if (!existsSync(vitepressDir)) return null;
+  if (!existsSync(vitepressDir)) {
+    return null;
+  }
 
   for (const name of ["config.ts", "config.mts", "config.js"]) {
     const full = join(vitepressDir, name);
-    if (existsSync(full)) return full;
+    if (existsSync(full)) {
+      return full;
+    }
   }
 
   return null;
@@ -167,7 +171,9 @@ export function parseVitepressConfig(configContent: string): VitepressConfig {
  */
 function extractBalanced(str: string, pos: number): string | null {
   const open = str[pos];
-  if (open !== "{" && open !== "[") return null;
+  if (open !== "{" && open !== "[") {
+    return null;
+  }
 
   const close = open === "{" ? "}" : "]";
   let depth = 1;
@@ -193,7 +199,9 @@ function extractBalanced(str: string, pos: number): string | null {
     i++;
   }
 
-  if (depth !== 0) return null;
+  if (depth !== 0) {
+    return null;
+  }
   return str.slice(pos, i);
 }
 
@@ -217,7 +225,9 @@ function normalizeToJson(jsStr: string): string {
       const ch = s[i];
       if (inStr) {
         result += ch;
-        if (ch === inStr && s[i - 1] !== "\\") inStr = null;
+        if (ch === inStr && s[i - 1] !== "\\") {
+          inStr = null;
+        }
         i++;
       } else if (ch === '"' || ch === "'") {
         inStr = ch;
@@ -225,7 +235,9 @@ function normalizeToJson(jsStr: string): string {
         i++;
       } else if (ch === "/" && s[i + 1] === "/") {
         // Skip to end of line.
-        while (i < s.length && s[i] !== "\n") i++;
+        while (i < s.length && s[i] !== "\n") {
+          i++;
+        }
       } else {
         result += ch;
         i++;
@@ -256,7 +268,7 @@ function normalizeToJson(jsStr: string): string {
  * Handles both object-keyed (multi-section) and array (single-section) formats.
  */
 export function convertSidebarToNavigation(
-  sidebar: VitepressSidebarItem[] | Record<string, VitepressSidebarItem[]>,
+  sidebar: VitepressSidebarItem[] | Record<string, VitepressSidebarItem[]>
 ): NavigationGroup[] {
   if (Array.isArray(sidebar)) {
     return convertSidebarArray(sidebar);
@@ -271,9 +283,7 @@ export function convertSidebarToNavigation(
 }
 
 /** Convert a flat array of VitePress sidebar items to NavigationGroup[]. */
-function convertSidebarArray(
-  items: VitepressSidebarItem[],
-): NavigationGroup[] {
+function convertSidebarArray(items: VitepressSidebarItem[]): NavigationGroup[] {
   const groups: NavigationGroup[] = [];
 
   for (const item of items) {
@@ -395,9 +405,7 @@ export function convertVitepressContent(content: string): {
       if (titles.length > 0) {
         hasJsx = true;
         const itemsList = JSON.stringify(titles);
-        const tabContent = bodies
-          .map((b) => `<Tab>\n${b}\n</Tab>`)
-          .join("\n");
+        const tabContent = bodies.map((b) => `<Tab>\n${b}\n</Tab>`).join("\n");
         result += `<Tabs items={${itemsList}}>\n${tabContent}\n</Tabs>`;
       } else {
         // No code blocks found; keep the inner content as-is.
@@ -406,8 +414,11 @@ export function convertVitepressContent(content: string): {
 
       // Skip past the closing `:::`.
       lastIndex = converted.indexOf("\n", closeIndex);
-      if (lastIndex === -1) lastIndex = converted.length;
-      else lastIndex += 1;
+      if (lastIndex === -1) {
+        lastIndex = converted.length;
+      } else {
+        lastIndex += 1;
+      }
 
       codeGroupRe.lastIndex = lastIndex;
     }
@@ -442,8 +453,11 @@ export function convertVitepressContent(content: string): {
       result += `<Accordion title="${title}">\n${body}\n</Accordion>`;
 
       lastIndex = converted.indexOf("\n", closeIndex);
-      if (lastIndex === -1) lastIndex = converted.length;
-      else lastIndex += 1;
+      if (lastIndex === -1) {
+        lastIndex = converted.length;
+      } else {
+        lastIndex += 1;
+      }
 
       detailsRe.lastIndex = lastIndex;
     }
@@ -456,7 +470,8 @@ export function convertVitepressContent(content: string): {
 
   // ---- :::info / :::tip / :::warning / :::danger → Callout --------------
   {
-    const containerRe = /^:::\s*(info|tip|warning|danger|note)(?:[^\S\n][^\n]*)?$/gm;
+    const containerRe =
+      /^:::\s*(info|tip|warning|danger|note)(?:[^\S\n][^\n]*)?$/gm;
     let result = "";
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -479,8 +494,11 @@ export function convertVitepressContent(content: string): {
       result += `<Callout type="${tomeType}">\n${body}\n</Callout>`;
 
       lastIndex = converted.indexOf("\n", closeIndex);
-      if (lastIndex === -1) lastIndex = converted.length;
-      else lastIndex += 1;
+      if (lastIndex === -1) {
+        lastIndex = converted.length;
+      } else {
+        lastIndex += 1;
+      }
 
       containerRe.lastIndex = lastIndex;
     }
@@ -517,8 +535,12 @@ function findClosingFence(content: string, startPos: number): number {
 
     if (line === ":::") {
       depth--;
-      if (depth === 0) return pos;
-    } else if (/^:::(?:info|tip|warning|danger|note|details|code-group)/.test(line)) {
+      if (depth === 0) {
+        return pos;
+      }
+    } else if (
+      /^:::(?:info|tip|warning|danger|note|details|code-group)/.test(line)
+    ) {
       depth++;
     }
 
@@ -534,7 +556,7 @@ function findClosingFence(content: string, startPos: number): number {
  * - `outline` (boolean or depth range) → `toc` (boolean)
  */
 export function convertFrontmatter(
-  frontmatter: Record<string, unknown>,
+  frontmatter: Record<string, unknown>
 ): Record<string, unknown> {
   const fm = { ...frontmatter };
 
@@ -559,13 +581,19 @@ export function convertFrontmatter(
 /** Recursively collect all files under `dir` matching the given extensions. */
 function walkFiles(dir: string, extensions: string[]): string[] {
   const results: string[] = [];
-  if (!existsSync(dir)) return results;
+  if (!existsSync(dir)) {
+    return results;
+  }
 
   for (const entry of readdirSync(dir)) {
     // Skip the .vitepress directory.
-    if (entry === ".vitepress") continue;
+    if (entry === ".vitepress") {
+      continue;
+    }
     // Skip node_modules.
-    if (entry === "node_modules") continue;
+    if (entry === "node_modules") {
+      continue;
+    }
 
     const full = join(dir, entry);
     const stat = statSync(full);
@@ -581,7 +609,9 @@ function walkFiles(dir: string, extensions: string[]): string[] {
 
 /** Copy a directory tree from `src` to `dest`, creating directories as needed. */
 function copyDirRecursive(src: string, dest: string): void {
-  if (!existsSync(src)) return;
+  if (!existsSync(src)) {
+    return;
+  }
   mkdirSync(dest, { recursive: true });
 
   for (const entry of readdirSync(src)) {
@@ -603,7 +633,7 @@ function copyDirRecursive(src: string, dest: string): void {
 function generateTomeConfig(
   title: string,
   description: string | undefined,
-  navigation: NavigationGroup[],
+  navigation: NavigationGroup[]
 ): string {
   const navJson = JSON.stringify(navigation, null, 2);
 
@@ -633,7 +663,7 @@ export default {
 export async function migrateFromVitepress(
   sourceDir: string,
   outDir: string,
-  options: { dryRun?: boolean } = {},
+  options: { dryRun?: boolean } = {}
 ): Promise<MigrationResult> {
   const warnings: string[] = [];
   const convertedFiles: string[] = [];
@@ -710,7 +740,7 @@ export async function migrateFromVitepress(
     const configContent = generateTomeConfig(
       title,
       vpConfig.description,
-      navigation,
+      navigation
     );
     writeFileSync(resolve(outDir, "tome.config.js"), configContent, "utf-8");
   }

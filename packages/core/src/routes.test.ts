@@ -1,10 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "fs";
-import { join } from "path";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { buildNavigation, getPrevNext, flattenNavItems, discoverPages, normalizeBadge } from "./routes.js";
-import type { PageRoute, NavigationGroup } from "./routes.js";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { TomeConfig } from "./config.js";
+import type { NavigationGroup, PageRoute } from "./routes.js";
+import {
+  buildNavigation,
+  discoverPages,
+  flattenNavItems,
+  getPrevNext,
+  normalizeBadge,
+} from "./routes.js";
 
 // ── HELPERS ──────────────────────────────────────────────
 
@@ -44,8 +50,16 @@ describe("buildNavigation", () => {
 
   it("groups pages by directory in auto-mode", () => {
     const routes = [
-      makeRoute({ id: "api/overview", filePath: "api/overview.md", urlPath: "/api/overview" }),
-      makeRoute({ id: "guides/start", filePath: "guides/start.md", urlPath: "/guides/start" }),
+      makeRoute({
+        id: "api/overview",
+        filePath: "api/overview.md",
+        urlPath: "/api/overview",
+      }),
+      makeRoute({
+        id: "guides/start",
+        filePath: "guides/start.md",
+        urlPath: "/guides/start",
+      }),
     ];
     const nav = buildNavigation(routes, emptyConfig);
     const sections = nav.map((g) => g.section);
@@ -54,7 +68,13 @@ describe("buildNavigation", () => {
   });
 
   it("capitalises directory name for section label", () => {
-    const routes = [makeRoute({ id: "getting-started/intro", filePath: "getting-started/intro.md", urlPath: "/getting-started/intro" })];
+    const routes = [
+      makeRoute({
+        id: "getting-started/intro",
+        filePath: "getting-started/intro.md",
+        urlPath: "/getting-started/intro",
+      }),
+    ];
     const nav = buildNavigation(routes, emptyConfig);
     expect(nav[0].section).toBe("Getting Started");
   });
@@ -62,7 +82,10 @@ describe("buildNavigation", () => {
   it("excludes hidden pages from auto-generated nav", () => {
     const routes = [
       makeRoute({ id: "visible" }),
-      makeRoute({ id: "hidden", frontmatter: { title: "hidden", hidden: true } }),
+      makeRoute({
+        id: "hidden",
+        frontmatter: { title: "hidden", hidden: true },
+      }),
     ];
     const nav = buildNavigation(routes, emptyConfig);
     const ids = flattenNavItems(nav).map((p) => p.id);
@@ -99,14 +122,19 @@ describe("buildNavigation", () => {
 
   it("uses sidebarTitle over title when available", () => {
     const routes = [
-      makeRoute({ id: "intro", frontmatter: { title: "Introduction", sidebarTitle: "Intro" } }),
+      makeRoute({
+        id: "intro",
+        frontmatter: { title: "Introduction", sidebarTitle: "Intro" },
+      }),
     ];
     const nav = buildNavigation(routes, emptyConfig);
     expect(nav[0].pages[0].title).toBe("Intro");
   });
 
   it("passes icon from frontmatter to nav item", () => {
-    const routes = [makeRoute({ id: "api", frontmatter: { title: "API", icon: "⚡" } })];
+    const routes = [
+      makeRoute({ id: "api", frontmatter: { title: "API", icon: "⚡" } }),
+    ];
     const nav = buildNavigation(routes, emptyConfig);
     expect(nav[0].pages[0].icon).toBe("⚡");
   });
@@ -209,7 +237,10 @@ describe("discoverPages", () => {
   });
 
   it("infers title from frontmatter", async () => {
-    writeFileSync(join(tmpDir, "page.md"), "---\ntitle: My Page\n---\n\nContent.");
+    writeFileSync(
+      join(tmpDir, "page.md"),
+      "---\ntitle: My Page\n---\n\nContent."
+    );
     const routes = await discoverPages(tmpDir);
     expect(routes[0].frontmatter.title).toBe("My Page");
   });
@@ -234,27 +265,36 @@ describe("discoverPages", () => {
     expect(routes[0].urlPath).toBe("/guides");
   });
   it("parses draft: true from frontmatter", async () => {
-    writeFileSync(join(tmpDir, "draft-page.md"), "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.");
+    writeFileSync(
+      join(tmpDir, "draft-page.md"),
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
+    );
     const routes = await discoverPages(tmpDir);
-    const draftRoute = routes.find(r => r.id === "draft-page");
+    const draftRoute = routes.find((r) => r.id === "draft-page");
     expect(draftRoute).toBeDefined();
     expect(draftRoute!.frontmatter.draft).toBe(true);
   });
 
   it("defaults draft to false when not specified", async () => {
-    writeFileSync(join(tmpDir, "normal.md"), "---\ntitle: Normal Page\n---\n\n# Normal");
+    writeFileSync(
+      join(tmpDir, "normal.md"),
+      "---\ntitle: Normal Page\n---\n\n# Normal"
+    );
     const routes = await discoverPages(tmpDir);
-    const route = routes.find(r => r.id === "normal");
+    const route = routes.find((r) => r.id === "normal");
     expect(route).toBeDefined();
     expect(route!.frontmatter.draft).toBe(false);
   });
 
   it("includes draft pages in route discovery (filtering happens later)", async () => {
     writeFileSync(join(tmpDir, "page-a.md"), "---\ntitle: Page A\n---\n\n# A");
-    writeFileSync(join(tmpDir, "page-b.md"), "---\ntitle: Page B\ndraft: true\n---\n\n# B");
+    writeFileSync(
+      join(tmpDir, "page-b.md"),
+      "---\ntitle: Page B\ndraft: true\n---\n\n# B"
+    );
     const routes = await discoverPages(tmpDir);
     expect(routes).toHaveLength(2);
-    const ids = routes.map(r => r.id);
+    const ids = routes.map((r) => r.id);
     expect(ids).toContain("page-a");
     expect(ids).toContain("page-b");
   });
@@ -278,7 +318,7 @@ describe("discoverPages Windows path normalization", () => {
     writeFileSync(join(tmpDir, "guides", "setup.md"), "# Setup Guide");
 
     const routes = await discoverPages(tmpDir);
-    const route = routes.find(r => r.id === "guides/setup");
+    const route = routes.find((r) => r.id === "guides/setup");
     expect(route).toBeDefined();
     // ID should never contain backslashes
     expect(route!.id).not.toContain("\\");
@@ -290,7 +330,7 @@ describe("discoverPages Windows path normalization", () => {
     writeFileSync(join(tmpDir, "api", "overview.md"), "# API Overview");
 
     const routes = await discoverPages(tmpDir);
-    const route = routes.find(r => r.id === "api/overview");
+    const route = routes.find((r) => r.id === "api/overview");
     expect(route).toBeDefined();
     expect(route!.filePath).not.toContain("\\");
     expect(route!.filePath).toBe("api/overview.md");
@@ -301,7 +341,7 @@ describe("discoverPages Windows path normalization", () => {
     writeFileSync(join(tmpDir, "guides", "advanced", "deploy.md"), "# Deploy");
 
     const routes = await discoverPages(tmpDir);
-    const route = routes.find(r => r.id === "guides/advanced/deploy");
+    const route = routes.find((r) => r.id === "guides/advanced/deploy");
     expect(route).toBeDefined();
     expect(route!.id).not.toContain("\\");
     expect(route!.urlPath).toBe("/guides/advanced/deploy");
@@ -333,8 +373,8 @@ describe("discoverPages with versioning", () => {
     const routes = await discoverPages(tmpDir, versioning);
     expect(routes).toHaveLength(2);
 
-    const v1Route = routes.find(r => r.version === "v1");
-    const v2Route = routes.find(r => r.version === "v2");
+    const v1Route = routes.find((r) => r.version === "v1");
+    const v2Route = routes.find((r) => r.version === "v2");
     expect(v1Route).toBeDefined();
     expect(v2Route).toBeDefined();
     expect(v1Route!.version).toBe("v1");
@@ -347,8 +387,8 @@ describe("discoverPages with versioning", () => {
     writeFileSync(join(tmpDir, "v2", "quickstart.md"), "# Quickstart");
 
     const routes = await discoverPages(tmpDir, versioning);
-    const indexRoute = routes.find(r => r.id === "index");
-    const qsRoute = routes.find(r => r.id === "quickstart");
+    const indexRoute = routes.find((r) => r.id === "index");
+    const qsRoute = routes.find((r) => r.id === "quickstart");
 
     expect(indexRoute).toBeDefined();
     expect(indexRoute!.urlPath).toBe("/");
@@ -362,8 +402,8 @@ describe("discoverPages with versioning", () => {
     writeFileSync(join(tmpDir, "v1", "quickstart.md"), "# Quickstart v1");
 
     const routes = await discoverPages(tmpDir, versioning);
-    const indexRoute = routes.find(r => r.id === "v1/index");
-    const qsRoute = routes.find(r => r.id === "v1/quickstart");
+    const indexRoute = routes.find((r) => r.id === "v1/index");
+    const qsRoute = routes.find((r) => r.id === "v1/quickstart");
 
     expect(indexRoute).toBeDefined();
     expect(indexRoute!.urlPath).toBe("/v1");
@@ -379,8 +419,10 @@ describe("discoverPages with versioning", () => {
     expect(routes).toHaveLength(2);
     expect(routes[0].version).toBeUndefined();
     expect(routes[1].version).toBeUndefined();
-    expect(routes.find(r => r.id === "index")!.urlPath).toBe("/");
-    expect(routes.find(r => r.id === "quickstart")!.urlPath).toBe("/quickstart");
+    expect(routes.find((r) => r.id === "index")!.urlPath).toBe("/");
+    expect(routes.find((r) => r.id === "quickstart")!.urlPath).toBe(
+      "/quickstart"
+    );
   });
 
   it("skips version directories that do not exist", async () => {
@@ -439,8 +481,8 @@ describe("discoverPages with i18n", () => {
 
     const routes = await discoverPages(tmpDir, undefined, i18nConfig);
 
-    const enRoute = routes.find(r => r.locale === "en");
-    const esRoute = routes.find(r => r.locale === "es");
+    const enRoute = routes.find((r) => r.locale === "en");
+    const esRoute = routes.find((r) => r.locale === "es");
     expect(enRoute).toBeDefined();
     expect(esRoute).toBeDefined();
     expect(enRoute!.locale).toBe("en");
@@ -453,8 +495,8 @@ describe("discoverPages with i18n", () => {
     writeFileSync(join(tmpDir, "en", "quickstart.md"), "# Quickstart");
 
     const routes = await discoverPages(tmpDir, undefined, i18nConfig);
-    const indexRoute = routes.find(r => r.id === "index");
-    const qsRoute = routes.find(r => r.id === "quickstart");
+    const indexRoute = routes.find((r) => r.id === "index");
+    const qsRoute = routes.find((r) => r.id === "quickstart");
 
     expect(indexRoute).toBeDefined();
     expect(indexRoute!.urlPath).toBe("/");
@@ -469,8 +511,8 @@ describe("discoverPages with i18n", () => {
     writeFileSync(join(tmpDir, "es", "quickstart.md"), "# Inicio Rapido");
 
     const routes = await discoverPages(tmpDir, undefined, i18nConfig);
-    const indexRoute = routes.find(r => r.id === "es/index");
-    const qsRoute = routes.find(r => r.id === "es/quickstart");
+    const indexRoute = routes.find((r) => r.id === "es/index");
+    const qsRoute = routes.find((r) => r.id === "es/quickstart");
 
     expect(indexRoute).toBeDefined();
     expect(indexRoute!.urlPath).toBe("/es");
@@ -490,12 +532,12 @@ describe("discoverPages with i18n", () => {
     const routes = await discoverPages(tmpDir, undefined, i18nConfig);
 
     // es/quickstart should be created as a fallback from en/quickstart
-    const esFallback = routes.find(r => r.id === "es/quickstart");
+    const esFallback = routes.find((r) => r.id === "es/quickstart");
     expect(esFallback).toBeDefined();
     expect(esFallback!.urlPath).toBe("/es/quickstart");
     expect(esFallback!.locale).toBe("es");
     // The fallback page should use the default locale's content (same absolutePath)
-    const enOriginal = routes.find(r => r.id === "quickstart");
+    const enOriginal = routes.find((r) => r.id === "quickstart");
     expect(esFallback!.absolutePath).toBe(enOriginal!.absolutePath);
   });
 
@@ -508,7 +550,7 @@ describe("discoverPages with i18n", () => {
     const routes = await discoverPages(tmpDir, undefined, i18nConfig);
 
     // There should be exactly 2 routes: en/index and es/index
-    const esIndexRoutes = routes.filter(r => r.id === "es/index");
+    const esIndexRoutes = routes.filter((r) => r.id === "es/index");
     expect(esIndexRoutes).toHaveLength(1);
   });
 
@@ -523,7 +565,7 @@ describe("discoverPages with i18n", () => {
     const routes = await discoverPages(tmpDir, undefined, noFallback);
 
     // es/quickstart should NOT exist since fallback is off
-    const esFallback = routes.find(r => r.id === "es/quickstart");
+    const esFallback = routes.find((r) => r.id === "es/quickstart");
     expect(esFallback).toBeUndefined();
   });
 
@@ -535,14 +577,20 @@ describe("discoverPages with i18n", () => {
     expect(routes).toHaveLength(2);
     expect(routes[0].locale).toBeUndefined();
     expect(routes[1].locale).toBeUndefined();
-    expect(routes.find(r => r.id === "index")!.urlPath).toBe("/");
-    expect(routes.find(r => r.id === "quickstart")!.urlPath).toBe("/quickstart");
+    expect(routes.find((r) => r.id === "index")!.urlPath).toBe("/");
+    expect(routes.find((r) => r.id === "quickstart")!.urlPath).toBe(
+      "/quickstart"
+    );
   });
 
   it("single locale i18n config means unchanged behavior", async () => {
     writeFileSync(join(tmpDir, "index.md"), "# Home");
 
-    const singleLocale = { defaultLocale: "en", locales: ["en"], fallback: true };
+    const singleLocale = {
+      defaultLocale: "en",
+      locales: ["en"],
+      fallback: true,
+    };
     const routes = await discoverPages(tmpDir, undefined, singleLocale);
     expect(routes).toHaveLength(1);
     expect(routes[0].locale).toBeUndefined();
@@ -554,7 +602,7 @@ describe("discoverPages with i18n", () => {
     writeFileSync(join(tmpDir, "es", "guide.md"), "# Guia");
 
     const routes = await discoverPages(tmpDir, undefined, i18nConfig);
-    const esGuide = routes.find(r => r.id === "es/guide");
+    const esGuide = routes.find((r) => r.id === "es/guide");
     expect(esGuide).toBeDefined();
     expect(esGuide!.filePath).toBe("es/guide.md");
   });
@@ -564,7 +612,7 @@ describe("discoverPages with i18n", () => {
     writeFileSync(join(tmpDir, "en", "api", "overview.md"), "# API Overview");
 
     const routes = await discoverPages(tmpDir, undefined, i18nConfig);
-    const route = routes.find(r => r.id === "api/overview");
+    const route = routes.find((r) => r.id === "api/overview");
     expect(route).toBeDefined();
     expect(route!.urlPath).toBe("/api/overview");
     expect(route!.locale).toBe("en");
@@ -585,7 +633,7 @@ describe("discoverPages with i18n", () => {
     writeFileSync(join(tmpDir, "ja", "index.md"), "# ホーム");
 
     const routes = await discoverPages(tmpDir, undefined, threeLocales);
-    const locales = [...new Set(routes.map(r => r.locale))];
+    const locales = [...new Set(routes.map((r) => r.locale))];
     expect(locales).toContain("en");
     expect(locales).toContain("es");
     expect(locales).toContain("ja");
@@ -615,11 +663,17 @@ describe("normalizeBadge", () => {
   });
 
   it("passes through object badge with explicit variant", () => {
-    expect(normalizeBadge({ text: "Beta", variant: "warning" })).toEqual({ text: "Beta", variant: "warning" });
+    expect(normalizeBadge({ text: "Beta", variant: "warning" })).toEqual({
+      text: "Beta",
+      variant: "warning",
+    });
   });
 
   it("defaults variant to 'default' when object badge omits variant", () => {
-    expect(normalizeBadge({ text: "Soon" })).toEqual({ text: "Soon", variant: "default" });
+    expect(normalizeBadge({ text: "Soon" })).toEqual({
+      text: "Soon",
+      variant: "default",
+    });
   });
 });
 
@@ -636,14 +690,22 @@ describe("buildNavigation with badges", () => {
 
   it("passes object badge from frontmatter to nav item", () => {
     const routes = [
-      makeRoute({ id: "api", frontmatter: { title: "API", badge: { text: "Beta", variant: "warning" } } }),
+      makeRoute({
+        id: "api",
+        frontmatter: {
+          title: "API",
+          badge: { text: "Beta", variant: "warning" },
+        },
+      }),
     ];
     const nav = buildNavigation(routes, emptyConfig);
     expect(nav[0].pages[0].badge).toEqual({ text: "Beta", variant: "warning" });
   });
 
   it("nav item has no badge when frontmatter has no badge", () => {
-    const routes = [makeRoute({ id: "plain", frontmatter: { title: "Plain" } })];
+    const routes = [
+      makeRoute({ id: "plain", frontmatter: { title: "Plain" } }),
+    ];
     const nav = buildNavigation(routes, emptyConfig);
     expect(nav[0].pages[0].badge).toBeUndefined();
   });
@@ -668,7 +730,12 @@ describe("buildNavigation with remote pages", () => {
     const routes = [
       makeRoute({ id: "index", filePath: "index.md", urlPath: "/" }),
       makeRoute({ id: "quickstart", filePath: "quickstart.md" }),
-      makeRoute({ id: "remote-guide", filePath: "__remote__/remote-guide.md", urlPath: "/remote-guide", frontmatter: { title: "Remote Guide" } }),
+      makeRoute({
+        id: "remote-guide",
+        filePath: "__remote__/remote-guide.md",
+        urlPath: "/remote-guide",
+        frontmatter: { title: "Remote Guide" },
+      }),
     ];
     const config: TomeConfig = {
       name: "Test",
@@ -699,7 +766,12 @@ describe("buildNavigation with remote pages", () => {
   it("excludes hidden remote pages from External group", () => {
     const routes = [
       makeRoute({ id: "index", filePath: "index.md", urlPath: "/" }),
-      makeRoute({ id: "hidden-remote", filePath: "__remote__/hidden-remote.md", urlPath: "/hidden-remote", frontmatter: { title: "Hidden", hidden: true } }),
+      makeRoute({
+        id: "hidden-remote",
+        filePath: "__remote__/hidden-remote.md",
+        urlPath: "/hidden-remote",
+        frontmatter: { title: "Hidden", hidden: true },
+      }),
     ];
     const config: TomeConfig = {
       name: "Test",
@@ -712,7 +784,12 @@ describe("buildNavigation with remote pages", () => {
   it("includes remote pages in auto-generated navigation without separate group", () => {
     const routes = [
       makeRoute({ id: "index", filePath: "index.md", urlPath: "/" }),
-      makeRoute({ id: "remote-page", filePath: "__remote__/remote-page.md", urlPath: "/remote-page", frontmatter: { title: "Remote Page" } }),
+      makeRoute({
+        id: "remote-page",
+        filePath: "__remote__/remote-page.md",
+        urlPath: "/remote-page",
+        frontmatter: { title: "Remote Page" },
+      }),
     ];
     // No explicit navigation — auto-generate
     const nav = buildNavigation(routes, emptyConfig);
@@ -727,9 +804,24 @@ describe("buildNavigation with remote pages", () => {
 
 describe("buildNavigation with nested groups", () => {
   const routes = [
-    makeRoute({ id: "sdk/overview", filePath: "sdk/overview.md", urlPath: "/sdk/overview", frontmatter: { title: "SDK Overview" } }),
-    makeRoute({ id: "sdk/javascript", filePath: "sdk/javascript.md", urlPath: "/sdk/javascript", frontmatter: { title: "JavaScript" } }),
-    makeRoute({ id: "sdk/python", filePath: "sdk/python.md", urlPath: "/sdk/python", frontmatter: { title: "Python" } }),
+    makeRoute({
+      id: "sdk/overview",
+      filePath: "sdk/overview.md",
+      urlPath: "/sdk/overview",
+      frontmatter: { title: "SDK Overview" },
+    }),
+    makeRoute({
+      id: "sdk/javascript",
+      filePath: "sdk/javascript.md",
+      urlPath: "/sdk/javascript",
+      frontmatter: { title: "JavaScript" },
+    }),
+    makeRoute({
+      id: "sdk/python",
+      filePath: "sdk/python.md",
+      urlPath: "/sdk/python",
+      frontmatter: { title: "Python" },
+    }),
   ];
 
   it("resolves nested groups into NavigationGroup entries", () => {
@@ -750,7 +842,10 @@ describe("buildNavigation with nested groups", () => {
     expect(nav[0].section).toBe("SDK");
     expect(nav[0].pages).toHaveLength(2);
     // First entry is a plain item
-    expect(nav[0].pages[0]).toMatchObject({ id: "sdk/overview", title: "SDK Overview" });
+    expect(nav[0].pages[0]).toMatchObject({
+      id: "sdk/overview",
+      title: "SDK Overview",
+    });
     // Second entry is a nested group
     const nested = nav[0].pages[1];
     expect("section" in nested).toBe(true);
@@ -773,7 +868,11 @@ describe("buildNavigation with nested groups", () => {
     };
     const nav = buildNavigation(routes, config);
     const flat = flattenNavItems(nav);
-    expect(flat.map((p) => p.id)).toEqual(["sdk/overview", "sdk/javascript", "sdk/python"]);
+    expect(flat.map((p) => p.id)).toEqual([
+      "sdk/overview",
+      "sdk/javascript",
+      "sdk/python",
+    ]);
   });
 
   it("getPrevNext works across nested group boundaries", () => {
@@ -824,7 +923,12 @@ describe("buildNavigation with nested groups", () => {
   it("collects nested IDs for explicitIds (no spurious External group)", () => {
     const routesWithRemote = [
       ...routes,
-      makeRoute({ id: "remote-doc", filePath: "__remote__/remote-doc.md", urlPath: "/remote-doc", frontmatter: { title: "Remote" } }),
+      makeRoute({
+        id: "remote-doc",
+        filePath: "__remote__/remote-doc.md",
+        urlPath: "/remote-doc",
+        frontmatter: { title: "Remote" },
+      }),
     ];
     const config: TomeConfig = {
       name: "Test",
@@ -846,10 +950,30 @@ describe("buildNavigation with nested groups", () => {
 
   it("resolves nested groups with versioned routes (filePath differs from id)", () => {
     const versionedRoutes = [
-      makeRoute({ id: "guides/search", filePath: "v3/guides/search.md", urlPath: "/guides/search", frontmatter: { title: "Search" } }),
-      makeRoute({ id: "guides/config", filePath: "v3/guides/config.mdx", urlPath: "/guides/config", frontmatter: { title: "Configuration" } }),
-      makeRoute({ id: "guides/theme", filePath: "v3/guides/theme.md", urlPath: "/guides/theme", frontmatter: { title: "Custom Theme" } }),
-      makeRoute({ id: "guides/plugins", filePath: "v3/guides/plugins.md", urlPath: "/guides/plugins", frontmatter: { title: "Plugins" } }),
+      makeRoute({
+        id: "guides/search",
+        filePath: "v3/guides/search.md",
+        urlPath: "/guides/search",
+        frontmatter: { title: "Search" },
+      }),
+      makeRoute({
+        id: "guides/config",
+        filePath: "v3/guides/config.mdx",
+        urlPath: "/guides/config",
+        frontmatter: { title: "Configuration" },
+      }),
+      makeRoute({
+        id: "guides/theme",
+        filePath: "v3/guides/theme.md",
+        urlPath: "/guides/theme",
+        frontmatter: { title: "Custom Theme" },
+      }),
+      makeRoute({
+        id: "guides/plugins",
+        filePath: "v3/guides/plugins.md",
+        urlPath: "/guides/plugins",
+        frontmatter: { title: "Plugins" },
+      }),
     ];
     const config: TomeConfig = {
       name: "Test",
@@ -858,7 +982,10 @@ describe("buildNavigation with nested groups", () => {
           group: "Guides",
           pages: [
             "guides/search",
-            { group: "Customization", pages: ["guides/config", "guides/theme"] },
+            {
+              group: "Customization",
+              pages: ["guides/config", "guides/theme"],
+            },
             { group: "Integrations", pages: ["guides/plugins"] },
           ],
         },

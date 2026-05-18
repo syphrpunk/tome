@@ -1,6 +1,14 @@
-import React from "react";
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import type React from "react";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { AiChat } from "./AiChat.js";
 
 // ── jsdom matchMedia mock ─────────────────────────────────
@@ -22,7 +30,9 @@ const defaultProps = {
   model: "gpt-4o-mini",
 };
 
-function renderChat(overrides: Partial<React.ComponentProps<typeof AiChat>> = {}) {
+function renderChat(
+  overrides: Partial<React.ComponentProps<typeof AiChat>> = {}
+) {
   return render(<AiChat {...defaultProps} {...overrides} />);
 }
 
@@ -103,9 +113,10 @@ describe("AiChat user messages", () => {
     vi.useFakeTimers();
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        choices: [{ message: { content: "AI response here" } }],
-      }),
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "AI response here" } }],
+        }),
     }) as any;
   });
 
@@ -130,7 +141,9 @@ describe("AiChat user messages", () => {
     // Use a promise that we can control to keep loading state active
     let resolveResponse!: (value: any) => void;
     global.fetch = vi.fn().mockReturnValue(
-      new Promise((resolve) => { resolveResponse = resolve; }),
+      new Promise((resolve) => {
+        resolveResponse = resolve;
+      })
     ) as any;
 
     renderChat({ apiKey: "test-key" });
@@ -147,7 +160,8 @@ describe("AiChat user messages", () => {
     await act(async () => {
       resolveResponse({
         ok: true,
-        json: () => Promise.resolve({ choices: [{ message: { content: "Done" } }] }),
+        json: () =>
+          Promise.resolve({ choices: [{ message: { content: "Done" } }] }),
       });
     });
   });
@@ -199,7 +213,9 @@ describe("AiChat user messages", () => {
     fireEvent.click(screen.getByTestId("ai-chat-button"));
 
     fireEvent.click(screen.getByTestId("ai-chat-send"));
-    expect(screen.queryByTestId("ai-chat-message-user")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("ai-chat-message-user")
+    ).not.toBeInTheDocument();
   });
 
   it("shows error when API call fails", async () => {
@@ -242,9 +258,10 @@ describe("AiChat provider handling", () => {
   it("calls OpenAI API for openai provider", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        choices: [{ message: { content: "OpenAI response" } }],
-      }),
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "OpenAI response" } }],
+        }),
     }) as any;
 
     renderChat({ provider: "openai", apiKey: "test-key" });
@@ -266,18 +283,19 @@ describe("AiChat provider handling", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          "Authorization": "Bearer test-key",
+          Authorization: "Bearer test-key",
         }),
-      }),
+      })
     );
   });
 
   it("calls Anthropic API for anthropic provider", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        content: [{ text: "Anthropic response" }],
-      }),
+      json: () =>
+        Promise.resolve({
+          content: [{ text: "Anthropic response" }],
+        }),
     }) as any;
 
     renderChat({ provider: "anthropic", apiKey: "test-key" });
@@ -302,7 +320,7 @@ describe("AiChat provider handling", () => {
           "x-api-key": "test-key",
           "anthropic-version": "2023-06-01",
         }),
-      }),
+      })
     );
   });
 });

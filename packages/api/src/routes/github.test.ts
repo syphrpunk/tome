@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
-import { github } from "./github.js";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
+import { github } from "./github.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -65,9 +65,13 @@ async function signPayload(payload: string, secret: string): Promise<string> {
     new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
-  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const mac = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(payload)
+  );
   const hex = Array.from(new Uint8Array(mac))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -165,7 +169,7 @@ describe("GitHub connect/disconnect", () => {
       body: JSON.stringify({
         slug: "my-docs",
         repository: "tomehq/tome",
-        installationId: 12345,
+        installationId: 12_345,
       }),
     });
 
@@ -185,7 +189,7 @@ describe("GitHub connect/disconnect", () => {
       body: JSON.stringify({
         slug: "my-docs",
         repository: "https://github.com/tomehq/tome",
-        installationId: 12345,
+        installationId: 12_345,
         branch: "develop",
       }),
     });
@@ -205,7 +209,7 @@ describe("GitHub connect/disconnect", () => {
       body: JSON.stringify({
         slug: "my-docs",
         repository: "not a valid repo",
-        installationId: 12345,
+        installationId: 12_345,
       }),
     });
 
@@ -222,7 +226,7 @@ describe("GitHub connect/disconnect", () => {
       body: JSON.stringify({
         slug: "nonexistent",
         repository: "tomehq/tome",
-        installationId: 12345,
+        installationId: 12_345,
       }),
     });
 
@@ -252,7 +256,7 @@ describe("GitHub status", () => {
     const db = mockDb({
       projectStatus: {
         github_repo: "tomehq/tome",
-        github_installation_id: 12345,
+        github_installation_id: 12_345,
         github_branch: "main",
       },
     });

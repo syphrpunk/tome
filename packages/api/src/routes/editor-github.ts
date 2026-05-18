@@ -4,33 +4,48 @@
  * this module commits the markdown file back to the repo.
  */
 
-import type { Env } from "../types.js";
 import { getInstallationToken } from "../github-app.js";
+import type { Env } from "../types.js";
 
 interface GitHubSyncOptions {
+  branch: string;
+  commitMessage: string;
+  content: string;
   env: Env;
+  filePath: string;
+  installationId: number;
   owner: string;
   repo: string;
-  branch: string;
-  installationId: number;
-  filePath: string;
-  content: string;
-  commitMessage: string;
 }
 
 /**
  * Create or update a file in a GitHub repository.
  * Uses the GitHub Contents API to create a commit.
  */
-export async function syncToGitHub(options: GitHubSyncOptions): Promise<{ sha: string } | null> {
-  const { env, owner, repo, branch, installationId, filePath, content, commitMessage } = options;
+export async function syncToGitHub(
+  options: GitHubSyncOptions
+): Promise<{ sha: string } | null> {
+  const {
+    env,
+    owner,
+    repo,
+    branch,
+    installationId,
+    filePath,
+    content,
+    commitMessage,
+  } = options;
 
-  if (!env.GITHUB_APP_ID || !env.GITHUB_APP_PRIVATE_KEY) {
+  if (!(env.GITHUB_APP_ID && env.GITHUB_APP_PRIVATE_KEY)) {
     return null;
   }
 
   try {
-    const token = await getInstallationToken(installationId, env.GITHUB_APP_ID, env.GITHUB_APP_PRIVATE_KEY);
+    const token = await getInstallationToken(
+      installationId,
+      env.GITHUB_APP_ID,
+      env.GITHUB_APP_PRIVATE_KEY
+    );
 
     // Check if file already exists (to get its SHA for updates)
     let existingSha: string | undefined;
@@ -44,10 +59,10 @@ export async function syncToGitHub(options: GitHubSyncOptions): Promise<{ sha: s
             "User-Agent": "Tome-Editor",
             "X-GitHub-Api-Version": "2022-11-28",
           },
-        },
+        }
       );
       if (getRes.ok) {
-        const data = await getRes.json() as { sha: string };
+        const data = (await getRes.json()) as { sha: string };
         existingSha = data.sha;
       }
     } catch {
@@ -77,7 +92,7 @@ export async function syncToGitHub(options: GitHubSyncOptions): Promise<{ sha: s
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
-      },
+      }
     );
 
     if (!putRes.ok) {
@@ -86,7 +101,7 @@ export async function syncToGitHub(options: GitHubSyncOptions): Promise<{ sha: s
       return null;
     }
 
-    const result = await putRes.json() as { content: { sha: string } };
+    const result = (await putRes.json()) as { content: { sha: string } };
     return { sha: result.content.sha };
   } catch (err) {
     console.error("GitHub sync error:", err);

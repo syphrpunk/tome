@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import type { Env, User } from "../types.js";
 import { PLAN_LIMITS, PLAN_NAMES } from "../plan-limits.js";
+import type { Env, User } from "../types.js";
 
 const domains = new Hono<{ Bindings: Env; Variables: { user: User } }>();
 
@@ -13,10 +13,12 @@ domains.post("/", async (c) => {
   }>();
 
   // Normalize domain — strip protocol and trailing slashes
-  const domain = (body.domain || "").replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  const domain = (body.domain || "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/+$/, "");
   const projectSlug = body.projectSlug;
 
-  if (!domain || !projectSlug) {
+  if (!(domain && projectSlug)) {
     return c.json({ error: "Missing domain or projectSlug" }, 400);
   }
 
@@ -30,7 +32,7 @@ domains.post("/", async (c) => {
         requiredPlan: "cloud",
         currentPlan: user.plan,
       },
-      403,
+      403
     );
   }
 
@@ -51,7 +53,7 @@ domains.post("/", async (c) => {
           requiredPlan: "team",
           currentPlan: user.plan,
         },
-        403,
+        403
       );
     }
   }
@@ -120,8 +122,18 @@ domains.post("/", async (c) => {
     verified: false,
     sslStatus: "pending",
     dnsRecords: [
-      { type: "CNAME", name: domain, value: `${projectSlug}.tome.center`, verified: false },
-      { type: "TXT", name: `_tome-verify.${domain}`, value: `tome-verify=${projectSlug}`, verified: false },
+      {
+        type: "CNAME",
+        name: domain,
+        value: `${projectSlug}.tome.center`,
+        verified: false,
+      },
+      {
+        type: "TXT",
+        name: `_tome-verify.${domain}`,
+        value: `tome-verify=${projectSlug}`,
+        verified: false,
+      },
     ],
   });
 });
@@ -201,8 +213,18 @@ domains.get("/", async (c) => {
       verified: d.verified === 1,
       sslStatus: d.ssl_status,
       dnsRecords: [
-        { type: "CNAME", name: d.domain as string, value: `${d.project_slug}.tome.center`, verified: d.verified === 1 },
-        { type: "TXT", name: `_tome-verify.${d.domain}`, value: `tome-verify=${d.project_slug}`, verified: d.verified === 1 },
+        {
+          type: "CNAME",
+          name: d.domain as string,
+          value: `${d.project_slug}.tome.center`,
+          verified: d.verified === 1,
+        },
+        {
+          type: "TXT",
+          name: `_tome-verify.${d.domain}`,
+          value: `tome-verify=${d.project_slug}`,
+          verified: d.verified === 1,
+        },
       ],
     }))
   );
@@ -250,7 +272,8 @@ domains.get("/:domain/verify", async (c) => {
           result: { status: string; ssl: { status: string } };
         };
         verified = cfData.result.status === "active";
-        sslStatus = cfData.result.ssl.status === "active" ? "active" : "pending";
+        sslStatus =
+          cfData.result.ssl.status === "active" ? "active" : "pending";
 
         // Update D1 with latest status
         await c.env.TOME_DB.prepare(
@@ -269,8 +292,18 @@ domains.get("/:domain/verify", async (c) => {
     verified,
     sslStatus,
     dnsRecords: [
-      { type: "CNAME", name: row.domain, value: `${row.project_slug}.tome.center`, verified },
-      { type: "TXT", name: `_tome-verify.${row.domain}`, value: `tome-verify=${row.project_slug}`, verified },
+      {
+        type: "CNAME",
+        name: row.domain,
+        value: `${row.project_slug}.tome.center`,
+        verified,
+      },
+      {
+        type: "TXT",
+        name: `_tome-verify.${row.domain}`,
+        value: `tome-verify=${row.project_slug}`,
+        verified,
+      },
     ],
   });
 });

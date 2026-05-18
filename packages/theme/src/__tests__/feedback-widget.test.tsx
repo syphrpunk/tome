@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import Shell from "../Shell.js";
 
 // jsdom doesn't provide matchMedia
@@ -28,24 +27,28 @@ const baseConfig = {
   toc: { enabled: false },
 };
 
-const navigation = [{
-  section: "Docs",
-  pages: [{ id: "test", title: "Test Page", urlPath: "/test" }],
-}];
+const navigation = [
+  {
+    section: "Docs",
+    pages: [{ id: "test", title: "Test Page", urlPath: "/test" }],
+  },
+];
 
-const allPages = [{ id: "test", title: "Test Page", description: "A test page" }];
+const allPages = [
+  { id: "test", title: "Test Page", description: "A test page" },
+];
 
 function renderShell(configOverrides = {}) {
   return render(
     <Shell
+      allPages={allPages}
       config={{ ...baseConfig, ...configOverrides }}
-      navigation={navigation}
       currentPageId="test"
+      headings={[]}
+      navigation={navigation}
+      onNavigate={() => {}}
       pageHtml="<h1>Test Page</h1><p>Content here.</p>"
       pageTitle="Test Page"
-      headings={[]}
-      allPages={allPages}
-      onNavigate={() => {}}
     />
   );
 }
@@ -86,13 +89,19 @@ describe("FeedbackWidget", () => {
   it("fires trackFeedback on thumbs up without textInput", () => {
     renderShell();
     fireEvent.click(screen.getByTestId("feedback-up"));
-    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith("test", "up");
+    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith(
+      "test",
+      "up"
+    );
   });
 
   it("fires trackFeedback on thumbs down without textInput", () => {
     renderShell();
     fireEvent.click(screen.getByTestId("feedback-down"));
-    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith("test", "down");
+    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith(
+      "test",
+      "down"
+    );
   });
 
   it("stores feedback in localStorage", () => {
@@ -106,7 +115,9 @@ describe("FeedbackWidget", () => {
     fireEvent.click(screen.getByTestId("feedback-up"));
     expect(screen.getByTestId("feedback-text-input")).toBeInTheDocument();
     expect(screen.getByTestId("feedback-submit")).toBeInTheDocument();
-    expect(screen.getByText("Any additional feedback? (optional)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Any additional feedback? (optional)")
+    ).toBeInTheDocument();
   });
 
   it("submits text feedback and shows thanks", () => {
@@ -117,7 +128,11 @@ describe("FeedbackWidget", () => {
     fireEvent.change(input, { target: { value: "Great docs!" } });
     fireEvent.click(screen.getByTestId("feedback-submit"));
 
-    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith("test", "up", "Great docs!");
+    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith(
+      "test",
+      "up",
+      "Great docs!"
+    );
     expect(screen.getByText("Thanks for your feedback!")).toBeInTheDocument();
   });
 
@@ -126,7 +141,10 @@ describe("FeedbackWidget", () => {
     fireEvent.click(screen.getByTestId("feedback-down"));
     fireEvent.click(screen.getByText("Skip"));
 
-    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith("test", "down");
+    expect((window as any).__tome.trackFeedback).toHaveBeenCalledWith(
+      "test",
+      "down"
+    );
     expect(screen.getByText("Thanks for your feedback!")).toBeInTheDocument();
   });
 });

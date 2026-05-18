@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 
 /**
  * Package manager command display — shows install commands for npm/yarn/pnpm/bun.

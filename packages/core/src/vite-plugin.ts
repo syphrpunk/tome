@@ -1,20 +1,33 @@
-import { resolve, join } from "path";
-import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { createRequire } from "module";
+import { join, resolve } from "path";
 import type { Plugin } from "vite";
 
 const _require = createRequire(import.meta.url);
-import { loadConfig, type TomeConfig, type TomePlugin } from "./config.js";
-import { discoverPages, buildNavigation, type PageRoute, type NavigationGroup, type I18nConfig } from "./routes.js";
-import { fetchRemoteContent, type ContentSource } from "./content-source.js";
-import { processMarkdown, extractHeadingsFromSource, type ProcessedPage, type MarkdownPluginOptions, type MarkdownMathOptions } from "./markdown.js";
-import { parseOpenApiSpec, type ApiManifest } from "./openapi.js";
-import { parseAsyncApiSpec, type AsyncApiManifest } from "./asyncapi.js";
-import { recmaSandbox } from "./recma-sandbox.js";
-import { generateAnalyticsScript } from "./analytics.js";
-import { getGitLastUpdated } from "./git-dates.js";
-import { parseChangelog } from "./changelog.js";
+
 import matter from "gray-matter";
+import { generateAnalyticsScript } from "./analytics.js";
+import { type AsyncApiManifest, parseAsyncApiSpec } from "./asyncapi.js";
+import { parseChangelog } from "./changelog.js";
+import { loadConfig, type TomeConfig, type TomePlugin } from "./config.js";
+import { type ContentSource, fetchRemoteContent } from "./content-source.js";
+import { getGitLastUpdated } from "./git-dates.js";
+import {
+  extractHeadingsFromSource,
+  type MarkdownMathOptions,
+  type MarkdownPluginOptions,
+  type ProcessedPage,
+  processMarkdown,
+} from "./markdown.js";
+import { type ApiManifest, parseOpenApiSpec } from "./openapi.js";
+import { recmaSandbox } from "./recma-sandbox.js";
+import {
+  buildNavigation,
+  discoverPages,
+  type I18nConfig,
+  type NavigationGroup,
+  type PageRoute,
+} from "./routes.js";
 
 // ── VIRTUAL MODULE IDS ───────────────────────────────────
 const VIRTUAL_CONFIG = "virtual:tome/config";
@@ -36,19 +49,29 @@ const RESOLVED_DOC_CONTEXT = "\0" + VIRTUAL_DOC_CONTEXT;
 const RESOLVED_OVERRIDES = "\0" + VIRTUAL_OVERRIDES;
 
 // ── TOME PLUGIN HOOK RUNNER ──────────────────────────────
-function runPluginHook<T>(plugins: TomePlugin[], hook: keyof NonNullable<TomePlugin['hooks']>, arg?: T): T {
+function runPluginHook<T>(
+  plugins: TomePlugin[],
+  hook: keyof NonNullable<TomePlugin["hooks"]>,
+  arg?: T
+): T {
   let result = arg as T;
   for (const plugin of plugins) {
     const fn = plugin.hooks?.[hook] as ((a: any) => any) | undefined;
     if (fn) {
       const ret = fn(result);
-      if (ret !== undefined) result = ret;
+      if (ret !== undefined) {
+        result = ret;
+      }
     }
   }
   return result;
 }
 
-async function runPluginHookAsync(plugins: TomePlugin[], hook: 'buildStart' | 'buildEnd', arg?: string): Promise<void> {
+async function runPluginHookAsync(
+  plugins: TomePlugin[],
+  hook: "buildStart" | "buildEnd",
+  arg?: string
+): Promise<void> {
   for (const plugin of plugins) {
     const fn = plugin.hooks?.[hook];
     if (fn) {
@@ -69,10 +92,10 @@ function collectHeadTags(plugins: TomePlugin[]): string[] {
 
 // ── PLUGIN ───────────────────────────────────────────────
 export interface TomePluginOptions {
-  /** Root directory of the Tome project (default: process.cwd()) */
-  root?: string;
   /** Pages directory relative to root (default: "pages") */
   pagesDir?: string;
+  /** Root directory of the Tome project (default: process.cwd()) */
+  root?: string;
 }
 
 export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
@@ -98,7 +121,7 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
 
     // Run configResolved hook for Tome plugins
     const tomePlugins: TomePlugin[] = (config as any).tomePlugins || [];
-    config = runPluginHook(tomePlugins, 'configResolved', config);
+    config = runPluginHook(tomePlugins, "configResolved", config);
 
     // TOM-57: Resolve custom markdown plugins from config
     resolvedPlugins = undefined;
@@ -109,12 +132,16 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         resolved.remarkPlugins = [];
         for (const entry of config.plugins.remark) {
           try {
-            const [name, options] = Array.isArray(entry) ? entry : [entry, undefined];
+            const [name, options] = Array.isArray(entry)
+              ? entry
+              : [entry, undefined];
             const mod = await import(name as string);
             const plugin = mod.default || mod;
             resolved.remarkPlugins.push(options ? [plugin, options] : [plugin]);
           } catch (err) {
-            console.warn(`[tome] Failed to load remark plugin: ${err instanceof Error ? err.message : String(err)}`);
+            console.warn(
+              `[tome] Failed to load remark plugin: ${err instanceof Error ? err.message : String(err)}`
+            );
           }
         }
       }
@@ -123,18 +150,24 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         resolved.rehypePlugins = [];
         for (const entry of config.plugins.rehype) {
           try {
-            const [name, options] = Array.isArray(entry) ? entry : [entry, undefined];
+            const [name, options] = Array.isArray(entry)
+              ? entry
+              : [entry, undefined];
             const mod = await import(name as string);
             const plugin = mod.default || mod;
             resolved.rehypePlugins.push(options ? [plugin, options] : [plugin]);
           } catch (err) {
-            console.warn(`[tome] Failed to load rehype plugin: ${err instanceof Error ? err.message : String(err)}`);
+            console.warn(
+              `[tome] Failed to load rehype plugin: ${err instanceof Error ? err.message : String(err)}`
+            );
           }
         }
       }
 
-      if ((resolved.remarkPlugins && resolved.remarkPlugins.length > 0) ||
-          (resolved.rehypePlugins && resolved.rehypePlugins.length > 0)) {
+      if (
+        (resolved.remarkPlugins && resolved.remarkPlugins.length > 0) ||
+        (resolved.rehypePlugins && resolved.rehypePlugins.length > 0)
+      ) {
         resolvedPlugins = resolved;
       }
     }
@@ -143,22 +176,31 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
     const snippetsDir = resolve(root, config.snippetsDir || "snippets");
     if (existsSync(snippetsDir)) {
       const { default: remarkSnippets } = await import("./remark-snippets.js");
-      if (!resolvedPlugins) resolvedPlugins = {};
-      if (!resolvedPlugins.remarkPlugins) resolvedPlugins.remarkPlugins = [];
+      if (!resolvedPlugins) {
+        resolvedPlugins = {};
+      }
+      if (!resolvedPlugins.remarkPlugins) {
+        resolvedPlugins.remarkPlugins = [];
+      }
       // Prepend snippets plugin so it runs before user plugins
       resolvedPlugins.remarkPlugins.unshift([remarkSnippets, { snippetsDir }]);
     }
 
     // Build i18n config if configured with multiple locales
-    const i18nConfig: I18nConfig | undefined = config.i18n && config.i18n.locales.length > 1
-      ? {
-          defaultLocale: config.i18n.defaultLocale,
-          locales: config.i18n.locales,
-          localeNames: config.i18n.localeNames,
-          fallback: config.i18n.fallback,
-        }
-      : undefined;
-    routes = await discoverPages(pagesDir, config.versioning ?? undefined, i18nConfig);
+    const i18nConfig: I18nConfig | undefined =
+      config.i18n && config.i18n.locales.length > 1
+        ? {
+            defaultLocale: config.i18n.defaultLocale,
+            locales: config.i18n.locales,
+            localeNames: config.i18n.localeNames,
+            fallback: config.i18n.fallback,
+          }
+        : undefined;
+    routes = await discoverPages(
+      pagesDir,
+      config.versioning ?? undefined,
+      i18nConfig
+    );
 
     // ── Content Sources: fetch remote pages and merge with local ──
     const contentSources: ContentSource[] = config.contentSources || [];
@@ -175,7 +217,9 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
       const localIds = new Set(routes.map((r) => r.id));
 
       for (const page of remotePages) {
-        if (localIds.has(page.id)) continue; // local wins
+        if (localIds.has(page.id)) {
+          continue; // local wins
+        }
 
         // Write remote page to temp directory so existing pipeline can process it
         const fileName = (page.id || "index") + "." + page.format;
@@ -199,7 +243,9 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
             title = data.title;
           } else {
             const m = content.match(/^#\s+(.+)$/m);
-            if (m) title = m[1].trim();
+            if (m) {
+              title = m[1].trim();
+            }
           }
 
           routes.push({
@@ -233,10 +279,12 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
     }
 
     // Run routesResolved hook for Tome plugins
-    routes = runPluginHook(tomePlugins, 'routesResolved', routes);
+    routes = runPluginHook(tomePlugins, "routesResolved", routes);
 
     // In production, filter out draft pages from routes used for navigation and outputs
-    const navRoutes = isDevMode ? routes : routes.filter(r => !r.frontmatter.draft);
+    const navRoutes = isDevMode
+      ? routes
+      : routes.filter((r) => !r.frontmatter.draft);
     navigation = buildNavigation(navRoutes, config);
     pageCache.clear();
 
@@ -247,7 +295,9 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
       try {
         apiManifest = await parseOpenApiSpec(specPath);
       } catch (err) {
-        console.warn(`[tome] Failed to parse OpenAPI spec: ${err instanceof Error ? err.message : String(err)}`);
+        console.warn(
+          `[tome] Failed to parse OpenAPI spec: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
 
@@ -258,7 +308,9 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
       try {
         asyncApiManifest = await parseAsyncApiSpec(asyncSpecPath);
       } catch (err) {
-        console.warn(`[tome] Failed to parse AsyncAPI spec: ${err instanceof Error ? err.message : String(err)}`);
+        console.warn(
+          `[tome] Failed to parse AsyncAPI spec: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
 
@@ -271,7 +323,9 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
           gitDates.set(route.id, route.frontmatter.lastUpdated);
         } else {
           const date = getGitLastUpdated(route.absolutePath);
-          if (date) gitDates.set(route.id, date);
+          if (date) {
+            gitDates.set(route.id, date);
+          }
         }
       }
     }
@@ -290,15 +344,26 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
   }
 
   async function getPage(id: string): Promise<ProcessedPage | null> {
-    if (id === "api-reference") return null; // synthetic route — no file on disk
-    if (pageCache.has(id)) return pageCache.get(id)!;
+    if (id === "api-reference") {
+      return null; // synthetic route — no file on disk
+    }
+    if (pageCache.has(id)) {
+      return pageCache.get(id)!;
+    }
 
     const route = routes.find((r) => r.id === id);
-    if (!route) return null;
+    if (!route) {
+      return null;
+    }
 
     const source = readFileSync(route.absolutePath, "utf-8");
     const mathOpts: MarkdownMathOptions = { math: config.math === true };
-    const processed = await processMarkdown(source, route.absolutePath, resolvedPlugins, mathOpts);
+    const processed = await processMarkdown(
+      source,
+      route.absolutePath,
+      resolvedPlugins,
+      mathOpts
+    );
 
     // Resolve relative `./pageId` links to bare page IDs.
     // Vite's import analysis scans module source for "./" and "/" patterns and rewrites
@@ -307,7 +372,10 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
     // link interceptor resolves them to the correct URL at runtime.
     // For versioned pages, prefix with the version directory so the Shell can resolve
     // cross-version links correctly (e.g. "v2/quickstart").
-    const versionPrefix = route.version && route.version !== (config.versioning?.current || "") ? `${route.version}/` : "";
+    const versionPrefix =
+      route.version && route.version !== (config.versioning?.current || "")
+        ? `${route.version}/`
+        : "";
     processed.html = processed.html.replace(
       /href="\.\/([^"]+)"/g,
       (_match, relPath) => `href="${versionPrefix}${relPath}"`
@@ -370,10 +438,13 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         const pluginDir = new URL(".", import.meta.url);
         // Walk up from src/ or dist/ to find package.json
         const corePkgPath = new URL("../package.json", pluginDir);
-        tomeVersion = JSON.parse(readFileSync(corePkgPath, "utf-8")).version ?? "0.0.0";
-      } catch { /* fallback */ }
+        tomeVersion =
+          JSON.parse(readFileSync(corePkgPath, "utf-8")).version ?? "0.0.0";
+      } catch {
+        /* fallback */
+      }
       const defines: Record<string, string> = {
-        "__TOME_VERSION__": JSON.stringify(tomeVersion),
+        __TOME_VERSION__: JSON.stringify(tomeVersion),
       };
 
       // Inject AI API key from environment at build time
@@ -409,12 +480,15 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
       // Inject head tags from Tome plugins
       const pluginHeadTags = collectHeadTags((config as any).tomePlugins || []);
       if (pluginHeadTags.length > 0) {
-        result = result.replace('</head>', pluginHeadTags.join('\n') + '\n</head>');
+        result = result.replace(
+          "</head>",
+          pluginHeadTags.join("\n") + "\n</head>"
+        );
       }
 
       // Content negotiation: link to llms.txt for AI agent discovery
       const llmsLink = `<link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM-optimized documentation" />`;
-      result = result.replace('</head>', `${llmsLink}\n</head>`);
+      result = result.replace("</head>", `${llmsLink}\n</head>`);
 
       // Inject WebSite JSON-LD schema into the main index.html
       const siteUrlForJsonLd = (config.baseUrl || "").replace(/\/$/, "");
@@ -423,12 +497,15 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         "@type": "WebSite",
         name: config.name,
         url: siteUrlForJsonLd || undefined,
-        description: config.branding?.powered !== false
-          ? `Documentation site powered by Tome`
-          : `Documentation for ${config.name}`,
+        description:
+          config.branding?.powered === false
+            ? `Documentation for ${config.name}`
+            : "Documentation site powered by Tome",
         potentialAction: {
           "@type": "SearchAction",
-          target: siteUrlForJsonLd ? `${siteUrlForJsonLd}/search?q={search_term_string}` : undefined,
+          target: siteUrlForJsonLd
+            ? `${siteUrlForJsonLd}/search?q={search_term_string}`
+            : undefined,
           "query-input": "required name=search_term_string",
         },
       };
@@ -437,13 +514,18 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         `<script type="application/ld+json">${JSON.stringify(websiteSchema)}</script>\n</head>`
       );
 
-      if (!config?.sandbox?.enabled) return result;
+      if (!config?.sandbox?.enabled) {
+        return result;
+      }
       // Build connect-src dynamically: always allow self + mermaid/KaTeX CDN
       const connectSrc = ["'self'", "https://cdn.jsdelivr.net"];
       // If AI chat is enabled, allow the provider's API endpoint
       if (config.ai?.enabled) {
-        if (config.ai.provider === "openai") connectSrc.push("https://api.openai.com");
-        else if (config.ai.provider === "anthropic") connectSrc.push("https://api.anthropic.com");
+        if (config.ai.provider === "openai") {
+          connectSrc.push("https://api.openai.com");
+        } else if (config.ai.provider === "anthropic") {
+          connectSrc.push("https://api.anthropic.com");
+        }
       }
       const csp = [
         `default-src 'self'`,
@@ -462,25 +544,32 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
     configureServer(srv) {
       // Content negotiation middleware — serve raw markdown for .md suffix or Accept: text/markdown
       srv.middlewares.use(async (req, res, next) => {
-        if (!req.url || !config) return next();
+        if (!(req.url && config)) {
+          return next();
+        }
         const urlPath = req.url.split("?")[0];
 
         // Check for .md suffix
         const isMdRequest = urlPath.endsWith(".md");
         // Check Accept header for text/markdown or text/plain
         const acceptHeader = req.headers.accept || "";
-        const wantsMarkdown = acceptHeader.includes("text/markdown") || acceptHeader.includes("text/plain");
+        const wantsMarkdown =
+          acceptHeader.includes("text/markdown") ||
+          acceptHeader.includes("text/plain");
 
         if (isMdRequest || wantsMarkdown) {
           // Strip .md suffix to find the page route
           const pagePath = isMdRequest ? urlPath.replace(/\.md$/, "") : urlPath;
-          const normalizedPath = pagePath === "" || pagePath === "/index" ? "/" : pagePath;
+          const normalizedPath =
+            pagePath === "" || pagePath === "/index" ? "/" : pagePath;
           const route = routes.find((r) => r.urlPath === normalizedPath);
 
           if (route && route.filePath !== "__api-reference__") {
             try {
               const source = readFileSync(route.absolutePath, "utf-8");
-              res.writeHead(200, { "Content-Type": "text/markdown; charset=utf-8" });
+              res.writeHead(200, {
+                "Content-Type": "text/markdown; charset=utf-8",
+              });
               res.end(source);
               return;
             } catch {}
@@ -492,11 +581,15 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
 
       // Redirect middleware — matches config-level and frontmatter-level redirects
       srv.middlewares.use((req, res, next) => {
-        if (!req.url || !config) return next();
+        if (!(req.url && config)) {
+          return next();
+        }
         const urlPath = req.url.split("?")[0];
 
         // Check config-level redirects
-        const configRedirect = config.redirects?.find((r) => r.from === urlPath);
+        const configRedirect = config.redirects?.find(
+          (r) => r.from === urlPath
+        );
         if (configRedirect) {
           res.writeHead(301, { Location: configRedirect.to });
           res.end();
@@ -531,22 +624,39 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         if (file.startsWith(pagesDir) && /\.(md|mdx)$/.test(file)) {
           // Invalidate cache for changed page
           const rel = file.slice(pagesDir.length + 1);
-          const id = rel.replace(/\.(md|mdx)$/, "").replace(/\/?index$/, "") || "index";
+          const id =
+            rel.replace(/\.(md|mdx)$/, "").replace(/\/?index$/, "") || "index";
           pageCache.delete(id);
 
           // Reload routes in case frontmatter changed
-          const i18nCfg: I18nConfig | undefined = config.i18n && config.i18n.locales.length > 1
-            ? { defaultLocale: config.i18n.defaultLocale, locales: config.i18n.locales, localeNames: config.i18n.localeNames, fallback: config.i18n.fallback }
-            : undefined;
-          routes = await discoverPages(pagesDir, config.versioning ?? undefined, i18nCfg);
+          const i18nCfg: I18nConfig | undefined =
+            config.i18n && config.i18n.locales.length > 1
+              ? {
+                  defaultLocale: config.i18n.defaultLocale,
+                  locales: config.i18n.locales,
+                  localeNames: config.i18n.localeNames,
+                  fallback: config.i18n.fallback,
+                }
+              : undefined;
+          routes = await discoverPages(
+            pagesDir,
+            config.versioning ?? undefined,
+            i18nCfg
+          );
           navigation = buildNavigation(routes, config);
 
           // Trigger HMR
           const mod = srv.moduleGraph.getModuleById(RESOLVED_ROUTES);
-          if (mod) srv.moduleGraph.invalidateModule(mod);
+          if (mod) {
+            srv.moduleGraph.invalidateModule(mod);
+          }
 
-          const pageMod = srv.moduleGraph.getModuleById(RESOLVED_PAGE_PREFIX + id);
-          if (pageMod) srv.moduleGraph.invalidateModule(pageMod);
+          const pageMod = srv.moduleGraph.getModuleById(
+            RESOLVED_PAGE_PREFIX + id
+          );
+          if (pageMod) {
+            srv.moduleGraph.invalidateModule(pageMod);
+          }
 
           srv.ws.send({ type: "full-reload" });
         }
@@ -574,14 +684,30 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
     },
 
     resolveId(id) {
-      if (id === VIRTUAL_CONFIG) return RESOLVED_CONFIG;
-      if (id === VIRTUAL_ROUTES) return RESOLVED_ROUTES;
-      if (id === VIRTUAL_PAGE_LOADER) return RESOLVED_PAGE_LOADER;
-      if (id === VIRTUAL_API) return RESOLVED_API;
-      if (id === VIRTUAL_ANALYTICS) return RESOLVED_ANALYTICS;
-      if (id === VIRTUAL_DOC_CONTEXT) return RESOLVED_DOC_CONTEXT;
-      if (id === VIRTUAL_OVERRIDES) return RESOLVED_OVERRIDES;
-      if (id.startsWith(VIRTUAL_PAGE_PREFIX)) return "\0" + id;
+      if (id === VIRTUAL_CONFIG) {
+        return RESOLVED_CONFIG;
+      }
+      if (id === VIRTUAL_ROUTES) {
+        return RESOLVED_ROUTES;
+      }
+      if (id === VIRTUAL_PAGE_LOADER) {
+        return RESOLVED_PAGE_LOADER;
+      }
+      if (id === VIRTUAL_API) {
+        return RESOLVED_API;
+      }
+      if (id === VIRTUAL_ANALYTICS) {
+        return RESOLVED_ANALYTICS;
+      }
+      if (id === VIRTUAL_DOC_CONTEXT) {
+        return RESOLVED_DOC_CONTEXT;
+      }
+      if (id === VIRTUAL_OVERRIDES) {
+        return RESOLVED_OVERRIDES;
+      }
+      if (id.startsWith(VIRTUAL_PAGE_PREFIX)) {
+        return "\0" + id;
+      }
       return null;
     },
 
@@ -593,7 +719,9 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
 
       // Serve route manifest as virtual module
       if (id === RESOLVED_ROUTES) {
-        const routesSrc = isDevMode ? routes : routes.filter(r => !r.frontmatter.draft);
+        const routesSrc = isDevMode
+          ? routes
+          : routes.filter((r) => !r.frontmatter.draft);
         const routeData = routesSrc.map((r) => ({
           id: r.id,
           filePath: r.filePath,
@@ -605,16 +733,20 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
           ...(gitDates.has(r.id) ? { lastUpdated: gitDates.get(r.id) } : {}),
         }));
         const versioningData = config.versioning
-          ? { current: config.versioning.current, versions: config.versioning.versions }
-          : null;
-        const i18nData = config.i18n && config.i18n.locales.length > 1
           ? {
-              defaultLocale: config.i18n.defaultLocale,
-              locales: config.i18n.locales,
-              localeNames: config.i18n.localeNames || {},
-              localeDirs: config.i18n.localeDirs || {},
+              current: config.versioning.current,
+              versions: config.versioning.versions,
             }
           : null;
+        const i18nData =
+          config.i18n && config.i18n.locales.length > 1
+            ? {
+                defaultLocale: config.i18n.defaultLocale,
+                locales: config.i18n.locales,
+                localeNames: config.i18n.localeNames || {},
+                localeDirs: config.i18n.localeDirs || {},
+              }
+            : null;
         return `
           export const routes = ${JSON.stringify(routeData)};
           export const navigation = ${JSON.stringify(navigation)};
@@ -625,7 +757,9 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
 
       // TOM-19 + TOM-66: Serve API manifests as virtual module
       if (id === RESOLVED_API) {
-        if (!apiManifest && !asyncApiManifest) return `export default null;`;
+        if (!(apiManifest || asyncApiManifest)) {
+          return "export default null;";
+        }
         return `export default ${JSON.stringify({ openapi: apiManifest, asyncapi: asyncApiManifest })};`;
       }
 
@@ -639,10 +773,12 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
 
       // Page loader — enumerates all pages with explicit imports so Vite can bundle them
       if (id === RESOLVED_PAGE_LOADER) {
-        const loaderRoutes = isDevMode ? routes : routes.filter(r => !r.frontmatter.draft);
+        const loaderRoutes = isDevMode
+          ? routes
+          : routes.filter((r) => !r.frontmatter.draft);
         const entries = loaderRoutes.map((r) => {
           // Validate route ID contains only safe path characters to prevent code injection
-          if (!/^[\w.\/\-]+$/.test(r.id)) {
+          if (!/^[\w./-]+$/.test(r.id)) {
             throw new Error(`Invalid route id: ${r.id}`);
           }
           const importPath = `virtual:tome/page/${r.id}`;
@@ -662,11 +798,19 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
       if (id === RESOLVED_DOC_CONTEXT) {
         const docs: { id: string; title: string; content: string }[] = [];
         let totalChars = 0;
-        const MAX_CHARS = 50000;
+        const MAX_CHARS = 50_000;
 
         for (const route of routes) {
-          if (route.frontmatter.hidden || route.frontmatter.draft || route.filePath === "__api-reference__") continue;
-          if (totalChars >= MAX_CHARS) break;
+          if (
+            route.frontmatter.hidden ||
+            route.frontmatter.draft ||
+            route.filePath === "__api-reference__"
+          ) {
+            continue;
+          }
+          if (totalChars >= MAX_CHARS) {
+            break;
+          }
           try {
             const source = readFileSync(route.absolutePath, "utf-8");
             const { content } = matter(source);
@@ -691,10 +835,18 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         const imports: string[] = [];
         const exportNames: string[] = [];
 
-        const slots = ["Header", "Footer", "Sidebar", "Toc", "PageFooter"] as const;
+        const slots = [
+          "Header",
+          "Footer",
+          "Sidebar",
+          "Toc",
+          "PageFooter",
+        ] as const;
         for (const slot of slots) {
           if (overrides[slot]) {
-            imports.push(`import ${slot} from ${JSON.stringify(overrides[slot])};`);
+            imports.push(
+              `import ${slot} from ${JSON.stringify(overrides[slot])};`
+            );
             exportNames.push(slot);
           }
         }
@@ -711,8 +863,16 @@ export default { ${exportNames.join(", ")} };
         // TOM-19 + TOM-66: Synthetic API reference page (OpenAPI and/or AsyncAPI)
         if (pageId === "api-reference" && (apiManifest || asyncApiManifest)) {
           const headings = [
-            ...(apiManifest?.tags || []).map((t) => ({ depth: 2, text: t.name, id: t.name.toLowerCase().replace(/\s+/g, "-") })),
-            ...(asyncApiManifest?.tags || []).map((t) => ({ depth: 2, text: t.name, id: `async-${t.name.toLowerCase().replace(/\s+/g, "-")}` })),
+            ...(apiManifest?.tags || []).map((t) => ({
+              depth: 2,
+              text: t.name,
+              id: t.name.toLowerCase().replace(/\s+/g, "-"),
+            })),
+            ...(asyncApiManifest?.tags || []).map((t) => ({
+              depth: 2,
+              text: t.name,
+              id: `async-${t.name.toLowerCase().replace(/\s+/g, "-")}`,
+            })),
           ];
           return `
             export const isApiReference = true;
@@ -727,7 +887,9 @@ export default { ${exportNames.join(", ")} };
         }
 
         const route = routes.find((r) => r.id === pageId);
-        if (!route) return `export default null;`;
+        if (!route) {
+          return "export default null;";
+        }
 
         if (route.isMdx) {
           // TOM-8: MDX pages — emit virtual module that re-exports from the real file.
@@ -741,7 +903,9 @@ export default { ${exportNames.join(", ")} };
 
         // Regular .md pages — return processed HTML
         const page = await getPage(pageId);
-        if (!page) return `export default null;`;
+        if (!page) {
+          return "export default null;";
+        }
 
         // TOM-49: Changelog page type — also export parsed changelog entries
         if (route.frontmatter.type === "changelog") {
@@ -764,8 +928,9 @@ export default { ${exportNames.join(", ")} };
     // Generate MCP manifest + analytics injection at build time
     async generateBundle(_outputOptions, bundle) {
       // Run buildStart hook for Tome plugins
-      const tomePluginsForBuild: TomePlugin[] = (config as any).tomePlugins || [];
-      await runPluginHookAsync(tomePluginsForBuild, 'buildStart');
+      const tomePluginsForBuild: TomePlugin[] =
+        (config as any).tomePlugins || [];
+      await runPluginHookAsync(tomePluginsForBuild, "buildStart");
 
       // TOM-24: Analytics injection moved to transformIndexHtml
 
@@ -776,7 +941,7 @@ export default { ${exportNames.join(", ")} };
           version: "1.0.0",
           pages: await Promise.all(
             routes
-              .filter((r) => !r.frontmatter.hidden && !r.frontmatter.draft)
+              .filter((r) => !(r.frontmatter.hidden || r.frontmatter.draft))
               .filter((r) => r.filePath !== "__api-reference__")
               .filter((r) => !config.mcp?.excludePages?.includes(r.id))
               .map(async (r) => {
@@ -787,9 +952,9 @@ export default { ${exportNames.join(", ")} };
                   description: r.frontmatter.description || "",
                   headings: page?.headings.map((h) => h.text) || [],
                   tags: r.frontmatter.tags || [],
-                  ...(config.mcp?.includeContent !== false
-                    ? { content: page?.raw || "" }
-                    : {}),
+                  ...(config.mcp?.includeContent === false
+                    ? {}
+                    : { content: page?.raw || "" }),
                 };
               })
           ),
@@ -804,20 +969,26 @@ export default { ${exportNames.join(", ")} };
 
       // ── llms.txt generation ─────────────────────────────────
       // In production builds (generateBundle), always filter out drafts
-      const visibleRoutes = routes.filter((r) => !r.frontmatter.hidden && !r.frontmatter.draft);
+      const visibleRoutes = routes.filter(
+        (r) => !(r.frontmatter.hidden || r.frontmatter.draft)
+      );
       const baseUrl = config.baseUrl || "";
 
       // llms.txt — page index with titles, descriptions, URLs
       const llmsTxtLines = [
         `# ${config.name}`,
         "",
-        config.branding?.powered !== false
-          ? "> Documentation site powered by Tome"
-          : `> ${config.name} documentation`,
+        config.branding?.powered === false
+          ? `> ${config.name} documentation`
+          : "> Documentation site powered by Tome",
         "",
         ...visibleRoutes.map((r) => {
-          const url = baseUrl ? `${baseUrl.replace(/\/$/, "")}${r.urlPath}` : r.urlPath;
-          const desc = r.frontmatter.description ? ` - ${r.frontmatter.description}` : "";
+          const url = baseUrl
+            ? `${baseUrl.replace(/\/$/, "")}${r.urlPath}`
+            : r.urlPath;
+          const desc = r.frontmatter.description
+            ? ` - ${r.frontmatter.description}`
+            : "";
           return `- [${r.frontmatter.title}](${url})${desc}`;
         }),
       ];
@@ -831,7 +1002,9 @@ export default { ${exportNames.join(", ")} };
       // llms-full.txt — full raw markdown of all non-hidden pages
       const fullParts: string[] = [`# ${config.name}\n`];
       for (const r of visibleRoutes) {
-        if (r.isMdx || r.filePath === "__api-reference__") continue;
+        if (r.isMdx || r.filePath === "__api-reference__") {
+          continue;
+        }
         try {
           const page = await getPage(r.id);
           if (page?.raw) {
@@ -848,13 +1021,18 @@ export default { ${exportNames.join(", ")} };
 
       // ── Per-page .md files for content negotiation ────────
       for (const r of visibleRoutes) {
-        if (r.filePath === "__api-reference__") continue;
+        if (r.filePath === "__api-reference__") {
+          continue;
+        }
         try {
           const page = await getPage(r.id);
           const rawContent = page?.raw;
           if (rawContent) {
             // Emit as {urlPath}.md (strip leading slash)
-            const mdPath = r.urlPath === "/" ? "index.md" : `${r.urlPath.replace(/^\//, "")}.md`;
+            const mdPath =
+              r.urlPath === "/"
+                ? "index.md"
+                : `${r.urlPath.replace(/^\//, "")}.md`;
             this.emitFile({
               type: "asset",
               fileName: mdPath,
@@ -864,7 +1042,10 @@ export default { ${exportNames.join(", ")} };
             // For MDX files, read raw source and emit
             try {
               const rawMdx = readFileSync(r.absolutePath, "utf-8");
-              const mdPath = r.urlPath === "/" ? "index.md" : `${r.urlPath.replace(/^\//, "")}.md`;
+              const mdPath =
+                r.urlPath === "/"
+                  ? "index.md"
+                  : `${r.urlPath.replace(/^\//, "")}.md`;
               this.emitFile({
                 type: "asset",
                 fileName: mdPath,
@@ -891,7 +1072,9 @@ export default { ${exportNames.join(", ")} };
 
       if (allRedirects.length > 0) {
         // _redirects file (Netlify/Vercel/Cloudflare-compatible)
-        const redirectLines = allRedirects.map((r) => `${r.from}  ${r.to}  301`);
+        const redirectLines = allRedirects.map(
+          (r) => `${r.from}  ${r.to}  301`
+        );
         this.emitFile({
           type: "asset",
           fileName: "_redirects",
@@ -932,10 +1115,16 @@ export default { ${exportNames.join(", ")} };
       }
 
       for (const route of routes) {
-        if (route.frontmatter.hidden || route.frontmatter.draft) continue;
-        if (route.filePath === "__api-reference__") continue;
+        if (route.frontmatter.hidden || route.frontmatter.draft) {
+          continue;
+        }
+        if (route.filePath === "__api-reference__") {
+          continue;
+        }
         // Skip root index — Vite already generates it
-        if (route.urlPath === "/" || route.urlPath === "") continue;
+        if (route.urlPath === "/" || route.urlPath === "") {
+          continue;
+        }
 
         const title = route.frontmatter.title || "Untitled";
         const description = route.frontmatter.description || "";
@@ -955,23 +1144,31 @@ export default { ${exportNames.join(", ")} };
 
         // Build the HTML shell
         const htmlParts = [
-          `<!DOCTYPE html>`,
+          "<!DOCTYPE html>",
           `<html lang="en">`,
-          `<head>`,
+          "<head>",
           `<meta charset="utf-8">`,
           `<meta name="viewport" content="width=device-width, initial-scale=1.0">`,
           `<title>${title} | ${config.name}</title>`,
-          description ? `<meta name="description" content="${description.replace(/"/g, "&quot;")}">` : "",
+          description
+            ? `<meta name="description" content="${description.replace(/"/g, "&quot;")}">`
+            : "",
           `<link rel="canonical" href="${canonical}">`,
           entryCss ? `<link rel="stylesheet" href="${bp}/${entryCss}">` : "",
-          entryJs ? `<script type="module" src="${bp}/${entryJs}"></script>` : "",
-          `</head>`,
-          `<body>`,
+          entryJs
+            ? `<script type="module" src="${bp}/${entryJs}"></script>`
+            : "",
+          "</head>",
+          "<body>",
           `<div id="tome-root"></div>`,
-          textContent ? `<div data-pagefind-body style="display:none"><h1>${title}</h1>\n${textContent}</div>` : "",
-          `</body>`,
-          `</html>`,
-        ].filter(Boolean).join("\n");
+          textContent
+            ? `<div data-pagefind-body style="display:none"><h1>${title}</h1>\n${textContent}</div>`
+            : "",
+          "</body>",
+          "</html>",
+        ]
+          .filter(Boolean)
+          .join("\n");
 
         // Emit at urlPath as directory index (e.g., "quickstart/index.html")
         const filePath = route.urlPath.replace(/^\//, "");
@@ -992,12 +1189,15 @@ export default { ${exportNames.join(", ")} };
         "@type": "WebSite",
         name: config.name,
         url: siteUrl || undefined,
-        description: config.branding?.powered !== false
-          ? `Documentation site powered by Tome`
-          : `Documentation for ${config.name}`,
+        description:
+          config.branding?.powered === false
+            ? `Documentation for ${config.name}`
+            : "Documentation site powered by Tome",
         potentialAction: {
           "@type": "SearchAction",
-          target: siteUrl ? `${siteUrl}/search?q={search_term_string}` : undefined,
+          target: siteUrl
+            ? `${siteUrl}/search?q={search_term_string}`
+            : undefined,
           "query-input": "required name=search_term_string",
         },
       };
@@ -1013,7 +1213,11 @@ export default { ${exportNames.join(", ")} };
           // Determine page-specific schema based on route match
           const routeMatch = routes.find((r) => {
             const routeFile = r.urlPath.replace(/^\//, "");
-            return fileName === `${routeFile}/index.html` || (fileName === "index.html" && (r.urlPath === "/" || r.urlPath === ""));
+            return (
+              fileName === `${routeFile}/index.html` ||
+              (fileName === "index.html" &&
+                (r.urlPath === "/" || r.urlPath === ""))
+            );
           });
 
           const schemas: any[] = [];
@@ -1023,7 +1227,9 @@ export default { ${exportNames.join(", ")} };
           }
 
           if (routeMatch) {
-            const articleUrl = siteUrl ? `${siteUrl}${routeMatch.urlPath}` : routeMatch.urlPath;
+            const articleUrl = siteUrl
+              ? `${siteUrl}${routeMatch.urlPath}`
+              : routeMatch.urlPath;
             schemas.push({
               "@context": "https://schema.org",
               "@type": "TechArticle",
@@ -1040,9 +1246,15 @@ export default { ${exportNames.join(", ")} };
 
           if (schemas.length > 0) {
             const jsonLdTags = schemas
-              .map((s) => `<script type="application/ld+json">${JSON.stringify(s)}</script>`)
+              .map(
+                (s) =>
+                  `<script type="application/ld+json">${JSON.stringify(s)}</script>`
+              )
               .join("\n");
-            chunk.source = chunk.source.replace("</head>", `${jsonLdTags}\n</head>`);
+            chunk.source = chunk.source.replace(
+              "</head>",
+              `${jsonLdTags}\n</head>`
+            );
           }
         }
       }
@@ -1052,7 +1264,7 @@ export default { ${exportNames.join(", ")} };
       const skillParts: string[] = [
         `# ${config.name}`,
         "",
-        `> Documentation site powered by [Tome](https://tome.dev)`,
+        "> Documentation site powered by [Tome](https://tome.dev)",
         "",
         "## Overview",
         "",
@@ -1075,7 +1287,9 @@ export default { ${exportNames.join(", ")} };
         "",
         ...visibleRoutes.map((r) => {
           const url = siteUrl ? `${siteUrl}${r.urlPath}` : r.urlPath;
-          const desc = r.frontmatter.description ? ` — ${r.frontmatter.description}` : "";
+          const desc = r.frontmatter.description
+            ? ` — ${r.frontmatter.description}`
+            : "";
           return `- **[${r.frontmatter.title}](${url})**${desc}`;
         }),
         "",
@@ -1091,10 +1305,20 @@ export default { ${exportNames.join(", ")} };
         "### Capabilities",
         "",
         `- **Search provider**: ${config.search?.provider || "local (Pagefind)"}`,
-        ...(config.api ? [`- **API reference**: Available at /api-reference`] : []),
-        ...(config.ai?.enabled ? [`- **AI chat**: Built-in AI assistant available`] : []),
-        ...(config.versioning ? [`- **Versioned docs**: ${config.versioning.versions.join(", ")} (current: ${config.versioning.current})`] : []),
-        ...(config.i18n && config.i18n.locales.length > 1 ? [`- **Internationalization**: ${config.i18n.locales.join(", ")}`] : []),
+        ...(config.api
+          ? ["- **API reference**: Available at /api-reference"]
+          : []),
+        ...(config.ai?.enabled
+          ? ["- **AI chat**: Built-in AI assistant available"]
+          : []),
+        ...(config.versioning
+          ? [
+              `- **Versioned docs**: ${config.versioning.versions.join(", ")} (current: ${config.versioning.current})`,
+            ]
+          : []),
+        ...(config.i18n && config.i18n.locales.length > 1
+          ? [`- **Internationalization**: ${config.i18n.locales.join(", ")}`]
+          : []),
         "",
       ];
 
@@ -1178,7 +1402,9 @@ export default { ${exportNames.join(", ")} };
                 const page = await getPage(r.id);
                 if (page) {
                   headings = page.headings.map((h) => h.text);
-                  wordCount = (page.raw || "").split(/\s+/).filter(Boolean).length;
+                  wordCount = (page.raw || "")
+                    .split(/\s+/)
+                    .filter(Boolean).length;
                 }
               } catch {}
             }
@@ -1203,8 +1429,9 @@ export default { ${exportNames.join(", ")} };
       });
 
       // Run buildEnd hook for Tome plugins
-      const outputDir = typeof _outputOptions?.dir === 'string' ? _outputOptions.dir : 'dist';
-      await runPluginHookAsync(tomePluginsForBuild, 'buildEnd', outputDir);
+      const outputDir =
+        typeof _outputOptions?.dir === "string" ? _outputOptions.dir : "dist";
+      await runPluginHookAsync(tomePluginsForBuild, "buildEnd", outputDir);
     },
   };
 
@@ -1219,15 +1446,24 @@ export default { ${exportNames.join(", ")} };
     // We wrap the plugin so it reads config lazily at transform time
     // (config is assigned in configResolved, after plugin construction).
     const lazySandbox = () => (tree: any, file: any) => {
-      if (!(config as any)?.sandbox?.enabled) return;
-      return recmaSandbox({ allowedExpressions: (config as any).sandbox.allowedExpressions ?? [] })(tree, file);
+      if (!(config as any)?.sandbox?.enabled) {
+        return;
+      }
+      return recmaSandbox({
+        allowedExpressions: (config as any).sandbox.allowedExpressions ?? [],
+      })(tree, file);
     };
     const recmaPlugins: any[] = [[lazySandbox]];
 
     // Remark plugin: transform ```mermaid code blocks into JSX placeholder divs
     // so the client-side mermaid renderer in entry.tsx can pick them up.
     // Uses mdxJsxFlowElement (native MDX AST node) — no rehype-raw needed.
-    const walkTree = (node: any, fn: (n: any, i: number, parent: any) => void, parent?: any, index?: number) => {
+    const walkTree = (
+      node: any,
+      fn: (n: any, i: number, parent: any) => void,
+      parent?: any,
+      index?: number
+    ) => {
       fn(node, index ?? 0, parent);
       if (node.children) {
         for (let i = 0; i < node.children.length; i++) {
@@ -1237,13 +1473,24 @@ export default { ${exportNames.join(", ")} };
     };
     const remarkMermaid = () => (tree: any) => {
       walkTree(tree, (node: any, index: number, parent: any) => {
-        if (node.type === "code" && node.lang === "mermaid" && parent && typeof index === "number") {
-          const encoded = Buffer.from((node.value || "").trim()).toString("base64");
+        if (
+          node.type === "code" &&
+          node.lang === "mermaid" &&
+          parent &&
+          typeof index === "number"
+        ) {
+          const encoded = Buffer.from((node.value || "").trim()).toString(
+            "base64"
+          );
           parent.children[index] = {
             type: "mdxJsxFlowElement",
             name: "div",
             attributes: [
-              { type: "mdxJsxAttribute", name: "className", value: "tome-mermaid" },
+              {
+                type: "mdxJsxAttribute",
+                name: "className",
+                value: "tome-mermaid",
+              },
               { type: "mdxJsxAttribute", name: "data-mermaid", value: encoded },
             ],
             children: [],
@@ -1258,15 +1505,23 @@ export default { ${exportNames.join(", ")} };
     // Instead, emit placeholder elements that entry.tsx renders with KaTeX CDN.
     const remarkMathToJsx = () => (tree: any) => {
       walkTree(tree, (node: any, index: number, parent: any) => {
-        if (!parent || typeof index !== "number") return;
+        if (!parent || typeof index !== "number") {
+          return;
+        }
         // Block math: ```math or $$ fenced
         if (node.type === "code" && node.lang === "math") {
-          const encoded = Buffer.from((node.value || "").trim()).toString("base64");
+          const encoded = Buffer.from((node.value || "").trim()).toString(
+            "base64"
+          );
           parent.children[index] = {
             type: "mdxJsxFlowElement",
             name: "div",
             attributes: [
-              { type: "mdxJsxAttribute", name: "className", value: "tome-math tome-math-block" },
+              {
+                type: "mdxJsxAttribute",
+                name: "className",
+                value: "tome-math tome-math-block",
+              },
               { type: "mdxJsxAttribute", name: "data-math", value: encoded },
             ],
             children: [],
@@ -1277,7 +1532,12 @@ export default { ${exportNames.join(", ")} };
     };
 
     // Build remark/rehype plugin arrays
-    const remarkPlugins: any[] = [remarkGfm, [remarkFrontmatter, ["yaml"]], remarkMermaid, remarkMathToJsx];
+    const remarkPlugins: any[] = [
+      remarkGfm,
+      [remarkFrontmatter, ["yaml"]],
+      remarkMermaid,
+      remarkMathToJsx,
+    ];
     const rehypePlugins: any[] = [];
 
     mdxPlugin = createMdxPlugin({

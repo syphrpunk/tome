@@ -9,17 +9,17 @@ import { join, relative } from "path";
 export interface DeployConfig {
   /** Tome Cloud API endpoint */
   apiUrl: string;
-  /** Auth token from ~/.tome/config */
-  token: string;
   /** Project slug (derived from config name) */
   slug: string;
+  /** Auth token from ~/.tome/config */
+  token: string;
 }
 
 export interface DeployResult {
-  url: string;
   deploymentId: string;
-  size: number;
   fileCount: number;
+  size: number;
+  url: string;
 }
 
 // ── AUTH ─────────────────────────────────────────────────
@@ -33,12 +33,16 @@ function defaultConfigDir(): string {
  */
 export function readAuthToken(configDir?: string): string | null {
   // CI/CD: check TOME_TOKEN env var first (for GitHub Actions, GitLab CI, etc.)
-  if (process.env.TOME_TOKEN) return process.env.TOME_TOKEN;
+  if (process.env.TOME_TOKEN) {
+    return process.env.TOME_TOKEN;
+  }
 
   try {
     const dir = configDir ?? defaultConfigDir();
     const configFile = join(dir, "config");
-    if (!existsSync(configFile)) return null;
+    if (!existsSync(configFile)) {
+      return null;
+    }
     const raw = readFileSync(configFile, "utf-8");
     const parsed = JSON.parse(raw);
     return typeof parsed.token === "string" ? parsed.token : null;
@@ -50,7 +54,10 @@ export function readAuthToken(configDir?: string): string | null {
 /**
  * Save auth token to ~/.tome/config (or a custom configDir for testing)
  */
-export async function saveAuthToken(token: string, configDir?: string): Promise<void> {
+export async function saveAuthToken(
+  token: string,
+  configDir?: string
+): Promise<void> {
   const dir = configDir ?? defaultConfigDir();
   const configFile = join(dir, "config");
   mkdirSync(dir, { recursive: true });
@@ -62,7 +69,10 @@ export async function saveAuthToken(token: string, configDir?: string): Promise<
 /**
  * Recursively walk a directory and collect all files.
  */
-async function walkDir(dir: string, base: string): Promise<Map<string, Buffer>> {
+async function walkDir(
+  dir: string,
+  base: string
+): Promise<Map<string, Buffer>> {
   const files = new Map<string, Buffer>();
 
   let entries: string[];
@@ -95,7 +105,9 @@ async function walkDir(dir: string, base: string): Promise<Map<string, Buffer>> 
  * Collect files from the build output directory.
  * Returns a map of relative paths to file contents (as Buffers).
  */
-export async function collectBuildFiles(outDir: string): Promise<Map<string, Buffer>> {
+export async function collectBuildFiles(
+  outDir: string
+): Promise<Map<string, Buffer>> {
   if (!existsSync(outDir)) {
     return new Map();
   }
@@ -108,7 +120,9 @@ export async function collectBuildFiles(outDir: string): Promise<Map<string, Buf
  * Compute content hashes for diff-based uploads.
  * Returns a map of relative file paths to their SHA-256 hex digests.
  */
-export function computeFileHashes(files: Map<string, Buffer>): Map<string, string> {
+export function computeFileHashes(
+  files: Map<string, Buffer>
+): Map<string, string> {
   const hashes = new Map<string, string>();
 
   for (const [path, content] of files) {
@@ -126,13 +140,18 @@ export function computeFileHashes(files: Map<string, Buffer>): Map<string, strin
  * Uses incremental uploads: sends file manifest (hashes),
  * server responds with which files need uploading.
  */
-export async function deployToCloud(config: DeployConfig, outDir: string): Promise<DeployResult> {
+export async function deployToCloud(
+  config: DeployConfig,
+  outDir: string
+): Promise<DeployResult> {
   // Collect files
   console.log("  Collecting files...");
   const files = await collectBuildFiles(outDir);
 
   if (files.size === 0) {
-    throw new Error(`No files found in output directory: ${outDir}\nRun "tome build" first.`);
+    throw new Error(
+      `No files found in output directory: ${outDir}\nRun "tome build" first.`
+    );
   }
 
   // Compute hashes for diff-based upload
@@ -162,7 +181,9 @@ export async function deployToCloud(config: DeployConfig, outDir: string): Promi
   });
 
   if (!startRes.ok) {
-    const err = await startRes.json().catch(() => ({ error: startRes.statusText }));
+    const err = await startRes
+      .json()
+      .catch(() => ({ error: startRes.statusText }));
     throw new Error(`Deploy failed: ${(err as { error: string }).error}`);
   }
 
@@ -182,7 +203,9 @@ export async function deployToCloud(config: DeployConfig, outDir: string): Promi
     console.log(`  Uploading ${needed.length} files...`);
     for (const filePath of needed) {
       const content = files.get(filePath);
-      if (!content) continue;
+      if (!content) {
+        continue;
+      }
 
       const uploadRes = await fetch(`${config.apiUrl}/api/deploy/upload`, {
         method: "POST",
@@ -197,8 +220,12 @@ export async function deployToCloud(config: DeployConfig, outDir: string): Promi
       });
 
       if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({ error: uploadRes.statusText }));
-        throw new Error(`Upload failed for ${filePath}: ${(err as { error: string }).error}`);
+        const err = await uploadRes
+          .json()
+          .catch(() => ({ error: uploadRes.statusText }));
+        throw new Error(
+          `Upload failed for ${filePath}: ${(err as { error: string }).error}`
+        );
       }
     }
   }
@@ -215,11 +242,16 @@ export async function deployToCloud(config: DeployConfig, outDir: string): Promi
   });
 
   if (!finalizeRes.ok) {
-    const err = await finalizeRes.json().catch(() => ({ error: finalizeRes.statusText }));
+    const err = await finalizeRes
+      .json()
+      .catch(() => ({ error: finalizeRes.statusText }));
     throw new Error(`Finalize failed: ${(err as { error: string }).error}`);
   }
 
-  const result = (await finalizeRes.json()) as { url: string; deploymentId: string };
+  const result = (await finalizeRes.json()) as {
+    url: string;
+    deploymentId: string;
+  };
 
   console.log("  Deploy complete!");
 

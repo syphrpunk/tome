@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App.js";
 
 // ── Helpers ────────────────────────────────────────────────
@@ -22,7 +22,7 @@ const mockProjects = [
     deployStatus: "live",
     lastDeployAt: new Date().toISOString(),
     fileCount: 12,
-    totalSize: 51200,
+    totalSize: 51_200,
     url: "https://my-docs.tome.center",
     createdAt: "2026-01-01T00:00:00Z",
   },
@@ -33,7 +33,7 @@ const mockDeployments = [
     id: "dep-1-full-uuid",
     status: "live",
     fileCount: 12,
-    totalSize: 51200,
+    totalSize: 51_200,
     createdAt: "2026-03-09T10:00:00Z",
     finalizedAt: "2026-03-09T10:01:00Z",
     url: "https://my-docs.tome.center",
@@ -41,8 +41,16 @@ const mockDeployments = [
 ];
 
 const mockProviders = [
-  { id: "github", name: "GitHub", authorizeUrl: "https://github.com/login/oauth/authorize?test=1" },
-  { id: "google", name: "Google", authorizeUrl: "https://accounts.google.com/o/oauth2/auth?test=1" },
+  {
+    id: "github",
+    name: "GitHub",
+    authorizeUrl: "https://github.com/login/oauth/authorize?test=1",
+  },
+  {
+    id: "google",
+    name: "Google",
+    authorizeUrl: "https://accounts.google.com/o/oauth2/auth?test=1",
+  },
 ];
 
 function mockFetch(overrides: Record<string, unknown> = {}) {
@@ -51,37 +59,75 @@ function mockFetch(overrides: Record<string, unknown> = {}) {
     const method = opts?.method ?? "GET";
 
     if (method === "GET" && path === "/api/auth/providers") {
-      return Response.json({ providers: overrides.providers ?? mockProviders, emailEnabled: false });
+      return Response.json({
+        providers: overrides.providers ?? mockProviders,
+        emailEnabled: false,
+      });
     }
     if (method === "POST" && path === "/api/auth/oauth/callback") {
-      return Response.json({ token: "tome_test123", userId: "user-1", email: "test@example.com" });
+      return Response.json({
+        token: "tome_test123",
+        userId: "user-1",
+        email: "test@example.com",
+      });
     }
     if (method === "GET" && path === "/api/auth/me") {
-      if (overrides.authFail) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+      if (overrides.authFail) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+        });
+      }
       return Response.json(mockUser);
     }
     if (method === "GET" && path === "/api/deploy/projects") {
       return Response.json(overrides.projects ?? mockProjects);
     }
-    if (method === "GET" && path.match(/\/api\/deploy\/projects\/[\w-]+\/deployments/)) {
+    if (
+      method === "GET" &&
+      path.match(/\/api\/deploy\/projects\/[\w-]+\/deployments/)
+    ) {
       return Response.json(overrides.deployments ?? mockDeployments);
     }
-    if (method === "GET" && (path === "/api/domains" || path === "/api/domains/")) {
+    if (
+      method === "GET" &&
+      (path === "/api/domains" || path === "/api/domains/")
+    ) {
       return Response.json(overrides.domains ?? []);
     }
-    if (method === "POST" && (path === "/api/domains" || path === "/api/domains/")) {
-      return Response.json({ domain: "docs.example.com", verified: false, sslStatus: "pending", dnsRecords: [] });
+    if (
+      method === "POST" &&
+      (path === "/api/domains" || path === "/api/domains/")
+    ) {
+      return Response.json({
+        domain: "docs.example.com",
+        verified: false,
+        sslStatus: "pending",
+        dnsRecords: [],
+      });
     }
     if (method === "GET" && path === "/api/analytics/summary") {
-      return Response.json(overrides.analytics ?? { totalPageViews: 0, uniqueVisitors: 0, topPages: [], topReferrers: [], viewsByDay: [] });
+      return Response.json(
+        overrides.analytics ?? {
+          totalPageViews: 0,
+          uniqueVisitors: 0,
+          topPages: [],
+          topReferrers: [],
+          viewsByDay: [],
+        }
+      );
     }
     if (method === "POST" && path === "/api/billing/checkout") {
-      return Response.json({ url: "https://checkout.stripe.com/test", sessionId: "cs_test" });
+      return Response.json({
+        url: "https://checkout.stripe.com/test",
+        sessionId: "cs_test",
+      });
     }
     if (method === "POST" && path === "/api/billing/portal") {
       return Response.json({ url: "https://billing.stripe.com/test" });
     }
-    return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+    return new Response(JSON.stringify({ error: "Not found" }), {
+      status: 404,
+    });
   }) as typeof fetch;
 }
 
@@ -116,7 +162,9 @@ describe("Login", () => {
     const slowFetch = vi.fn((url: string) => {
       const path = new URL(url).pathname;
       if (path === "/api/auth/providers") {
-        return new Promise<Response>((r) => { resolveProviders = r; });
+        return new Promise<Response>((r) => {
+          resolveProviders = r;
+        });
       }
       return mockFetch()(url);
     }) as typeof fetch;
@@ -127,14 +175,18 @@ describe("Login", () => {
       expect(screen.getByText("Loading…")).toBeInTheDocument();
     });
 
-    resolveProviders!(Response.json({ providers: mockProviders, emailEnabled: false }));
+    resolveProviders!(
+      Response.json({ providers: mockProviders, emailEnabled: false })
+    );
   });
 
   it("shows fallback when no providers available", async () => {
     vi.stubGlobal("fetch", mockFetch({ providers: [] }));
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText(/No sign-in providers available/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/No sign-in providers available/)
+      ).toBeInTheDocument();
     });
   });
 
@@ -223,15 +275,18 @@ describe("Project Detail", () => {
   });
 
   it("renders analytics summary when data exists", async () => {
-    vi.stubGlobal("fetch", mockFetch({
-      analytics: {
-        totalPageViews: 1500,
-        uniqueVisitors: 320,
-        topPages: [{ url: "/docs/api", views: 500 }],
-        topReferrers: [],
-        viewsByDay: [],
-      },
-    }));
+    vi.stubGlobal(
+      "fetch",
+      mockFetch({
+        analytics: {
+          totalPageViews: 1500,
+          uniqueVisitors: 320,
+          topPages: [{ url: "/docs/api", views: 500 }],
+          topReferrers: [],
+          viewsByDay: [],
+        },
+      })
+    );
     render(<App />);
     await waitFor(() => {
       expect(screen.getByText("1,500")).toBeInTheDocument();
@@ -241,14 +296,26 @@ describe("Project Detail", () => {
   });
 
   it("renders domain management section", async () => {
-    vi.stubGlobal("fetch", mockFetch({
-      domains: [{
-        domain: "docs.acme.io",
-        verified: true,
-        sslStatus: "active",
-        dnsRecords: [{ type: "CNAME", name: "docs", value: "my-docs.tome.center", verified: true }],
-      }],
-    }));
+    vi.stubGlobal(
+      "fetch",
+      mockFetch({
+        domains: [
+          {
+            domain: "docs.acme.io",
+            verified: true,
+            sslStatus: "active",
+            dnsRecords: [
+              {
+                type: "CNAME",
+                name: "docs",
+                value: "my-docs.tome.center",
+                verified: true,
+              },
+            ],
+          },
+        ],
+      })
+    );
     render(<App />);
     await waitFor(() => {
       expect(screen.getByText("docs.acme.io")).toBeInTheDocument();

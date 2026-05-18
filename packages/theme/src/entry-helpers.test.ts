@@ -1,12 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   computeEditUrl,
-  resolveInitialPageId,
-  loadPage,
   detectCurrentVersion,
-  PageNotFoundError,
-  PageLoadError,
+  loadPage,
   NavigationCancelledError,
+  PageLoadError,
+  PageNotFoundError,
+  resolveInitialPageId,
 } from "./entry-helpers.js";
 import type { MinimalRoute } from "./routing.js";
 
@@ -20,12 +20,21 @@ const routes: MinimalRoute[] = [
   { id: "v1/guides/migration", urlPath: "/v1/guides/migration" },
 ];
 
-function stubPathnameToPageId(pathname: string, basePath: string, rts: MinimalRoute[]): string | null {
+function stubPathnameToPageId(
+  pathname: string,
+  basePath: string,
+  rts: MinimalRoute[]
+): string | null {
   let relative = pathname;
   if (basePath && relative.startsWith(basePath)) {
     relative = relative.slice(basePath.length);
   }
-  const id = relative.replace(/^\//, "").replace(/\/index\.html$/, "").replace(/\.html$/, "").replace(/\/$/, "") || "index";
+  const id =
+    relative
+      .replace(/^\//, "")
+      .replace(/\/index\.html$/, "")
+      .replace(/\.html$/, "")
+      .replace(/\/$/, "") || "index";
   return rts.find((r) => r.id === id) ? id : null;
 }
 
@@ -46,30 +55,49 @@ describe("computeEditUrl", () => {
 
   it("builds URL with default branch (main)", () => {
     const url = computeEditUrl({ repo: "acme/docs" }, "docs/quickstart.md");
-    expect(url).toBe("https://github.com/acme/docs/edit/main/docs/quickstart.md");
+    expect(url).toBe(
+      "https://github.com/acme/docs/edit/main/docs/quickstart.md"
+    );
   });
 
   it("uses custom branch", () => {
-    const url = computeEditUrl({ repo: "acme/docs", branch: "develop" }, "docs/quickstart.md");
-    expect(url).toBe("https://github.com/acme/docs/edit/develop/docs/quickstart.md");
+    const url = computeEditUrl(
+      { repo: "acme/docs", branch: "develop" },
+      "docs/quickstart.md"
+    );
+    expect(url).toBe(
+      "https://github.com/acme/docs/edit/develop/docs/quickstart.md"
+    );
   });
 
   it("uses custom dir prefix", () => {
-    const url = computeEditUrl({ repo: "acme/docs", dir: "website" }, "quickstart.md");
-    expect(url).toBe("https://github.com/acme/docs/edit/main/website/quickstart.md");
+    const url = computeEditUrl(
+      { repo: "acme/docs", dir: "website" },
+      "quickstart.md"
+    );
+    expect(url).toBe(
+      "https://github.com/acme/docs/edit/main/website/quickstart.md"
+    );
   });
 
   it("strips trailing slash from dir", () => {
-    const url = computeEditUrl({ repo: "acme/docs", dir: "website/" }, "quickstart.md");
-    expect(url).toBe("https://github.com/acme/docs/edit/main/website/quickstart.md");
+    const url = computeEditUrl(
+      { repo: "acme/docs", dir: "website/" },
+      "quickstart.md"
+    );
+    expect(url).toBe(
+      "https://github.com/acme/docs/edit/main/website/quickstart.md"
+    );
   });
 
   it("uses custom branch and dir together", () => {
     const url = computeEditUrl(
       { repo: "org/repo", branch: "v2", dir: "packages/docs" },
-      "guides/search.md",
+      "guides/search.md"
     );
-    expect(url).toBe("https://github.com/org/repo/edit/v2/packages/docs/guides/search.md");
+    expect(url).toBe(
+      "https://github.com/org/repo/edit/v2/packages/docs/guides/search.md"
+    );
   });
 
   it("handles empty dir string", () => {
@@ -78,8 +106,13 @@ describe("computeEditUrl", () => {
   });
 
   it("handles nested file paths", () => {
-    const url = computeEditUrl({ repo: "org/repo" }, "docs/v1/guides/migration.md");
-    expect(url).toBe("https://github.com/org/repo/edit/main/docs/v1/guides/migration.md");
+    const url = computeEditUrl(
+      { repo: "org/repo" },
+      "docs/v1/guides/migration.md"
+    );
+    expect(url).toBe(
+      "https://github.com/org/repo/edit/main/docs/v1/guides/migration.md"
+    );
   });
 });
 
@@ -87,67 +120,139 @@ describe("computeEditUrl", () => {
 
 describe("resolveInitialPageId", () => {
   it("resolves from pathname when route exists", () => {
-    const id = resolveInitialPageId("/docs/quickstart", "", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/docs/quickstart",
+      "",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("quickstart");
   });
 
   it("resolves index from basePath root", () => {
-    const id = resolveInitialPageId("/docs/", "", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/docs/",
+      "",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("index");
   });
 
   it("resolves nested route from pathname", () => {
-    const id = resolveInitialPageId("/docs/guides/search", "", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/docs/guides/search",
+      "",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("guides/search");
   });
 
   it("falls back to hash for legacy URLs when pathname doesn't match", () => {
     // Pathname resolver returns null, so hash fallback triggers
     const noRouteResolver = () => null;
-    const id = resolveInitialPageId("/docs/", "#quickstart", routes, "/docs", noRouteResolver);
+    const id = resolveInitialPageId(
+      "/docs/",
+      "#quickstart",
+      routes,
+      "/docs",
+      noRouteResolver
+    );
     expect(id).toBe("quickstart");
   });
 
   it("falls back to hash with nested IDs when pathname fails", () => {
     // Pathname resolves to no known route, so hash fallback kicks in
     const noRouteResolver = () => null;
-    const id = resolveInitialPageId("/", "#guides/search", routes, "", noRouteResolver);
+    const id = resolveInitialPageId(
+      "/",
+      "#guides/search",
+      routes,
+      "",
+      noRouteResolver
+    );
     expect(id).toBe("guides/search");
   });
 
   it("returns first route ID when neither pathname nor hash match", () => {
-    const id = resolveInitialPageId("/unknown", "", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/unknown",
+      "",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("index");
   });
 
   it("returns 'index' when routes array is empty", () => {
-    const id = resolveInitialPageId("/unknown", "", [], "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/unknown",
+      "",
+      [],
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("index");
   });
 
   it("prefers pathname over hash when both match", () => {
-    const id = resolveInitialPageId("/docs/quickstart", "#guides/search", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/docs/quickstart",
+      "#guides/search",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("quickstart");
   });
 
   it("handles hash without # prefix", () => {
     // The real hash will always start with #, but the function handles both
-    const id = resolveInitialPageId("/unknown", "quickstart", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/unknown",
+      "quickstart",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("quickstart");
   });
 
   it("ignores hash that matches no route", () => {
-    const id = resolveInitialPageId("/unknown", "#nonexistent", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/unknown",
+      "#nonexistent",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("index");
   });
 
   it("works with empty basePath", () => {
-    const id = resolveInitialPageId("/quickstart", "", routes, "", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/quickstart",
+      "",
+      routes,
+      "",
+      stubPathnameToPageId
+    );
     expect(id).toBe("quickstart");
   });
 
   it("resolves versioned routes", () => {
-    const id = resolveInitialPageId("/docs/v1/guides/migration", "", routes, "/docs", stubPathnameToPageId);
+    const id = resolveInitialPageId(
+      "/docs/v1/guides/migration",
+      "",
+      routes,
+      "/docs",
+      stubPathnameToPageId
+    );
     expect(id).toBe("v1/guides/migration");
   });
 });
@@ -201,19 +306,31 @@ describe("loadPage", () => {
 
   it("throws PageNotFoundError when module has no default export", async () => {
     const mockLoader = vi.fn().mockResolvedValue({ default: null });
-    await expect(loadPage("quickstart", routesWithMeta, mockLoader)).rejects.toThrow(PageNotFoundError);
-    await expect(loadPage("quickstart", routesWithMeta, mockLoader)).rejects.toMatchObject({ code: "PAGE_NOT_FOUND" });
+    await expect(
+      loadPage("quickstart", routesWithMeta, mockLoader)
+    ).rejects.toThrow(PageNotFoundError);
+    await expect(
+      loadPage("quickstart", routesWithMeta, mockLoader)
+    ).rejects.toMatchObject({ code: "PAGE_NOT_FOUND" });
   });
 
   it("throws PageLoadError on loader error", async () => {
     const mockLoader = vi.fn().mockRejectedValue(new Error("Module not found"));
-    await expect(loadPage("quickstart", routesWithMeta, mockLoader)).rejects.toThrow(PageLoadError);
-    await expect(loadPage("quickstart", routesWithMeta, mockLoader)).rejects.toMatchObject({ code: "PAGE_LOAD_ERROR" });
+    await expect(
+      loadPage("quickstart", routesWithMeta, mockLoader)
+    ).rejects.toThrow(PageLoadError);
+    await expect(
+      loadPage("quickstart", routesWithMeta, mockLoader)
+    ).rejects.toMatchObject({ code: "PAGE_LOAD_ERROR" });
   });
 
   it("loads a changelog page with entries", async () => {
     const changelogEntries = [
-      { version: "1.0.0", date: "2025-01-01", sections: [{ type: "Added", items: ["Feature A"] }] },
+      {
+        version: "1.0.0",
+        date: "2025-01-01",
+        sections: [{ type: "Added", items: ["Feature A"] }],
+      },
     ];
     const mockLoader = vi.fn().mockResolvedValue({
       default: {
@@ -260,7 +377,11 @@ describe("loadPage", () => {
 
   it("handles page ID not in routes array", async () => {
     const mockLoader = vi.fn().mockResolvedValue({
-      default: { html: "<p>Found</p>", frontmatter: { title: "Found" }, headings: [] },
+      default: {
+        html: "<p>Found</p>",
+        frontmatter: { title: "Found" },
+        headings: [],
+      },
     });
     const page = await loadPage("unknown-page", routesWithMeta, mockLoader);
     expect(page).not.toBeNull();
@@ -284,7 +405,10 @@ describe("loadPage", () => {
       isApiReference: true,
       apiManifest,
     });
-    const apiRoutes = [...routesWithMeta, { id: "api-reference", urlPath: "/api", isMdx: false }];
+    const apiRoutes = [
+      ...routesWithMeta,
+      { id: "api-reference", urlPath: "/api", isMdx: false },
+    ];
     const page = await loadPage("api-reference", apiRoutes, mockLoader);
     expect(page).not.toBeNull();
     expect(page!.isMdx).toBe(false);
@@ -339,7 +463,10 @@ describe("loadPage", () => {
       isApiReference: true,
       apiManifest: { endpoints: [], tags: [], servers: [] },
     });
-    const apiRoutes = [...routesWithMeta, { id: "api-reference", urlPath: "/api", isMdx: false }];
+    const apiRoutes = [
+      ...routesWithMeta,
+      { id: "api-reference", urlPath: "/api", isMdx: false },
+    ];
     const page = await loadPage("api-reference", apiRoutes, mockLoader);
     expect(page!.headings).toEqual(headings);
   });
@@ -347,7 +474,11 @@ describe("loadPage", () => {
   it("does not treat non-MDX route as MDX even if mod.meta exists", async () => {
     // A markdown route shouldn't be treated as MDX even if the module has meta
     const mockLoader = vi.fn().mockResolvedValue({
-      default: { html: "<p>MD</p>", frontmatter: { title: "MD" }, headings: [] },
+      default: {
+        html: "<p>MD</p>",
+        frontmatter: { title: "MD" },
+        headings: [],
+      },
       meta: { frontmatter: { title: "MDX" }, headings: [] },
     });
     const page = await loadPage("quickstart", routesWithMeta, mockLoader);
@@ -360,7 +491,9 @@ describe("loadPage", () => {
 
 describe("detectCurrentVersion", () => {
   it("returns route version when present", () => {
-    expect(detectCurrentVersion({ version: "v1" }, { current: "v2" })).toBe("v1");
+    expect(detectCurrentVersion({ version: "v1" }, { current: "v2" })).toBe(
+      "v1"
+    );
   });
 
   it("falls back to versions.current when route has no version", () => {
@@ -380,20 +513,22 @@ describe("detectCurrentVersion", () => {
   });
 
   it("prefers route version over versions.current", () => {
-    expect(detectCurrentVersion({ version: "v3" }, { current: "v1" })).toBe("v3");
+    expect(detectCurrentVersion({ version: "v3" }, { current: "v1" })).toBe(
+      "v3"
+    );
   });
 
   it("returns undefined when route has no version and versions has no current", () => {
-    expect(detectCurrentVersion({ version: undefined }, { current: undefined })).toBeUndefined();
+    expect(
+      detectCurrentVersion({ version: undefined }, { current: undefined })
+    ).toBeUndefined();
   });
 });
 
 // ── Error type distinguishability ─────────────────────────
 
 describe("loadPage — distinguishable error types", () => {
-  const routesWithMeta = [
-    { id: "index", urlPath: "/", isMdx: false },
-  ];
+  const routesWithMeta = [{ id: "index", urlPath: "/", isMdx: false }];
 
   it("PageNotFoundError has code PAGE_NOT_FOUND", async () => {
     const mockLoader = vi.fn().mockResolvedValue({ default: null });

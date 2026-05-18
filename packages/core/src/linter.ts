@@ -14,28 +14,32 @@ export interface LintIssue {
   file: string;
   /** Line number (1-based) */
   line: number;
+  /** Human-readable message */
+  message: string;
   /** Rule that triggered the issue */
   rule: string;
   /** Severity level */
   severity: "error" | "warning" | "info";
-  /** Human-readable message */
-  message: string;
 }
 
 export interface LintResult {
-  /** Total issues found */
-  totalIssues: number;
   /** Issues grouped by severity */
   errors: number;
-  warnings: number;
   infos: number;
   /** All issues */
   issues: LintIssue[];
   /** Whether the lint passed (no errors) */
   ok: boolean;
+  /** Total issues found */
+  totalIssues: number;
+  warnings: number;
 }
 
 export interface LintRuleConfig {
+  /** Custom banned words */
+  bannedWords?: string[];
+  /** Check for empty links [text]() */
+  emptyLinks?: boolean;
   /** Check for headings that skip levels (e.g., h2 → h4) */
   headingIncrement?: boolean;
   /** Check for images missing alt text */
@@ -46,10 +50,6 @@ export interface LintRuleConfig {
   singleH1?: boolean;
   /** Check for trailing whitespace */
   trailingWhitespace?: boolean;
-  /** Check for empty links [text]() */
-  emptyLinks?: boolean;
-  /** Custom banned words */
-  bannedWords?: string[];
 }
 
 const DEFAULT_RULES: Required<LintRuleConfig> = {
@@ -108,7 +108,8 @@ function checkImageAltText(content: string, file: string): LintIssue[] {
         line: i + 1,
         rule: "image-alt-text",
         severity: "warning",
-        message: "Image is missing alt text. Add a description inside the brackets: ![description](url)",
+        message:
+          "Image is missing alt text. Add a description inside the brackets: ![description](url)",
       });
     }
 
@@ -120,7 +121,8 @@ function checkImageAltText(content: string, file: string): LintIssue[] {
         line: i + 1,
         rule: "image-alt-text",
         severity: "warning",
-        message: "HTML <img> is missing alt attribute. Add alt=\"description\" for accessibility.",
+        message:
+          'HTML <img> is missing alt attribute. Add alt="description" for accessibility.',
       });
     }
   }
@@ -131,8 +133,14 @@ function checkImageAltText(content: string, file: string): LintIssue[] {
 /**
  * Check for paragraphs that exceed the maximum word count.
  */
-function checkParagraphLength(content: string, file: string, maxWords: number): LintIssue[] {
-  if (maxWords <= 0) return [];
+function checkParagraphLength(
+  content: string,
+  file: string,
+  maxWords: number
+): LintIssue[] {
+  if (maxWords <= 0) {
+    return [];
+  }
 
   const issues: LintIssue[] = [];
   const lines = content.split("\n");
@@ -158,8 +166,14 @@ function checkParagraphLength(content: string, file: string, maxWords: number): 
     const trimmed = lines[i].trim();
 
     // Skip headings, code blocks, lists, etc.
-    if (trimmed.startsWith("#") || trimmed.startsWith("```") || trimmed.startsWith("- ") ||
-        trimmed.startsWith("* ") || trimmed.startsWith("> ") || trimmed.match(/^\d+\.\s/)) {
+    if (
+      trimmed.startsWith("#") ||
+      trimmed.startsWith("```") ||
+      trimmed.startsWith("- ") ||
+      trimmed.startsWith("* ") ||
+      trimmed.startsWith("> ") ||
+      trimmed.match(/^\d+\.\s/)
+    ) {
       flushParagraph();
       continue;
     }
@@ -167,7 +181,9 @@ function checkParagraphLength(content: string, file: string, maxWords: number): 
     if (trimmed === "") {
       flushParagraph();
     } else {
-      if (paragraphStart < 0) paragraphStart = i;
+      if (paragraphStart < 0) {
+        paragraphStart = i;
+      }
       paragraphWords.push(...trimmed.split(/\s+/).filter((w) => w.length > 0));
     }
   }
@@ -193,7 +209,8 @@ function checkSingleH1(content: string, file: string): LintIssue[] {
           line: i + 1,
           rule: "single-h1",
           severity: "warning",
-          message: "Multiple h1 headings found. A page should have only one h1 heading.",
+          message:
+            "Multiple h1 headings found. A page should have only one h1 heading.",
         });
       }
     }
@@ -229,12 +246,21 @@ function checkEmptyLinks(content: string, file: string): LintIssue[] {
 /**
  * Check for banned words.
  */
-function checkBannedWords(content: string, file: string, words: string[]): LintIssue[] {
-  if (words.length === 0) return [];
+function checkBannedWords(
+  content: string,
+  file: string,
+  words: string[]
+): LintIssue[] {
+  if (words.length === 0) {
+    return [];
+  }
 
   const issues: LintIssue[] = [];
   const lines = content.split("\n");
-  const pattern = new RegExp(`\\b(${words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join("|")})\\b`, "gi");
+  const pattern = new RegExp(
+    `\\b(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
+    "gi"
+  );
 
   for (let i = 0; i < lines.length; i++) {
     let match;
@@ -266,7 +292,9 @@ export function lintPages(
   const allIssues: LintIssue[] = [];
 
   for (const route of routes) {
-    if (route.filePath === "__api-reference__") continue;
+    if (route.filePath === "__api-reference__") {
+      continue;
+    }
 
     try {
       const source = readFileSync(route.absolutePath, "utf-8");
@@ -279,7 +307,13 @@ export function lintPages(
         allIssues.push(...checkImageAltText(content, route.filePath));
       }
       if (rules.maxParagraphLength > 0) {
-        allIssues.push(...checkParagraphLength(content, route.filePath, rules.maxParagraphLength));
+        allIssues.push(
+          ...checkParagraphLength(
+            content,
+            route.filePath,
+            rules.maxParagraphLength
+          )
+        );
       }
       if (rules.singleH1) {
         allIssues.push(...checkSingleH1(content, route.filePath));
@@ -288,7 +322,9 @@ export function lintPages(
         allIssues.push(...checkEmptyLinks(content, route.filePath));
       }
       if (rules.bannedWords.length > 0) {
-        allIssues.push(...checkBannedWords(content, route.filePath, rules.bannedWords));
+        allIssues.push(
+          ...checkBannedWords(content, route.filePath, rules.bannedWords)
+        );
       }
     } catch {
       // Skip unreadable files
@@ -335,10 +371,10 @@ export function formatLintResults(result: LintResult): string {
 
 // Export individual rule checkers for testing
 export {
+  checkBannedWords,
+  checkEmptyLinks,
   checkHeadingIncrement,
   checkImageAltText,
   checkParagraphLength,
   checkSingleH1,
-  checkEmptyLinks,
-  checkBannedWords,
 };

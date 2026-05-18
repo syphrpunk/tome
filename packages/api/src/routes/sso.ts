@@ -15,26 +15,40 @@
  */
 
 import { Hono } from "hono";
-import type { Env, User } from "../types.js";
-import { buildAuthnRequest, buildSamlRedirectUrl, parseSamlResponse, extractSamlClaims, buildSpMetadata, validateSamlSignature } from "../sso/saml.js";
-import { buildAuthorizationUrl, exchangeCode, validateIdToken, generateCodeVerifier, generateCodeChallenge, discoverOidcEndpoints } from "../sso/oidc.js";
+import {
+  buildAuthorizationUrl,
+  discoverOidcEndpoints,
+  exchangeCode,
+  generateCodeChallenge,
+  generateCodeVerifier,
+  validateIdToken,
+} from "../sso/oidc.js";
+import {
+  buildAuthnRequest,
+  buildSamlRedirectUrl,
+  buildSpMetadata,
+  extractSamlClaims,
+  parseSamlResponse,
+  validateSamlSignature,
+} from "../sso/saml.js";
 import { createSsoSession } from "../sso/session.js";
+import type { Env, User } from "../types.js";
 
 // ── Types ───────────────────────────────────────────────
 
 interface SsoConfig {
-  id: string;
-  project_id: string;
-  sso_type: "saml" | "oidc";
-  enabled: number;
-  saml_idp_sso_url: string | null;
-  saml_idp_certificate: string | null;
-  saml_entity_id: string | null;
-  oidc_issuer: string | null;
-  oidc_client_id: string | null;
-  oidc_client_secret: string | null;
   allowed_domains: string | null;
   auto_provision: number;
+  enabled: number;
+  id: string;
+  oidc_client_id: string | null;
+  oidc_client_secret: string | null;
+  oidc_issuer: string | null;
+  project_id: string;
+  saml_entity_id: string | null;
+  saml_idp_certificate: string | null;
+  saml_idp_sso_url: string | null;
+  sso_type: "saml" | "oidc";
 }
 
 // ── Routes ──────────────────────────────────────────────
@@ -47,10 +61,12 @@ sso.get("/sites/:slug/initiate", async (c) => {
   const slug = c.req.param("slug");
 
   const project = await c.env.TOME_DB.prepare(
-    "SELECT p.sso_config_id, s.* FROM projects p LEFT JOIN sso_configs s ON p.sso_config_id = s.id WHERE p.slug = ? AND p.sso_enabled = 1",
-  ).bind(slug).first<SsoConfig & { sso_config_id: string }>();
+    "SELECT p.sso_config_id, s.* FROM projects p LEFT JOIN sso_configs s ON p.sso_config_id = s.id WHERE p.slug = ? AND p.sso_enabled = 1"
+  )
+    .bind(slug)
+    .first<SsoConfig & { sso_config_id: string }>();
 
-  if (!project || !project.sso_config_id) {
+  if (!(project && project.sso_config_id)) {
     return c.json({ error: "SSO not configured for this site" }, 404);
   }
 
@@ -63,13 +79,20 @@ sso.get("/sites/:slug/initiate", async (c) => {
     }
     const entityId = `${baseUrl}/api/sso/sites/${slug}/metadata`;
     const acsUrl = `${baseUrl}/api/sso/sites/${slug}/saml/acs`;
-    const authnRequest = buildAuthnRequest(entityId, acsUrl, project.saml_idp_sso_url);
-    const redirectUrl = buildSamlRedirectUrl(project.saml_idp_sso_url, authnRequest);
+    const authnRequest = buildAuthnRequest(
+      entityId,
+      acsUrl,
+      project.saml_idp_sso_url
+    );
+    const redirectUrl = buildSamlRedirectUrl(
+      project.saml_idp_sso_url,
+      authnRequest
+    );
     return c.redirect(redirectUrl);
   }
 
   if (project.sso_type === "oidc") {
-    if (!project.oidc_issuer || !project.oidc_client_id) {
+    if (!(project.oidc_issuer && project.oidc_client_id)) {
       return c.json({ error: "OIDC configuration incomplete" }, 500);
     }
     const endpoints = await discoverOidcEndpoints(project.oidc_issuer);
@@ -81,7 +104,10 @@ sso.get("/sites/:slug/initiate", async (c) => {
     // Store state + verifier in a short-lived cookie
     const statePayload = btoa(JSON.stringify({ state, codeVerifier, slug }));
     const headers = new Headers();
-    headers.set("Set-Cookie", `tome_sso_state=${statePayload}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
+    headers.set(
+      "Set-Cookie",
+      `tome_sso_state=${statePayload}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`
+    );
 
     const authUrl = buildAuthorizationUrl({
       authorizationEndpoint: endpoints.authorization_endpoint,
@@ -111,8 +137,10 @@ sso.post("/sites/:slug/saml/acs", async (c) => {
   }
 
   const project = await c.env.TOME_DB.prepare(
-    "SELECT s.* FROM projects p JOIN sso_configs s ON p.sso_config_id = s.id WHERE p.slug = ? AND p.sso_enabled = 1",
-  ).bind(slug).first<SsoConfig>();
+    "SELECT s.* FROM projects p JOIN sso_configs s ON p.sso_config_id = s.id WHERE p.slug = ? AND p.sso_enabled = 1"
+  )
+    .bind(slug)
+    .first<SsoConfig>();
 
   if (!project) {
     return c.json({ error: "SSO not configured" }, 404);
@@ -123,7 +151,10 @@ sso.post("/sites/:slug/saml/acs", async (c) => {
 
     // Validate SAML signature if IdP certificate is configured
     if (project.saml_idp_certificate) {
-      const sigValid = await validateSamlSignature(parsed.rawXml, project.saml_idp_certificate);
+      const sigValid = await validateSamlSignature(
+        parsed.rawXml,
+        project.saml_idp_certificate
+      );
       if (!sigValid) {
         return c.json({ error: "SAML signature validation failed" }, 401);
       }
@@ -158,11 +189,17 @@ sso.post("/sites/:slug/saml/acs", async (c) => {
     });
 
     const headers = new Headers();
-    headers.set("Set-Cookie", `tome_sso_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=28800`);
+    headers.set(
+      "Set-Cookie",
+      `tome_sso_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=28800`
+    );
     headers.set("Location", "/");
     return new Response(null, { status: 302, headers });
   } catch (err) {
-    return c.json({ error: `SAML validation failed: ${(err as Error).message}` }, 401);
+    return c.json(
+      { error: `SAML validation failed: ${(err as Error).message}` },
+      401
+    );
   }
 });
 
@@ -178,7 +215,7 @@ sso.get("/sites/:slug/oidc/callback", async (c) => {
     return c.json({ error: `OIDC error: ${error}` }, 400);
   }
 
-  if (!code || !state) {
+  if (!(code && state)) {
     return c.json({ error: "Missing code or state" }, 400);
   }
 
@@ -201,10 +238,19 @@ sso.get("/sites/:slug/oidc/callback", async (c) => {
   }
 
   const project = await c.env.TOME_DB.prepare(
-    "SELECT s.* FROM projects p JOIN sso_configs s ON p.sso_config_id = s.id WHERE p.slug = ? AND p.sso_enabled = 1",
-  ).bind(slug).first<SsoConfig>();
+    "SELECT s.* FROM projects p JOIN sso_configs s ON p.sso_config_id = s.id WHERE p.slug = ? AND p.sso_enabled = 1"
+  )
+    .bind(slug)
+    .first<SsoConfig>();
 
-  if (!project || !project.oidc_issuer || !project.oidc_client_id || !project.oidc_client_secret) {
+  if (
+    !(
+      project &&
+      project.oidc_issuer &&
+      project.oidc_client_id &&
+      project.oidc_client_secret
+    )
+  ) {
     return c.json({ error: "OIDC not configured" }, 404);
   }
 
@@ -226,7 +272,7 @@ sso.get("/sites/:slug/oidc/callback", async (c) => {
       tokens.id_token,
       endpoints.jwks_uri,
       project.oidc_client_id,
-      project.oidc_issuer,
+      project.oidc_issuer
     );
 
     if (!claims.email) {
@@ -256,13 +302,19 @@ sso.get("/sites/:slug/oidc/callback", async (c) => {
     });
 
     const headers = new Headers();
-    headers.set("Set-Cookie", `tome_sso_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=28800`);
+    headers.set(
+      "Set-Cookie",
+      `tome_sso_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=28800`
+    );
     // Clear state cookie
     headers.append("Set-Cookie", "tome_sso_state=; Path=/; Max-Age=0");
     headers.set("Location", "/");
     return new Response(null, { status: 302, headers });
   } catch (err) {
-    return c.json({ error: `OIDC validation failed: ${(err as Error).message}` }, 401);
+    return c.json(
+      { error: `OIDC validation failed: ${(err as Error).message}` },
+      401
+    );
   }
 });
 
@@ -297,13 +349,15 @@ sso.post("/config", async (c) => {
     allowedDomains?: string[];
   }>();
 
-  if (!body.projectSlug || !body.ssoType) {
+  if (!(body.projectSlug && body.ssoType)) {
     return c.json({ error: "Missing projectSlug or ssoType" }, 400);
   }
 
   const project = await c.env.TOME_DB.prepare(
-    "SELECT id FROM projects WHERE slug = ? AND user_id = ?",
-  ).bind(body.projectSlug, user.id).first<{ id: string }>();
+    "SELECT id FROM projects WHERE slug = ? AND user_id = ?"
+  )
+    .bind(body.projectSlug, user.id)
+    .first<{ id: string }>();
 
   if (!project) {
     return c.json({ error: "Project not found" }, 404);
@@ -312,23 +366,27 @@ sso.post("/config", async (c) => {
   const configId = crypto.randomUUID();
   await c.env.TOME_DB.prepare(
     `INSERT INTO sso_configs (id, project_id, sso_type, enabled, saml_idp_sso_url, saml_idp_certificate, saml_entity_id, oidc_issuer, oidc_client_id, oidc_client_secret, allowed_domains)
-     VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)`,
-  ).bind(
-    configId,
-    project.id,
-    body.ssoType,
-    body.samlIdpSsoUrl || null,
-    body.samlIdpCertificate || null,
-    body.samlEntityId || null,
-    body.oidcIssuer || null,
-    body.oidcClientId || null,
-    body.oidcClientSecret || null,
-    body.allowedDomains ? JSON.stringify(body.allowedDomains) : null,
-  ).run();
+     VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      configId,
+      project.id,
+      body.ssoType,
+      body.samlIdpSsoUrl || null,
+      body.samlIdpCertificate || null,
+      body.samlEntityId || null,
+      body.oidcIssuer || null,
+      body.oidcClientId || null,
+      body.oidcClientSecret || null,
+      body.allowedDomains ? JSON.stringify(body.allowedDomains) : null
+    )
+    .run();
 
   await c.env.TOME_DB.prepare(
-    "UPDATE projects SET sso_enabled = 1, sso_config_id = ? WHERE id = ?",
-  ).bind(configId, project.id).run();
+    "UPDATE projects SET sso_enabled = 1, sso_config_id = ? WHERE id = ?"
+  )
+    .bind(configId, project.id)
+    .run();
 
   return c.json({ ok: true, configId });
 });
@@ -340,8 +398,10 @@ sso.get("/config/:slug", async (c) => {
   const config = await c.env.TOME_DB.prepare(
     `SELECT s.* FROM sso_configs s
      JOIN projects p ON s.project_id = p.id
-     WHERE p.slug = ? AND p.user_id = ?`,
-  ).bind(slug, user.id).first<SsoConfig>();
+     WHERE p.slug = ? AND p.user_id = ?`
+  )
+    .bind(slug, user.id)
+    .first<SsoConfig>();
 
   if (!config) {
     return c.json({ error: "SSO not configured" }, 404);
@@ -355,7 +415,15 @@ sso.get("/config/:slug", async (c) => {
     samlEntityId: config.saml_entity_id,
     oidcIssuer: config.oidc_issuer,
     oidcClientId: config.oidc_client_id,
-    allowedDomains: config.allowed_domains ? (() => { try { return JSON.parse(config.allowed_domains!); } catch { return []; } })() : [],
+    allowedDomains: config.allowed_domains
+      ? (() => {
+          try {
+            return JSON.parse(config.allowed_domains!);
+          } catch {
+            return [];
+          }
+        })()
+      : [],
   });
 });
 
@@ -364,20 +432,26 @@ sso.delete("/config/:slug", async (c) => {
   const slug = c.req.param("slug");
 
   const project = await c.env.TOME_DB.prepare(
-    "SELECT id, sso_config_id FROM projects WHERE slug = ? AND user_id = ?",
-  ).bind(slug, user.id).first<{ id: string; sso_config_id: string | null }>();
+    "SELECT id, sso_config_id FROM projects WHERE slug = ? AND user_id = ?"
+  )
+    .bind(slug, user.id)
+    .first<{ id: string; sso_config_id: string | null }>();
 
   if (!project) {
     return c.json({ error: "Project not found" }, 404);
   }
 
   if (project.sso_config_id) {
-    await c.env.TOME_DB.prepare("DELETE FROM sso_configs WHERE id = ?").bind(project.sso_config_id).run();
+    await c.env.TOME_DB.prepare("DELETE FROM sso_configs WHERE id = ?")
+      .bind(project.sso_config_id)
+      .run();
   }
 
   await c.env.TOME_DB.prepare(
-    "UPDATE projects SET sso_enabled = 0, sso_config_id = NULL WHERE id = ?",
-  ).bind(project.id).run();
+    "UPDATE projects SET sso_enabled = 0, sso_config_id = NULL WHERE id = ?"
+  )
+    .bind(project.id)
+    .run();
 
   return c.json({ ok: true });
 });

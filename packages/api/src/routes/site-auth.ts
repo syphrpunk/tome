@@ -4,9 +4,9 @@
  */
 
 import { Hono } from "hono";
-import type { Env } from "../types.js";
-import { verifyPassword, generateSessionToken } from "../password.js";
+import { generateSessionToken, verifyPassword } from "../password.js";
 import { passwordPageHtml } from "../templates/password-page.js";
+import type { Env } from "../types.js";
 
 export const siteAuth = new Hono<{ Bindings: Env }>();
 
@@ -29,22 +29,33 @@ siteAuth.post("/:slug/authenticate", async (c) => {
   // Look up the project's password hash
   const project = await c.env.TOME_DB.prepare(
     "SELECT password_hash FROM projects WHERE slug = ? AND password_required = 1"
-  ).bind(slug).first<{ password_hash: string }>();
+  )
+    .bind(slug)
+    .first<{ password_hash: string }>();
 
   if (!project?.password_hash) {
-    return c.html(passwordPageHtml(slug, "This site is not password-protected."), 400);
+    return c.html(
+      passwordPageHtml(slug, "This site is not password-protected."),
+      400
+    );
   }
 
   // Verify password
   const valid = await verifyPassword(password, project.password_hash);
   if (!valid) {
-    return c.html(passwordPageHtml(slug, "Incorrect password. Please try again."), 401);
+    return c.html(
+      passwordPageHtml(slug, "Incorrect password. Please try again."),
+      401
+    );
   }
 
   // Generate session token and set cookie
   const token = await generateSessionToken(slug, c.env.SSO_SESSION_SECRET);
   const headers = new Headers();
-  headers.set("Set-Cookie", `tome_site_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
+  headers.set(
+    "Set-Cookie",
+    `tome_site_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`
+  );
   headers.set("Location", redirect);
 
   return new Response(null, { status: 302, headers });

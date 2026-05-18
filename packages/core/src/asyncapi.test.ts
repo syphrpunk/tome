@@ -1,16 +1,26 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, rmSync } from "fs";
-import { join } from "path";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { parseAsyncApiSpec, generateAsyncCodeSamples, resolveRef } from "./asyncapi.js";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AsyncApiChannel, AsyncApiServer } from "./asyncapi.js";
+import {
+  generateAsyncCodeSamples,
+  parseAsyncApiSpec,
+  resolveRef,
+} from "./asyncapi.js";
 
 // ── HELPERS ──────────────────────────────────────────────
 
-function makeSpec(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function makeSpec(
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
   return {
     asyncapi: "2.6.0",
-    info: { title: "Test Events API", version: "1.0.0", description: "A test event-driven API" },
+    info: {
+      title: "Test Events API",
+      version: "1.0.0",
+      description: "A test event-driven API",
+    },
     servers: {
       production: {
         url: "broker.example.com",
@@ -43,7 +53,10 @@ function makeSpec(overrides: Record<string, unknown> = {}): Record<string, unkno
               },
             },
             examples: [
-              { name: "example1", payload: { userId: "abc-123", email: "user@test.com" } },
+              {
+                name: "example1",
+                payload: { userId: "abc-123", email: "user@test.com" },
+              },
             ],
           },
         },
@@ -62,7 +75,10 @@ function makeSpec(overrides: Record<string, unknown> = {}): Record<string, unkno
               },
             },
             examples: [
-              { name: "example1", payload: { userId: "abc-123", email: "user@test.com" } },
+              {
+                name: "example1",
+                payload: { userId: "abc-123", email: "user@test.com" },
+              },
             ],
           },
         },
@@ -98,7 +114,11 @@ function makeSpec(overrides: Record<string, unknown> = {}): Record<string, unkno
   };
 }
 
-function writeSpec(dir: string, spec: Record<string, unknown>, filename = "spec.json"): string {
+function writeSpec(
+  dir: string,
+  spec: Record<string, unknown>,
+  filename = "spec.json"
+): string {
   const filePath = join(dir, filename);
   writeFileSync(filePath, JSON.stringify(spec, null, 2));
   return filePath;
@@ -187,18 +207,24 @@ describe("channel extraction", () => {
   it("extracts channels with subscribe operations", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     expect(userChannel).toBeDefined();
     expect(userChannel!.subscribe).toBeDefined();
     expect(userChannel!.subscribe!.operationId).toBe("onUserSignedUp");
     expect(userChannel!.subscribe!.summary).toBe("Receive user signup events");
-    expect(userChannel!.subscribe!.description).toBe("Fired when a new user signs up");
+    expect(userChannel!.subscribe!.description).toBe(
+      "Fired when a new user signs up"
+    );
   });
 
   it("extracts channels with publish operations", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     expect(userChannel).toBeDefined();
     expect(userChannel!.publish).toBeDefined();
     expect(userChannel!.publish!.operationId).toBe("publishUserSignedUp");
@@ -207,14 +233,18 @@ describe("channel extraction", () => {
   it("extracts channel descriptions", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     expect(userChannel!.description).toBe("User signed up event");
   });
 
   it("extracts channel tags from operations", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     expect(userChannel!.tags).toContain("users");
   });
 
@@ -233,7 +263,9 @@ describe("message extraction", () => {
   it("extracts message name and title", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     const msg = userChannel!.subscribe!.message!;
     expect(msg.name).toBe("UserSignedUp");
     expect(msg.title).toBe("User Signed Up");
@@ -242,7 +274,9 @@ describe("message extraction", () => {
   it("extracts message payload schema", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     const msg = userChannel!.subscribe!.message!;
     expect(msg.payload).toBeDefined();
     const payload = msg.payload as Record<string, unknown>;
@@ -253,7 +287,9 @@ describe("message extraction", () => {
   it("extracts message content type", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     const msg = userChannel!.subscribe!.message!;
     expect(msg.contentType).toBe("application/json");
   });
@@ -261,12 +297,17 @@ describe("message extraction", () => {
   it("extracts message examples", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     const msg = userChannel!.subscribe!.message!;
     expect(msg.examples).toBeDefined();
     expect(msg.examples).toHaveLength(1);
     expect(msg.examples![0].name).toBe("example1");
-    expect(msg.examples![0].payload).toEqual({ userId: "abc-123", email: "user@test.com" });
+    expect(msg.examples![0].payload).toEqual({
+      userId: "abc-123",
+      email: "user@test.com",
+    });
   });
 });
 
@@ -276,7 +317,9 @@ describe("parameter extraction", () => {
   it("extracts channel parameters with description", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const notifChannel = manifest.channels.find((c) => c.name === "notifications/{userId}");
+    const notifChannel = manifest.channels.find(
+      (c) => c.name === "notifications/{userId}"
+    );
     expect(notifChannel).toBeDefined();
     expect(notifChannel!.parameters).toHaveLength(1);
     const param = notifChannel!.parameters[0];
@@ -287,7 +330,9 @@ describe("parameter extraction", () => {
   it("extracts parameter schema", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const notifChannel = manifest.channels.find((c) => c.name === "notifications/{userId}");
+    const notifChannel = manifest.channels.find(
+      (c) => c.name === "notifications/{userId}"
+    );
     const param = notifChannel!.parameters[0];
     expect(param.schema).toBeDefined();
     const schema = param.schema as Record<string, unknown>;
@@ -297,7 +342,9 @@ describe("parameter extraction", () => {
   it("extracts parameter location", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const notifChannel = manifest.channels.find((c) => c.name === "notifications/{userId}");
+    const notifChannel = manifest.channels.find(
+      (c) => c.name === "notifications/{userId}"
+    );
     const param = notifChannel!.parameters[0];
     expect(param.location).toBe("$message.payload#/userId");
   });
@@ -488,7 +535,9 @@ describe("generateAsyncCodeSamples", () => {
     const samples = generateAsyncCodeSamples(baseChannel, server);
     expect(samples).toHaveLength(1);
     expect(samples[0].label).toBe("STOMP");
-    expect(samples[0].code).toContain("stomp://custom.example.com/user/signedup");
+    expect(samples[0].code).toContain(
+      "stomp://custom.example.com/user/signedup"
+    );
   });
 
   it("uses default ws protocol when no server provided", () => {
@@ -531,12 +580,16 @@ describe("error handling", () => {
   it("throws on invalid JSON", async () => {
     const specPath = join(tmpDir, "bad.json");
     writeFileSync(specPath, "{ this is not valid json }}}");
-    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow("invalid JSON/YAML");
+    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow(
+      "invalid JSON/YAML"
+    );
   });
 
   it("throws when asyncapi field is missing", async () => {
     const specPath = writeSpec(tmpDir, { info: { title: "No version field" } });
-    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow("missing 'asyncapi' version field");
+    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow(
+      "missing 'asyncapi' version field"
+    );
   });
 
   it("throws on unsupported asyncapi version (3.x)", async () => {
@@ -544,8 +597,12 @@ describe("error handling", () => {
       asyncapi: "3.0.0",
       info: { title: "V3 API", version: "1.0.0" },
     });
-    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow("Unsupported AsyncAPI version");
-    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow("Only 2.x is supported");
+    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow(
+      "Unsupported AsyncAPI version"
+    );
+    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow(
+      "Only 2.x is supported"
+    );
   });
 
   it("throws on unsupported asyncapi version (1.x)", async () => {
@@ -553,7 +610,9 @@ describe("error handling", () => {
       asyncapi: "1.2.0",
       info: { title: "V1 API", version: "1.0.0" },
     });
-    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow("Unsupported AsyncAPI version");
+    await expect(parseAsyncApiSpec(specPath)).rejects.toThrow(
+      "Unsupported AsyncAPI version"
+    );
   });
 });
 
@@ -625,8 +684,16 @@ describe("edge cases", () => {
     const spec = makeSpec({
       servers: {
         ws: { url: "ws.example.com", protocol: "ws", description: "WebSocket" },
-        mqtt: { url: "mqtt.example.com", protocol: "mqtt", description: "MQTT" },
-        kafka: { url: "kafka.example.com:9092", protocol: "kafka", description: "Kafka" },
+        mqtt: {
+          url: "mqtt.example.com",
+          protocol: "mqtt",
+          description: "MQTT",
+        },
+        kafka: {
+          url: "kafka.example.com:9092",
+          protocol: "kafka",
+          description: "Kafka",
+        },
       },
     });
     const specPath = writeSpec(tmpDir, spec);
@@ -655,13 +722,17 @@ describe("edge cases", () => {
     const manifest = await parseAsyncApiSpec(specPath);
     const channel = manifest.channels[0];
     expect(channel.bindings).toBeDefined();
-    expect((channel.bindings as Record<string, Record<string, unknown>>).kafka.topic).toBe("custom-topic");
+    expect(
+      (channel.bindings as Record<string, Record<string, unknown>>).kafka.topic
+    ).toBe("custom-topic");
   });
 
   it("handles channel with no parameters", async () => {
     const specPath = writeSpec(tmpDir, makeSpec());
     const manifest = await parseAsyncApiSpec(specPath);
-    const userChannel = manifest.channels.find((c) => c.name === "user/signedup");
+    const userChannel = manifest.channels.find(
+      (c) => c.name === "user/signedup"
+    );
     expect(userChannel!.parameters).toEqual([]);
   });
 });

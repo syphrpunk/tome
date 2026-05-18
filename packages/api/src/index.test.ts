@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import app from "./index.js";
 import type { Env } from "./types.js";
 
@@ -51,7 +51,11 @@ describe("API server", () => {
   describe("404 fallback", () => {
     it("returns 404 JSON for unknown API routes", async () => {
       const env = mockEnv();
-      const res = await app.request("/api/nonexistent", { headers: API_HEADERS }, env);
+      const res = await app.request(
+        "/api/nonexistent",
+        { headers: API_HEADERS },
+        env
+      );
       expect(res.status).toBe(404);
       const body = await res.json();
       expect(body.error).toBe("Not found");
@@ -61,9 +65,13 @@ describe("API server", () => {
   describe("site-serving middleware", () => {
     it("returns 'Site not found' for unknown custom domains", async () => {
       const env = mockEnv();
-      const res = await app.request("/", {
-        headers: { Host: "unknown-site.example.com" },
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          headers: { Host: "unknown-site.example.com" },
+        },
+        env
+      );
       expect(res.status).toBe(404);
       const text = await res.text();
       expect(text).toBe("Site not found");
@@ -71,25 +79,37 @@ describe("API server", () => {
 
     it("passes through for localhost", async () => {
       const env = mockEnv();
-      const res = await app.request("/health", {
-        headers: { Host: "localhost:8787" },
-      }, env);
+      const res = await app.request(
+        "/health",
+        {
+          headers: { Host: "localhost:8787" },
+        },
+        env
+      );
       expect(res.status).toBe(200);
     });
 
     it("passes through for *.workers.dev", async () => {
       const env = mockEnv();
-      const res = await app.request("/health", {
-        headers: { Host: "tome-api.user.workers.dev" },
-      }, env);
+      const res = await app.request(
+        "/health",
+        {
+          headers: { Host: "tome-api.user.workers.dev" },
+        },
+        env
+      );
       expect(res.status).toBe(200);
     });
 
     it("passes through for api.tome.center", async () => {
       const env = mockEnv();
-      const res = await app.request("/health", {
-        headers: { Host: "api.tome.center" },
-      }, env);
+      const res = await app.request(
+        "/health",
+        {
+          headers: { Host: "api.tome.center" },
+        },
+        env
+      );
       expect(res.status).toBe(200);
     });
   });
@@ -97,34 +117,50 @@ describe("API server", () => {
   describe("protected routes without auth", () => {
     it("returns 401 for /api/deploy without auth", async () => {
       const env = mockEnv();
-      const res = await app.request("/api/deploy/start", {
-        method: "POST",
-        headers: API_HEADERS,
-      }, env);
+      const res = await app.request(
+        "/api/deploy/start",
+        {
+          method: "POST",
+          headers: API_HEADERS,
+        },
+        env
+      );
       expect(res.status).toBe(401);
     });
 
     it("returns 401 for /api/domains without auth", async () => {
       const env = mockEnv();
-      const res = await app.request("/api/domains/list", {
-        headers: API_HEADERS,
-      }, env);
+      const res = await app.request(
+        "/api/domains/list",
+        {
+          headers: API_HEADERS,
+        },
+        env
+      );
       expect(res.status).toBe(401);
     });
 
     it("returns 401 for /api/billing without auth", async () => {
       const env = mockEnv();
-      const res = await app.request("/api/billing/status", {
-        headers: API_HEADERS,
-      }, env);
+      const res = await app.request(
+        "/api/billing/status",
+        {
+          headers: API_HEADERS,
+        },
+        env
+      );
       expect(res.status).toBe(401);
     });
 
     it("returns 401 for /api/auth/me without auth", async () => {
       const env = mockEnv();
-      const res = await app.request("/api/auth/me", {
-        headers: API_HEADERS,
-      }, env);
+      const res = await app.request(
+        "/api/auth/me",
+        {
+          headers: API_HEADERS,
+        },
+        env
+      );
       expect(res.status).toBe(401);
     });
   });
@@ -132,11 +168,15 @@ describe("API server", () => {
   describe("public routes", () => {
     it("allows analytics event without auth", async () => {
       const env = mockEnv();
-      const res = await app.request("/api/analytics/event", {
-        method: "POST",
-        headers: { ...API_HEADERS, "Content-Type": "application/json" },
-        body: JSON.stringify({ siteId: "test", type: "pageview" }),
-      }, env);
+      const res = await app.request(
+        "/api/analytics/event",
+        {
+          method: "POST",
+          headers: { ...API_HEADERS, "Content-Type": "application/json" },
+          body: JSON.stringify({ siteId: "test", type: "pageview" }),
+        },
+        env
+      );
       expect(res.status).toBe(200);
     });
   });
@@ -149,18 +189,26 @@ describe("API server", () => {
         body: mockBody,
         httpMetadata: { contentType: "text/html" },
       });
-      const res = await app.request("/sites/my-docs/index.html", {
-        headers: API_HEADERS,
-      }, env);
+      const res = await app.request(
+        "/sites/my-docs/index.html",
+        {
+          headers: API_HEADERS,
+        },
+        env
+      );
       expect(res.status).toBe(200);
     });
 
     it("returns 404 for missing site file", async () => {
       const env = mockEnv();
       (env.TOME_BUCKET.get as any).mockResolvedValue(null);
-      const res = await app.request("/sites/my-docs/missing.html", {
-        headers: API_HEADERS,
-      }, env);
+      const res = await app.request(
+        "/sites/my-docs/missing.html",
+        {
+          headers: API_HEADERS,
+        },
+        env
+      );
       expect(res.status).toBe(404);
     });
   });
@@ -168,30 +216,44 @@ describe("API server", () => {
   describe("CORS", () => {
     it("includes CORS headers for allowed origins", async () => {
       const env = mockEnv();
-      const res = await app.request("/health", {
-        headers: { ...API_HEADERS, Origin: "https://tome.center" },
-      }, env);
-      expect(res.headers.get("access-control-allow-origin")).toBe("https://tome.center");
+      const res = await app.request(
+        "/health",
+        {
+          headers: { ...API_HEADERS, Origin: "https://tome.center" },
+        },
+        env
+      );
+      expect(res.headers.get("access-control-allow-origin")).toBe(
+        "https://tome.center"
+      );
     });
 
     it("allows analytics event CORS from any origin", async () => {
       const env = mockEnv();
-      const res = await app.request("/api/analytics/event", {
-        method: "OPTIONS",
-        headers: {
-          ...API_HEADERS,
-          Origin: "https://random-site.com",
-          "Access-Control-Request-Method": "POST",
+      const res = await app.request(
+        "/api/analytics/event",
+        {
+          method: "OPTIONS",
+          headers: {
+            ...API_HEADERS,
+            Origin: "https://random-site.com",
+            "Access-Control-Request-Method": "POST",
+          },
         },
-      }, env);
+        env
+      );
       expect(res.headers.get("access-control-allow-origin")).toBe("*");
     });
 
     it("rejects CORS for disallowed origins", async () => {
       const env = mockEnv();
-      const res = await app.request("/health", {
-        headers: { ...API_HEADERS, Origin: "https://evil-site.com" },
-      }, env);
+      const res = await app.request(
+        "/health",
+        {
+          headers: { ...API_HEADERS, Origin: "https://evil-site.com" },
+        },
+        env
+      );
       // Should not include the origin in the response
       const origin = res.headers.get("access-control-allow-origin");
       expect(origin).not.toBe("https://evil-site.com");

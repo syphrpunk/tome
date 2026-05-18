@@ -20,9 +20,10 @@ const buckets = new Map<string, { count: number; resetAt: number }>();
 
 export function rateLimit(options: RateLimitOptions) {
   return createMiddleware<{ Bindings: Env }>(async (c, next) => {
-    const ip = c.req.header("cf-connecting-ip")
-      ?? c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
-      ?? "unknown";
+    const ip =
+      c.req.header("cf-connecting-ip") ??
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
 
     const now = Date.now();
     const key = `${ip}:${c.req.path}`;
@@ -31,7 +32,9 @@ export function rateLimit(options: RateLimitOptions) {
     // Clean up expired buckets periodically
     if (buckets.size > 10_000) {
       for (const [k, v] of buckets) {
-        if (v.resetAt <= now) buckets.delete(k);
+        if (v.resetAt <= now) {
+          buckets.delete(k);
+        }
       }
     }
 
@@ -52,7 +55,7 @@ export function rateLimit(options: RateLimitOptions) {
           "X-RateLimit-Limit": String(options.maxRequests),
           "X-RateLimit-Remaining": "0",
           "X-RateLimit-Reset": String(Math.ceil(bucket.resetAt / 1000)),
-        },
+        }
       );
     }
 
@@ -60,7 +63,10 @@ export function rateLimit(options: RateLimitOptions) {
     await next();
 
     c.header("X-RateLimit-Limit", String(options.maxRequests));
-    c.header("X-RateLimit-Remaining", String(Math.max(0, options.maxRequests - bucket.count)));
+    c.header(
+      "X-RateLimit-Remaining",
+      String(Math.max(0, options.maxRequests - bucket.count))
+    );
     c.header("X-RateLimit-Reset", String(Math.ceil(bucket.resetAt / 1000)));
   });
 }

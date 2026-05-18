@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
 import { domains } from "./domains.js";
 
@@ -18,13 +18,20 @@ const communityUser: User = {
 const cloudUser: User = { ...communityUser, plan: "cloud" };
 const teamUser: User = { ...communityUser, plan: "team" };
 
-function mockDb(overrides: {
-  domainCount?: number;
-  project?: { id: string } | null;
-  existingDomain?: Record<string, unknown> | null;
-  domainRow?: Record<string, unknown> | null;
-} = {}) {
-  const { domainCount = 0, project = { id: "proj1" }, existingDomain = null, domainRow = null } = overrides;
+function mockDb(
+  overrides: {
+    domainCount?: number;
+    project?: { id: string } | null;
+    existingDomain?: Record<string, unknown> | null;
+    domainRow?: Record<string, unknown> | null;
+  } = {}
+) {
+  const {
+    domainCount = 0,
+    project = { id: "proj1" },
+    existingDomain = null,
+    domainRow = null,
+  } = overrides;
 
   return {
     prepare: vi.fn().mockImplementation((sql: string) => ({
@@ -39,7 +46,10 @@ function mockDb(overrides: {
           if (sql.includes("SELECT id FROM domains")) {
             return Promise.resolve(existingDomain);
           }
-          if (sql.includes("SELECT d.id") && sql.includes("cloudflare_hostname_id")) {
+          if (
+            sql.includes("SELECT d.id") &&
+            sql.includes("cloudflare_hostname_id")
+          ) {
             return Promise.resolve(domainRow);
           }
           if (sql.includes("SELECT d.*")) {
@@ -84,13 +94,20 @@ describe("domain routes", () => {
     it("blocks community users from adding domains", async () => {
       const app = makeApp(communityUser);
       const env = makeEnv();
-      const res = await app.request("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: "docs.acme.io", projectSlug: "my-docs" }),
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: "docs.acme.io",
+            projectSlug: "my-docs",
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(403);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.error).toContain("Cloud plan or higher");
       expect(body.requiredPlan).toBe("cloud");
     });
@@ -99,13 +116,20 @@ describe("domain routes", () => {
       const db = mockDb();
       const app = makeApp(cloudUser);
       const env = makeEnv(db);
-      const res = await app.request("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: "docs.acme.io", projectSlug: "my-docs" }),
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: "docs.acme.io",
+            projectSlug: "my-docs",
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.domain).toBe("docs.acme.io");
       expect(body.verified).toBe(false);
       expect(body.dnsRecords).toHaveLength(2);
@@ -115,13 +139,20 @@ describe("domain routes", () => {
       const db = mockDb({ domainCount: 1 }); // cloud limit is 1
       const app = makeApp(cloudUser);
       const env = makeEnv(db);
-      const res = await app.request("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: "docs2.acme.io", projectSlug: "my-docs" }),
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: "docs2.acme.io",
+            projectSlug: "my-docs",
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(403);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.error).toContain("Domain limit reached");
     });
 
@@ -129,22 +160,33 @@ describe("domain routes", () => {
       const db = mockDb({ domainCount: 50 });
       const app = makeApp(teamUser);
       const env = makeEnv(db);
-      const res = await app.request("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: "docs.acme.io", projectSlug: "my-docs" }),
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: "docs.acme.io",
+            projectSlug: "my-docs",
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(200);
     });
 
     it("rejects missing domain or project slug", async () => {
       const app = makeApp(cloudUser);
       const env = makeEnv();
-      const res = await app.request("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+        env
+      );
       expect(res.status).toBe(400);
     });
 
@@ -152,11 +194,18 @@ describe("domain routes", () => {
       const db = mockDb({ project: null });
       const app = makeApp(cloudUser);
       const env = makeEnv(db);
-      const res = await app.request("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: "docs.acme.io", projectSlug: "nonexistent" }),
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: "docs.acme.io",
+            projectSlug: "nonexistent",
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(404);
     });
 
@@ -164,11 +213,18 @@ describe("domain routes", () => {
       const db = mockDb({ existingDomain: { id: "existing" } });
       const app = makeApp(cloudUser);
       const env = makeEnv(db);
-      const res = await app.request("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: "docs.acme.io", projectSlug: "my-docs" }),
-      }, env);
+      const res = await app.request(
+        "/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: "docs.acme.io",
+            projectSlug: "my-docs",
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(409);
     });
   });
@@ -179,7 +235,7 @@ describe("domain routes", () => {
       const env = makeEnv();
       const res = await app.request("/", {}, env);
       expect(res.status).toBe(200);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(Array.isArray(body)).toBe(true);
     });
   });
@@ -189,9 +245,13 @@ describe("domain routes", () => {
       const db = mockDb({ domainRow: null });
       const app = makeApp(cloudUser);
       const env = makeEnv(db);
-      const res = await app.request("/docs.acme.io", {
-        method: "DELETE",
-      }, env);
+      const res = await app.request(
+        "/docs.acme.io",
+        {
+          method: "DELETE",
+        },
+        env
+      );
       expect(res.status).toBe(404);
     });
 
@@ -201,11 +261,15 @@ describe("domain routes", () => {
       });
       const app = makeApp(cloudUser);
       const env = makeEnv(db);
-      const res = await app.request("/docs.acme.io", {
-        method: "DELETE",
-      }, env);
+      const res = await app.request(
+        "/docs.acme.io",
+        {
+          method: "DELETE",
+        },
+        env
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.removed).toBe(true);
     });
   });

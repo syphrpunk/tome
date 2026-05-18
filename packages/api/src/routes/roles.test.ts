@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
-import { roles } from "./roles.js";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
+import { roles } from "./roles.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -35,7 +35,11 @@ function mockDb(queryResults: Record<string, any> = {}) {
       bind: vi.fn().mockReturnValue({
         first: vi.fn().mockImplementation(async () => {
           // Project lookup
-          if (sql.includes("SELECT") && sql.includes("projects") && sql.includes("slug")) {
+          if (
+            sql.includes("SELECT") &&
+            sql.includes("projects") &&
+            sql.includes("slug")
+          ) {
             return queryResults.project || null;
           }
           // Role lookup for authorization check
@@ -122,7 +126,10 @@ describe("roles routes", () => {
 
     it("rejects non-owner/admin users", async () => {
       // project.user_id !== u2, and no admin role entry
-      const db = mockDb({ project: { id: "p1", user_id: "u1" }, callerRole: null });
+      const db = mockDb({
+        project: { id: "p1", user_id: "u1" },
+        callerRole: null,
+      });
       const app = makeApp(db, mockNonOwner);
 
       const res = await app.request("/api/roles", {
@@ -165,8 +172,18 @@ describe("roles routes", () => {
       const db = mockDb({
         project: { id: "p1", user_id: "u1" },
         rolesList: [
-          { id: "r1", email: "dev@acme.com", role: "editor", created_at: "2025-06-01" },
-          { id: "r2", email: "admin@acme.com", role: "admin", created_at: "2025-06-01" },
+          {
+            id: "r1",
+            email: "dev@acme.com",
+            role: "editor",
+            created_at: "2025-06-01",
+          },
+          {
+            id: "r2",
+            email: "admin@acme.com",
+            role: "admin",
+            created_at: "2025-06-01",
+          },
         ],
       });
       const app = makeApp(db);
@@ -179,7 +196,10 @@ describe("roles routes", () => {
     });
 
     it("returns 403 for non-owner/admin", async () => {
-      const db = mockDb({ project: { id: "p1", user_id: "u1" }, callerRole: null });
+      const db = mockDb({
+        project: { id: "p1", user_id: "u1" },
+        callerRole: null,
+      });
       const app = makeApp(db, mockNonOwner);
 
       const res = await app.request("/api/roles/acme-docs");
@@ -220,7 +240,10 @@ describe("roles routes", () => {
     });
 
     it("rejects non-owner/admin users", async () => {
-      const db = mockDb({ project: { id: "p1", user_id: "u1" }, callerRole: null });
+      const db = mockDb({
+        project: { id: "p1", user_id: "u1" },
+        callerRole: null,
+      });
       const app = makeApp(db, mockNonOwner);
 
       const res = await app.request("/api/roles", {

@@ -11,40 +11,40 @@ import { collectBuildFiles, computeFileHashes } from "./deploy.js";
 export interface PreviewConfig extends DeployConfig {
   /** Git branch name */
   branch: string;
-  /** PR number (optional) */
-  prNumber?: number;
   /** Commit SHA (optional, for tracking) */
   commitSha?: string;
   /** Preview expiry in days */
   expiresInDays?: number;
+  /** PR number (optional) */
+  prNumber?: number;
 }
 
 export interface PreviewResult extends DeployResult {
-  /** Preview-specific URL */
-  previewUrl: string;
   /** Branch this preview is for */
   branch: string;
   /** When this preview expires */
   expiresAt: string;
+  /** Preview-specific URL */
+  previewUrl: string;
 }
 
 export interface PreviewDeployment {
-  /** Deployment ID */
-  deploymentId: string;
   /** Branch name */
   branch: string;
   /** Branch slug (URL-safe) */
   branchSlug: string;
-  /** Preview URL */
-  previewUrl: string;
-  /** PR number if applicable */
-  prNumber?: number;
   /** Commit SHA */
   commitSha?: string;
   /** When this was created */
   createdAt: string;
+  /** Deployment ID */
+  deploymentId: string;
   /** When this expires */
   expiresAt: string;
+  /** Preview URL */
+  previewUrl: string;
+  /** PR number if applicable */
+  prNumber?: number;
   /** Status */
   status: "active" | "expired" | "superseded";
 }
@@ -59,22 +59,26 @@ export interface PreviewDeployment {
 export function slugifyBranch(branch: string): string {
   return branch
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")   // Replace non-alphanumeric sequences with dashes
-    .replace(/^-|-$/g, "")         // Trim leading/trailing dashes
-    .slice(0, 50);                 // Limit length for DNS-safe subdomain
+    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric sequences with dashes
+    .replace(/^-|-$/g, "") // Trim leading/trailing dashes
+    .slice(0, 50); // Limit length for DNS-safe subdomain
 }
 
 /**
  * Generate the preview URL for a branch.
  */
-export function getPreviewUrl(branchSlug: string, projectSlug: string, baseDomain: string = "tome.center"): string {
+export function getPreviewUrl(
+  branchSlug: string,
+  projectSlug: string,
+  baseDomain = "tome.center"
+): string {
   return `https://${branchSlug}.preview.${projectSlug}.${baseDomain}`;
 }
 
 /**
  * Calculate the expiry date for a preview deployment.
  */
-export function getExpiryDate(daysFromNow: number = 7): string {
+export function getExpiryDate(daysFromNow = 7): string {
   const expiry = new Date();
   expiry.setDate(expiry.getDate() + daysFromNow);
   return expiry.toISOString();
@@ -86,18 +90,30 @@ export function getExpiryDate(daysFromNow: number = 7): string {
  */
 export function detectBranch(): string | null {
   // GitHub Actions
-  if (process.env.GITHUB_HEAD_REF) return process.env.GITHUB_HEAD_REF;
-  if (process.env.GITHUB_REF_NAME) return process.env.GITHUB_REF_NAME;
+  if (process.env.GITHUB_HEAD_REF) {
+    return process.env.GITHUB_HEAD_REF;
+  }
+  if (process.env.GITHUB_REF_NAME) {
+    return process.env.GITHUB_REF_NAME;
+  }
 
   // GitLab CI
-  if (process.env.CI_MERGE_REQUEST_SOURCE_BRANCH_NAME) return process.env.CI_MERGE_REQUEST_SOURCE_BRANCH_NAME;
-  if (process.env.CI_COMMIT_BRANCH) return process.env.CI_COMMIT_BRANCH;
+  if (process.env.CI_MERGE_REQUEST_SOURCE_BRANCH_NAME) {
+    return process.env.CI_MERGE_REQUEST_SOURCE_BRANCH_NAME;
+  }
+  if (process.env.CI_COMMIT_BRANCH) {
+    return process.env.CI_COMMIT_BRANCH;
+  }
 
   // Bitbucket Pipelines
-  if (process.env.BITBUCKET_BRANCH) return process.env.BITBUCKET_BRANCH;
+  if (process.env.BITBUCKET_BRANCH) {
+    return process.env.BITBUCKET_BRANCH;
+  }
 
   // Generic CI
-  if (process.env.BRANCH_NAME) return process.env.BRANCH_NAME;
+  if (process.env.BRANCH_NAME) {
+    return process.env.BRANCH_NAME;
+  }
 
   // Fall back to git command
   try {
@@ -116,9 +132,15 @@ export function detectBranch(): string | null {
  * Detect the current commit SHA.
  */
 export function detectCommitSha(): string | null {
-  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
-  if (process.env.CI_COMMIT_SHA) return process.env.CI_COMMIT_SHA;
-  if (process.env.BITBUCKET_COMMIT) return process.env.BITBUCKET_COMMIT;
+  if (process.env.GITHUB_SHA) {
+    return process.env.GITHUB_SHA;
+  }
+  if (process.env.CI_COMMIT_SHA) {
+    return process.env.CI_COMMIT_SHA;
+  }
+  if (process.env.BITBUCKET_COMMIT) {
+    return process.env.BITBUCKET_COMMIT;
+  }
 
   try {
     const { execSync } = require("child_process");
@@ -138,17 +160,19 @@ export function detectPrNumber(): number | null {
   // GitHub Actions
   if (process.env.GITHUB_EVENT_NAME === "pull_request") {
     const prNum = process.env.GITHUB_REF?.match(/refs\/pull\/(\d+)/)?.[1];
-    if (prNum) return parseInt(prNum, 10);
+    if (prNum) {
+      return Number.parseInt(prNum, 10);
+    }
   }
 
   // GitLab CI
   if (process.env.CI_MERGE_REQUEST_IID) {
-    return parseInt(process.env.CI_MERGE_REQUEST_IID, 10);
+    return Number.parseInt(process.env.CI_MERGE_REQUEST_IID, 10);
   }
 
   // Bitbucket
   if (process.env.BITBUCKET_PR_ID) {
-    return parseInt(process.env.BITBUCKET_PR_ID, 10);
+    return Number.parseInt(process.env.BITBUCKET_PR_ID, 10);
   }
 
   return null;
@@ -160,7 +184,11 @@ export function detectPrNumber(): number | null {
  * Generate an HTML/CSS snippet for the preview deployment banner.
  * This banner is injected into preview builds to indicate the deployment is a preview.
  */
-export function generatePreviewBanner(branch: string, previewUrl: string, expiresAt: string): string {
+export function generatePreviewBanner(
+  branch: string,
+  previewUrl: string,
+  expiresAt: string
+): string {
   const expiryDate = new Date(expiresAt);
   const expiryStr = expiryDate.toLocaleDateString("en-US", {
     month: "short",
@@ -188,7 +216,10 @@ function escapeHtml(s: string): string {
  * Deploy build output as a preview deployment.
  * Similar to deployToCloud but includes branch metadata and preview URL.
  */
-export async function deployPreview(config: PreviewConfig, outDir: string): Promise<PreviewResult> {
+export async function deployPreview(
+  config: PreviewConfig,
+  outDir: string
+): Promise<PreviewResult> {
   const branchSlug = slugifyBranch(config.branch);
   const expiresAt = getExpiryDate(config.expiresInDays ?? 7);
 
@@ -197,7 +228,9 @@ export async function deployPreview(config: PreviewConfig, outDir: string): Prom
   const files = await collectBuildFiles(outDir);
 
   if (files.size === 0) {
-    throw new Error(`No files found in output directory: ${outDir}\nRun "tome build" first.`);
+    throw new Error(
+      `No files found in output directory: ${outDir}\nRun "tome build" first.`
+    );
   }
 
   // Compute hashes for diff-based upload
@@ -216,7 +249,9 @@ export async function deployPreview(config: PreviewConfig, outDir: string): Prom
   const sizeKb = (totalSize / 1024).toFixed(1);
 
   // Step 1: Start preview deployment
-  console.log(`  Starting preview deployment (${files.size} files, ${sizeKb} KB)...`);
+  console.log(
+    `  Starting preview deployment (${files.size} files, ${sizeKb} KB)...`
+  );
   console.log(`  Branch: ${config.branch} → ${branchSlug}`);
 
   const startRes = await fetch(`${config.apiUrl}/api/deploy/start`, {
@@ -238,8 +273,12 @@ export async function deployPreview(config: PreviewConfig, outDir: string): Prom
   });
 
   if (!startRes.ok) {
-    const err = await startRes.json().catch(() => ({ error: startRes.statusText }));
-    throw new Error(`Preview deploy failed: ${(err as { error: string }).error}`);
+    const err = await startRes
+      .json()
+      .catch(() => ({ error: startRes.statusText }));
+    throw new Error(
+      `Preview deploy failed: ${(err as { error: string }).error}`
+    );
   }
 
   const { deploymentId, needed, skipped } = (await startRes.json()) as {
@@ -258,7 +297,9 @@ export async function deployPreview(config: PreviewConfig, outDir: string): Prom
     console.log(`  Uploading ${needed.length} files...`);
     for (const filePath of needed) {
       const content = files.get(filePath);
-      if (!content) continue;
+      if (!content) {
+        continue;
+      }
 
       const uploadRes = await fetch(`${config.apiUrl}/api/deploy/upload`, {
         method: "POST",
@@ -273,8 +314,12 @@ export async function deployPreview(config: PreviewConfig, outDir: string): Prom
       });
 
       if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({ error: uploadRes.statusText }));
-        throw new Error(`Upload failed for ${filePath}: ${(err as { error: string }).error}`);
+        const err = await uploadRes
+          .json()
+          .catch(() => ({ error: uploadRes.statusText }));
+        throw new Error(
+          `Upload failed for ${filePath}: ${(err as { error: string }).error}`
+        );
       }
     }
   }
@@ -294,12 +339,19 @@ export async function deployPreview(config: PreviewConfig, outDir: string): Prom
   });
 
   if (!finalizeRes.ok) {
-    const err = await finalizeRes.json().catch(() => ({ error: finalizeRes.statusText }));
+    const err = await finalizeRes
+      .json()
+      .catch(() => ({ error: finalizeRes.statusText }));
     throw new Error(`Finalize failed: ${(err as { error: string }).error}`);
   }
 
-  const result = (await finalizeRes.json()) as { url: string; deploymentId: string; previewUrl?: string };
-  const previewUrl = result.previewUrl || getPreviewUrl(branchSlug, config.slug);
+  const result = (await finalizeRes.json()) as {
+    url: string;
+    deploymentId: string;
+    previewUrl?: string;
+  };
+  const previewUrl =
+    result.previewUrl || getPreviewUrl(branchSlug, config.slug);
 
   console.log("  Preview deploy complete!");
 
@@ -320,17 +372,22 @@ export async function deployPreview(config: PreviewConfig, outDir: string): Prom
 export async function listPreviews(
   apiUrl: string,
   token: string,
-  slug: string,
+  slug: string
 ): Promise<PreviewDeployment[]> {
-  const res = await fetch(`${apiUrl}/api/deploy/previews?slug=${encodeURIComponent(slug)}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await fetch(
+    `${apiUrl}/api/deploy/previews?slug=${encodeURIComponent(slug)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(`Failed to list previews: ${(err as { error: string }).error}`);
+    throw new Error(
+      `Failed to list previews: ${(err as { error: string }).error}`
+    );
   }
 
   const data = (await res.json()) as { previews: PreviewDeployment[] };
@@ -343,7 +400,7 @@ export async function listPreviews(
 export async function deletePreview(
   apiUrl: string,
   token: string,
-  deploymentId: string,
+  deploymentId: string
 ): Promise<void> {
   const res = await fetch(`${apiUrl}/api/deploy/previews/${deploymentId}`, {
     method: "DELETE",
@@ -354,6 +411,8 @@ export async function deletePreview(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(`Failed to delete preview: ${(err as { error: string }).error}`);
+    throw new Error(
+      `Failed to delete preview: ${(err as { error: string }).error}`
+    );
   }
 }

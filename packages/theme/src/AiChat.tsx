@@ -1,47 +1,72 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── TYPES ────────────────────────────────────────────────
 export interface AiChatProps {
-  provider: "openai" | "anthropic" | "custom";
-  model?: string;
   apiKey?: string;
   context?: string; // serialized doc context for RAG
+  model?: string;
+  provider: "openai" | "anthropic" | "custom";
 }
 
 interface Message {
-  role: "user" | "assistant";
   content: string;
+  role: "user" | "assistant";
 }
 
 // ── ICONS ────────────────────────────────────────────────
 const ChatIcon = () => (
-  <svg width={22} height={22} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    fill="none"
+    height={22}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width={22}
+  >
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
 
 const CloseIcon = () => (
-  <svg width={18} height={18} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    fill="none"
+    height={18}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width={18}
+  >
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
 
 const SendIcon = () => (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    fill="none"
+    height={16}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="2"
+    viewBox="0 0 24 24"
+    width={16}
+  >
     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
   </svg>
 );
 
 // ── API HELPERS (shared with AI search) ─────────────────
 import {
-  buildSystemPrompt,
-  callOpenAI,
-  callAnthropic,
-  getDefaultModel,
   type AiMessage,
+  buildSystemPrompt,
+  callAnthropic,
+  callOpenAI,
+  getDefaultModel,
 } from "./ai-api.js";
 
 // ── COMPONENT ───────────────────────────────────────────
@@ -54,7 +79,11 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const resolvedKey = apiKey || (typeof window !== "undefined" ? (window as any).__TOME_AI_API_KEY__ : undefined);
+  const resolvedKey =
+    apiKey ||
+    (typeof window === "undefined"
+      ? undefined
+      : (window as any).__TOME_AI_API_KEY__);
   const resolvedModel = model || getDefaultModel(provider);
 
   // Scroll to bottom on new messages
@@ -71,8 +100,12 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text || loading) return;
-    if (!resolvedKey) return;
+    if (!text || loading) {
+      return;
+    }
+    if (!resolvedKey) {
+      return;
+    }
 
     const userMsg: Message = { role: "user", content: text };
     const updatedMessages = [...messages, userMsg];
@@ -85,11 +118,24 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
       let response: string;
       const sysPrompt = buildSystemPrompt(context);
       if (provider === "openai") {
-        response = await callOpenAI(updatedMessages as AiMessage[], resolvedKey, resolvedModel, sysPrompt);
+        response = await callOpenAI(
+          updatedMessages as AiMessage[],
+          resolvedKey,
+          resolvedModel,
+          sysPrompt
+        );
       } else {
-        response = await callAnthropic(updatedMessages as AiMessage[], resolvedKey, resolvedModel, sysPrompt);
+        response = await callAnthropic(
+          updatedMessages as AiMessage[],
+          resolvedKey,
+          resolvedModel,
+          sysPrompt
+        );
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: response },
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to get response");
     } finally {
@@ -104,16 +150,16 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
         sendMessage();
       }
     },
-    [sendMessage],
+    [sendMessage]
   );
 
   // ── Floating button (closed state) ─────────────────────
   if (!open) {
     return (
       <button
+        aria-label="Open AI chat"
         data-testid="ai-chat-button"
         onClick={() => setOpen(true)}
-        aria-label="Open AI chat"
         style={{
           position: "fixed",
           bottom: 24,
@@ -182,9 +228,9 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
           Ask AI
         </span>
         <button
+          aria-label="Close AI chat"
           data-testid="ai-chat-close"
           onClick={() => setOpen(false)}
-          aria-label="Close AI chat"
           style={{
             background: "none",
             border: "none",
@@ -217,38 +263,57 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
               lineHeight: 1.6,
             }}
           >
-            <p style={{ marginBottom: 8, fontWeight: 500, color: "var(--tx)" }}>AI not configured</p>
+            <p style={{ marginBottom: 8, fontWeight: 500, color: "var(--tx)" }}>
+              AI not configured
+            </p>
             <p style={{ marginBottom: 8 }}>
-              To enable AI chat, set the <code style={{
-                fontFamily: "var(--font-code)",
-                fontSize: "0.88em",
-                background: "var(--cdBg)",
-                padding: "0.15em 0.4em",
-                borderRadius: 4,
-              }}>apiKeyEnv</code> in <code style={{
-                fontFamily: "var(--font-code)",
-                fontSize: "0.88em",
-                background: "var(--cdBg)",
-                padding: "0.15em 0.4em",
-                borderRadius: 4,
-              }}>tome.config.js</code> and provide the environment variable at build time.
+              To enable AI chat, set the{" "}
+              <code
+                style={{
+                  fontFamily: "var(--font-code)",
+                  fontSize: "0.88em",
+                  background: "var(--cdBg)",
+                  padding: "0.15em 0.4em",
+                  borderRadius: 4,
+                }}
+              >
+                apiKeyEnv
+              </code>{" "}
+              in{" "}
+              <code
+                style={{
+                  fontFamily: "var(--font-code)",
+                  fontSize: "0.88em",
+                  background: "var(--cdBg)",
+                  padding: "0.15em 0.4em",
+                  borderRadius: 4,
+                }}
+              >
+                tome.config.js
+              </code>{" "}
+              and provide the environment variable at build time.
             </p>
             <p style={{ fontSize: 11.5, color: "var(--txM)" }}>
-              Example: <code style={{
-                fontFamily: "var(--font-code)",
-                fontSize: "0.88em",
-                background: "var(--cdBg)",
-                padding: "0.15em 0.4em",
-                borderRadius: 4,
-              }}>TOME_AI_KEY=sk-... tome build</code>
+              Example:{" "}
+              <code
+                style={{
+                  fontFamily: "var(--font-code)",
+                  fontSize: "0.88em",
+                  background: "var(--cdBg)",
+                  padding: "0.15em 0.4em",
+                  borderRadius: 4,
+                }}
+              >
+                TOME_AI_KEY=sk-... tome build
+              </code>
             </p>
           </div>
         )}
 
         {messages.map((msg, i) => (
           <div
-            key={i}
             data-testid={`ai-chat-message-${msg.role}`}
+            key={i}
             style={{
               marginBottom: 12,
               display: "flex",
@@ -264,8 +329,7 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
                 lineHeight: 1.55,
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
-                background:
-                  msg.role === "user" ? "var(--ac)" : "var(--cdBg)",
+                background: msg.role === "user" ? "var(--ac)" : "var(--cdBg)",
                 color: msg.role === "user" ? "#fff" : "var(--tx)",
               }}
             >
@@ -328,13 +392,12 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
         }}
       >
         <input
-          ref={inputRef}
           data-testid="ai-chat-input"
-          value={input}
+          disabled={!resolvedKey}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={resolvedKey ? "Ask a question..." : "API key required"}
-          disabled={!resolvedKey}
+          ref={inputRef}
           style={{
             flex: 1,
             background: "var(--cdBg)",
@@ -346,17 +409,19 @@ export function AiChat({ provider, model, apiKey, context }: AiChatProps) {
             fontFamily: "var(--font-body)",
             outline: "none",
           }}
+          value={input}
         />
         <button
-          data-testid="ai-chat-send"
-          onClick={sendMessage}
-          disabled={!resolvedKey || !input.trim() || loading}
           aria-label="Send message"
+          data-testid="ai-chat-send"
+          disabled={!(resolvedKey && input.trim()) || loading}
+          onClick={sendMessage}
           style={{
             width: 34,
             height: 34,
             borderRadius: 8,
-            background: resolvedKey && input.trim() ? "var(--ac)" : "var(--cdBg)",
+            background:
+              resolvedKey && input.trim() ? "var(--ac)" : "var(--cdBg)",
             color: resolvedKey && input.trim() ? "#fff" : "var(--txM)",
             border: "none",
             cursor: resolvedKey && input.trim() ? "pointer" : "default",

@@ -6,7 +6,7 @@
  * validate every node's name, attributes, parseHTML, renderHTML, and flags
  * without needing a live Tiptap editor instance.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock @tiptap/core before any node imports.
 // Node.create(config) just returns config with a _isMocked flag.
@@ -24,22 +24,22 @@ vi.mock("@tiptap/core", () => ({
 
 // Now import the nodes — they will use the mocked @tiptap/core
 import {
-  tomeNodes,
-  CalloutNode,
-  TabsNode,
-  TabNode,
-  CardNode,
-  CardGroupNode,
-  StepsNode,
-  StepNode,
   AccordionNode,
+  CalloutNode,
+  CardGroupNode,
+  CardNode,
   CodeBlockNode,
-  FileTreeNode,
   FileTreeItemNode,
-  PackageManagerNode,
-  TypeTableNode,
+  FileTreeNode,
   LinkCardNode,
+  PackageManagerNode,
   SnippetNode,
+  StepNode,
+  StepsNode,
+  TabNode,
+  TabsNode,
+  TypeTableNode,
+  tomeNodes,
 } from "./index.js";
 
 // Helper: call addAttributes() if it exists on the mocked config
@@ -55,8 +55,13 @@ function getParseRules(node: Record<string, unknown>) {
 }
 
 // Helper: call renderHTML() on the mocked config
-function callRenderHTML(node: Record<string, unknown>, attrs: Record<string, unknown> = {}) {
-  const fn = node.renderHTML as ((opts: { HTMLAttributes: Record<string, unknown> }) => unknown[]) | undefined;
+function callRenderHTML(
+  node: Record<string, unknown>,
+  attrs: Record<string, unknown> = {}
+) {
+  const fn = node.renderHTML as
+    | ((opts: { HTMLAttributes: Record<string, unknown> }) => unknown[])
+    | undefined;
   return fn ? fn({ HTMLAttributes: attrs }) : [];
 }
 

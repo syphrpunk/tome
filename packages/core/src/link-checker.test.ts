@@ -1,7 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { extractInternalLinks, checkLinks, formatLinkCheckResults } from "./link-checker.js";
-import type { PageRoute } from "./routes.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TomeConfig } from "./config.js";
+import {
+  checkLinks,
+  extractInternalLinks,
+  formatLinkCheckResults,
+} from "./link-checker.js";
+import type { PageRoute } from "./routes.js";
 
 // ── extractInternalLinks ────────────────────────────────
 
@@ -150,10 +154,14 @@ describe("checkLinks", () => {
 
     // index.md links to quickstart
     (readFileSync as any)
-      .mockReturnValueOnce("---\ntitle: Index\n---\nSee [quickstart](quickstart)")  // index headings
-      .mockReturnValueOnce("---\ntitle: QS\n---\n## Installation\nContent")           // quickstart headings
-      .mockReturnValueOnce("---\ntitle: Index\n---\nSee [quickstart](quickstart)")  // index links
-      .mockReturnValueOnce("---\ntitle: QS\n---\n## Installation\nContent");          // quickstart links
+      .mockReturnValueOnce(
+        "---\ntitle: Index\n---\nSee [quickstart](quickstart)"
+      ) // index headings
+      .mockReturnValueOnce("---\ntitle: QS\n---\n## Installation\nContent") // quickstart headings
+      .mockReturnValueOnce(
+        "---\ntitle: Index\n---\nSee [quickstart](quickstart)"
+      ) // index links
+      .mockReturnValueOnce("---\ntitle: QS\n---\n## Installation\nContent"); // quickstart links
 
     const result = checkLinks(routes, mockConfig);
     expect(result.ok).toBe(true);
@@ -162,13 +170,13 @@ describe("checkLinks", () => {
 
   it("detects broken page reference", async () => {
     const { readFileSync } = await import("fs");
-    const routes: PageRoute[] = [
-      makeRoute("index", "index.md", ""),
-    ];
+    const routes: PageRoute[] = [makeRoute("index", "index.md", "")];
 
     (readFileSync as any)
-      .mockReturnValueOnce("---\ntitle: Index\n---\n## Heading\nContent")  // headings pass
-      .mockReturnValueOnce("---\ntitle: Index\n---\nSee [missing](nonexistent)");  // links pass
+      .mockReturnValueOnce("---\ntitle: Index\n---\n## Heading\nContent") // headings pass
+      .mockReturnValueOnce(
+        "---\ntitle: Index\n---\nSee [missing](nonexistent)"
+      ); // links pass
 
     const result = checkLinks(routes, mockConfig);
     expect(result.ok).toBe(false);
@@ -185,10 +193,12 @@ describe("checkLinks", () => {
     ];
 
     (readFileSync as any)
-      .mockReturnValueOnce("---\ntitle: Index\n---\n## Overview\nContent")   // index headings
-      .mockReturnValueOnce("---\ntitle: QS\n---\n## Setup\nContent")          // quickstart headings
-      .mockReturnValueOnce("---\ntitle: Index\n---\nSee [qs](quickstart#bad-anchor)")  // index links
-      .mockReturnValueOnce("---\ntitle: QS\n---\n## Setup\nContent");          // quickstart links
+      .mockReturnValueOnce("---\ntitle: Index\n---\n## Overview\nContent") // index headings
+      .mockReturnValueOnce("---\ntitle: QS\n---\n## Setup\nContent") // quickstart headings
+      .mockReturnValueOnce(
+        "---\ntitle: Index\n---\nSee [qs](quickstart#bad-anchor)"
+      ) // index links
+      .mockReturnValueOnce("---\ntitle: QS\n---\n## Setup\nContent"); // quickstart links
 
     const result = checkLinks(routes, mockConfig);
     expect(result.ok).toBe(false);
@@ -215,15 +225,11 @@ describe("checkLinks", () => {
 
   it("checks navigation config references", async () => {
     const { readFileSync } = await import("fs");
-    const routes: PageRoute[] = [
-      makeRoute("index", "index.md", ""),
-    ];
+    const routes: PageRoute[] = [makeRoute("index", "index.md", "")];
 
     const configWithNav: TomeConfig = {
       ...mockConfig,
-      navigation: [
-        { group: "Docs", pages: ["index", "missing-page"] },
-      ],
+      navigation: [{ group: "Docs", pages: ["index", "missing-page"] }],
     } as TomeConfig;
 
     (readFileSync as any)
@@ -232,8 +238,10 @@ describe("checkLinks", () => {
 
     const result = checkLinks(routes, configWithNav);
     expect(result.ok).toBe(false);
-    expect(result.broken.some(b => b.href === "missing-page")).toBe(true);
-    expect(result.broken.find(b => b.href === "missing-page")?.file).toBe("tome.config.js");
+    expect(result.broken.some((b) => b.href === "missing-page")).toBe(true);
+    expect(result.broken.find((b) => b.href === "missing-page")?.file).toBe(
+      "tome.config.js"
+    );
   });
 
   it("handles links with leading slash", async () => {
@@ -302,7 +310,9 @@ describe("checkLinks", () => {
     (readFileSync as any)
       .mockReturnValueOnce("---\ntitle: Index\n---\nContent")
       .mockReturnValueOnce("---\ntitle: Config\n---\nContent")
-      .mockReturnValueOnce("---\ntitle: Index\n---\nSee [config](/docs/reference/config)")
+      .mockReturnValueOnce(
+        "---\ntitle: Index\n---\nSee [config](/docs/reference/config)"
+      )
       .mockReturnValueOnce("---\ntitle: Config\n---\nContent");
 
     const result = checkLinks(routes, configWithBase);
@@ -320,7 +330,9 @@ describe("checkLinks", () => {
     (readFileSync as any)
       .mockReturnValueOnce("---\ntitle: Index\n---\nContent")
       .mockReturnValueOnce("---\ntitle: QS\n---\nContent")
-      .mockReturnValueOnce("---\ntitle: Index\n---\n[a](quickstart) and [b](quickstart)")
+      .mockReturnValueOnce(
+        "---\ntitle: Index\n---\n[a](quickstart) and [b](quickstart)"
+      )
       .mockReturnValueOnce("---\ntitle: QS\n---\n[c](index)");
 
     const result = checkLinks(routes, mockConfig);
@@ -342,7 +354,12 @@ describe("formatLinkCheckResults", () => {
     const result = {
       totalLinks: 10,
       broken: [
-        { file: "intro.md", line: 5, href: "missing", reason: 'Page "missing" does not exist' },
+        {
+          file: "intro.md",
+          line: 5,
+          href: "missing",
+          reason: 'Page "missing" does not exist',
+        },
       ],
       ok: false,
     };
@@ -369,9 +386,7 @@ describe("formatLinkCheckResults", () => {
   it("uses singular 'link' for one broken", () => {
     const result = {
       totalLinks: 5,
-      broken: [
-        { file: "a.md", line: 1, href: "x", reason: "missing" },
-      ],
+      broken: [{ file: "a.md", line: 1, href: "x", reason: "missing" }],
       ok: false,
     };
     const output = formatLinkCheckResults(result);
@@ -382,7 +397,12 @@ describe("formatLinkCheckResults", () => {
     const result = {
       totalLinks: 3,
       broken: [
-        { file: "tome.config.js", line: 0, href: "missing", reason: "nav reference" },
+        {
+          file: "tome.config.js",
+          line: 0,
+          href: "missing",
+          reason: "nav reference",
+        },
       ],
       ok: false,
     };

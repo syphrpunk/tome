@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 
 /**
  * Container for tabbed content. Wraps multiple TabNode children.
@@ -16,7 +16,9 @@ export const TabsNode = Node.create({
         default: [],
         parseHTML: (el) => {
           const raw = el.getAttribute("data-tab-items");
-          if (!raw) return [];
+          if (!raw) {
+            return [];
+          }
           try {
             return JSON.parse(raw);
           } catch {

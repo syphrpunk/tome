@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  hashPassword,
-  verifyPassword,
   generateSessionToken,
+  hashPassword,
   validateSessionToken,
+  verifyPassword,
 } from "./password.js";
 
 const TEST_SECRET = "test-secret-key-for-hmac-signing";
@@ -125,14 +125,21 @@ describe("validateSessionToken", () => {
     const token = await generateSessionToken("my-docs", TEST_SECRET);
     const [, sig] = token.split(".");
     // Create a different payload
-    const tamperedPayload = btoa(JSON.stringify({ slug: "hacked", exp: Date.now() + 100000 }));
-    const slug = await validateSessionToken(`${tamperedPayload}.${sig}`, TEST_SECRET);
+    const tamperedPayload = btoa(
+      JSON.stringify({ slug: "hacked", exp: Date.now() + 100_000 })
+    );
+    const slug = await validateSessionToken(
+      `${tamperedPayload}.${sig}`,
+      TEST_SECRET
+    );
     expect(slug).toBeNull();
   });
 
   it("returns null for unsigned token (old format)", async () => {
     // Simulate old unsigned token format (plain base64, no signature)
-    const oldToken = btoa(JSON.stringify({ slug: "my-docs", exp: Date.now() + 100000 }));
+    const oldToken = btoa(
+      JSON.stringify({ slug: "my-docs", exp: Date.now() + 100_000 })
+    );
     const slug = await validateSessionToken(oldToken, TEST_SECRET);
     expect(slug).toBeNull();
   });

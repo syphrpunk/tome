@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { isApiHost, resolveHostname, serveFromR2 } from "./serve.js";
 
 // ── isApiHost ──────────────────────────────────────────────
@@ -50,7 +50,9 @@ describe("resolveHostname", () => {
 
   it("strips port before extracting", async () => {
     const db = mockDb();
-    expect(await resolveHostname("my-docs.tome.center:443", db)).toBe("my-docs");
+    expect(await resolveHostname("my-docs.tome.center:443", db)).toBe(
+      "my-docs"
+    );
   });
 
   it("rejects bare tome.center (no subdomain)", async () => {
@@ -76,14 +78,20 @@ describe("resolveHostname", () => {
 
 // ── serveFromR2 ────────────────────────────────────────────
 
-function mockBucket(files: Record<string, { body: string; contentType?: string }>) {
+function mockBucket(
+  files: Record<string, { body: string; contentType?: string }>
+) {
   return {
     get: vi.fn(async (key: string) => {
       const file = files[key];
-      if (!file) return null;
+      if (!file) {
+        return null;
+      }
       return {
         body: file.body,
-        httpMetadata: file.contentType ? { contentType: file.contentType } : undefined,
+        httpMetadata: file.contentType
+          ? { contentType: file.contentType }
+          : undefined,
         etag: `"etag-${key}"`,
       };
     }),
@@ -159,7 +167,7 @@ describe("serveFromR2", () => {
     });
     const res = await serveFromR2("my-docs", "/app.js", bucket);
     expect(res.headers.get("Cache-Control")).toBe(
-      "public, max-age=60, s-maxage=600",
+      "public, max-age=60, s-maxage=600"
     );
     expect(res.headers.get("ETag")).toBe('"etag-sites/my-docs/app.js"');
   });
@@ -170,7 +178,7 @@ describe("serveFromR2", () => {
     });
     const res = await serveFromR2("my-docs", "/app.js", bucket);
     expect(res.headers.get("Content-Type")).toBe(
-      "application/javascript; charset=utf-8",
+      "application/javascript; charset=utf-8"
     );
   });
 

@@ -19,15 +19,18 @@
 /** MDX components that are allowed in editor output */
 const ALLOWED_COMPONENTS = new Set([
   "Callout",
-  "Tabs", "Tab",
-  "Card", "CardGroup",
+  "Tabs",
+  "Tab",
+  "Card",
+  "CardGroup",
   "Steps",
   "Accordion",
   "CodeBlock",
   "FileTree",
   "PackageManager",
   "TypeTable",
-  "LinkCard", "CardGrid",
+  "LinkCard",
+  "CardGrid",
   "Snippet",
   "ApiPlayground",
   "CodeSamples",
@@ -99,7 +102,9 @@ function isComponentTag(line: string): boolean {
   const trimmed = line.trim();
   // Match opening or closing component tags
   const match = trimmed.match(/^<\/?([A-Z]\w*)/);
-  if (match) return ALLOWED_COMPONENTS.has(match[1]);
+  if (match) {
+    return ALLOWED_COMPONENTS.has(match[1]);
+  }
   return false;
 }
 
@@ -135,8 +140,11 @@ function stripInlineExpressions(line: string): string {
       let depth = 1;
       let j = i + 1;
       while (j < line.length && depth > 0) {
-        if (line[j] === "{") depth++;
-        else if (line[j] === "}") depth--;
+        if (line[j] === "{") {
+          depth++;
+        } else if (line[j] === "}") {
+          depth--;
+        }
         j++;
       }
 
@@ -145,8 +153,10 @@ function stripInlineExpressions(line: string): string {
         // Allow simple prop expressions like {true} or {"string"}
         const inner = expr.slice(1, -1).trim();
         if (
-          inner === "true" || inner === "false" ||
-          /^"[^"]*"$/.test(inner) || /^'[^']*'$/.test(inner) ||
+          inner === "true" ||
+          inner === "false" ||
+          /^"[^"]*"$/.test(inner) ||
+          /^'[^']*'$/.test(inner) ||
           /^\d+$/.test(inner)
         ) {
           result += expr;
@@ -181,15 +191,29 @@ export function validateEditorContent(markdown: string): string[] {
       inCodeBlock = !inCodeBlock;
       continue;
     }
-    if (inCodeBlock) continue;
+    if (inCodeBlock) {
+      continue;
+    }
 
     // Check for dangerous patterns
-    if (/\bfetch\s*\(/.test(line)) warnings.push(`Line ${i + 1}: contains fetch() call`);
-    if (/\bglobalThis\b/.test(line)) warnings.push(`Line ${i + 1}: references globalThis`);
-    if (/\beval\s*\(/.test(line)) warnings.push(`Line ${i + 1}: contains eval() call`);
-    if (/\bFunction\s*\(/.test(line)) warnings.push(`Line ${i + 1}: contains Function() constructor`);
-    if (/\bprocess\.env\b/.test(line)) warnings.push(`Line ${i + 1}: references process.env`);
-    if (/\bimport\s*\(/.test(line) && !line.trim().startsWith("```")) warnings.push(`Line ${i + 1}: contains dynamic import()`);
+    if (/\bfetch\s*\(/.test(line)) {
+      warnings.push(`Line ${i + 1}: contains fetch() call`);
+    }
+    if (/\bglobalThis\b/.test(line)) {
+      warnings.push(`Line ${i + 1}: references globalThis`);
+    }
+    if (/\beval\s*\(/.test(line)) {
+      warnings.push(`Line ${i + 1}: contains eval() call`);
+    }
+    if (/\bFunction\s*\(/.test(line)) {
+      warnings.push(`Line ${i + 1}: contains Function() constructor`);
+    }
+    if (/\bprocess\.env\b/.test(line)) {
+      warnings.push(`Line ${i + 1}: references process.env`);
+    }
+    if (/\bimport\s*\(/.test(line) && !line.trim().startsWith("```")) {
+      warnings.push(`Line ${i + 1}: contains dynamic import()`);
+    }
   }
 
   return warnings;

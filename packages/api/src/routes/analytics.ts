@@ -18,7 +18,7 @@ analytics.post("/event", async (c) => {
     screenWidth?: number;
   }>();
 
-  if (!body.siteId || !body.type) {
+  if (!(body.siteId && body.type)) {
     return c.json({ error: "Missing siteId or type" }, 400);
   }
 
@@ -55,7 +55,7 @@ analytics.get("/summary", async (c) => {
   }
 
   // Calculate date cutoff from range
-  const days = parseInt(range) || 30;
+  const days = Number.parseInt(range) || 30;
   const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
 
   // Total page views

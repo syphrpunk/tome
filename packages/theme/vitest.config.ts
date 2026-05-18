@@ -1,6 +1,6 @@
-import { defineConfig, type Plugin } from "vitest/config";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
+import { defineConfig, type Plugin } from "vitest/config";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -11,9 +11,18 @@ function virtualTomeStubs(): Plugin {
   const stubs: Record<string, string> = {
     "virtual:tome/config": resolve(__dirname, "src/__virtual_stubs/config.ts"),
     "virtual:tome/routes": resolve(__dirname, "src/__virtual_stubs/routes.ts"),
-    "virtual:tome/page-loader": resolve(__dirname, "src/__virtual_stubs/page-loader.ts"),
-    "virtual:tome/doc-context": resolve(__dirname, "src/__virtual_stubs/doc-context.ts"),
-    "virtual:tome/overrides": resolve(__dirname, "src/__virtual_stubs/overrides.ts"),
+    "virtual:tome/page-loader": resolve(
+      __dirname,
+      "src/__virtual_stubs/page-loader.ts"
+    ),
+    "virtual:tome/doc-context": resolve(
+      __dirname,
+      "src/__virtual_stubs/doc-context.ts"
+    ),
+    "virtual:tome/overrides": resolve(
+      __dirname,
+      "src/__virtual_stubs/overrides.ts"
+    ),
   };
 
   return {
@@ -21,7 +30,9 @@ function virtualTomeStubs(): Plugin {
     enforce: "pre",
     resolveId(id) {
       const resolved = stubs[id];
-      if (resolved) return resolved;
+      if (resolved) {
+        return resolved;
+      }
       return null;
     },
   };

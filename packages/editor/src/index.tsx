@@ -1,6 +1,10 @@
-export { TomeEditor, getEditorMarkdown } from "./Editor.js";
 export type { TomeEditorProps } from "./Editor.js";
-export { EditorToolbar } from "./toolbar.js";
-export { sanitizeEditorContent, validateEditorContent } from "./sanitize.js";
-export { SlashCommandsExtension, filterSlashCommands, SLASH_COMMANDS } from "./extensions/SlashCommands.js";
+export { getEditorMarkdown, TomeEditor } from "./Editor.js";
+export {
+  filterSlashCommands,
+  SLASH_COMMANDS,
+  SlashCommandsExtension,
+} from "./extensions/SlashCommands.js";
 export { tomeNodes } from "./nodes/index.js";
+export { sanitizeEditorContent, validateEditorContent } from "./sanitize.js";
+export { EditorToolbar } from "./toolbar.js";

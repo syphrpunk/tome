@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatRelativeDate, getGitLastUpdated } from "./git-dates.js";
 
 // ── formatRelativeDate ──────────────────────────────────
@@ -75,7 +75,7 @@ describe("getGitLastUpdated", () => {
 
   it("returns a string for a tracked file", () => {
     // Use a file that exists in the repo
-    const result = getGitLastUpdated(__filename);
+    const result = getGitLastUpdated(import.meta.filename);
     // This test file is tracked by git, so we should get a date
     if (result) {
       expect(typeof result).toBe("string");

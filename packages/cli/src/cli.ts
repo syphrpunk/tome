@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import pc from "picocolors";
-import { resolve, join } from "path";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join, resolve } from "path";
+import pc from "picocolors";
 import { fileURLToPath } from "url";
 import { runPagefind } from "./pagefind.js";
 
@@ -12,7 +12,9 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 // Read version from package.json at runtime so it's always current
 const VERSION = (() => {
   try {
-    const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8"));
+    const pkg = JSON.parse(
+      readFileSync(join(__dirname, "..", "package.json"), "utf-8")
+    );
     return pkg.version || "0.0.0";
   } catch {
     return "0.0.0";
@@ -44,7 +46,9 @@ program
     console.log(pc.dim("  Creating new documentation project...\n"));
 
     if (existsSync(targetDir)) {
-      console.error(pc.red(`  Error: Directory "${projectName}" already exists.\n`));
+      console.error(
+        pc.red(`  Error: Directory "${projectName}" already exists.\n`)
+      );
       process.exit(1);
     }
 
@@ -113,7 +117,7 @@ export default {
           devDependencies: {
             "@tomehq/cli": `^${VERSION}`,
             "@tomehq/theme": `^${VERSION}`,
-            "react": "^19.0.0",
+            react: "^19.0.0",
             "react-dom": "^19.0.0",
           },
         },
@@ -918,12 +922,18 @@ dist/
 `
     );
 
-    console.log(pc.green("  ✓ ") + `Project created at ${pc.bold(projectName)}/\n`);
+    console.log(
+      pc.green("  ✓ ") + `Project created at ${pc.bold(projectName)}/\n`
+    );
     console.log(pc.dim("  Next steps:\n"));
     console.log(`    ${pc.cyan("cd")} ${projectName}`);
     console.log(`    ${pc.cyan("npm install")}`);
     console.log(`    ${pc.cyan("npm run dev")}\n`);
-    console.log(pc.dim(`  Then open ${pc.underline("http://localhost:3000")} to see your docs.\n`));
+    console.log(
+      pc.dim(
+        `  Then open ${pc.underline("http://localhost:3000")} to see your docs.\n`
+      )
+    );
   });
 
 // ── DEV ──────────────────────────────────────────────────
@@ -957,16 +967,19 @@ program
       const server = await createServer({
         root,
         server: {
-          port: parseInt(opts.port),
-          host: opts.host || false,
+          port: Number.parseInt(opts.port),
+          host: opts.host,
           open: false,
         },
-        plugins: [
-          tomePlugin({ root }),
-          react(),
-        ],
+        plugins: [tomePlugin({ root }), react()],
         optimizeDeps: {
-          include: ["react", "react/jsx-runtime", "react/jsx-dev-runtime", "react-dom", "react-dom/client"],
+          include: [
+            "react",
+            "react/jsx-runtime",
+            "react/jsx-dev-runtime",
+            "react-dom",
+            "react-dom/client",
+          ],
         },
         resolve: {
           alias: {
@@ -981,17 +994,20 @@ program
       const host = opts.host ? "0.0.0.0" : "localhost";
 
       console.log(pc.green("  ✓ ") + "Dev server running\n");
-      console.log(`    ${pc.dim("Local:")}   ${pc.cyan(`http://localhost:${port}`)}`);
+      console.log(
+        `    ${pc.dim("Local:")}   ${pc.cyan(`http://localhost:${port}`)}`
+      );
       if (opts.host) {
-        console.log(`    ${pc.dim("Network:")} ${pc.cyan(`http://${host}:${port}`)}`);
+        console.log(
+          `    ${pc.dim("Network:")} ${pc.cyan(`http://${host}:${port}`)}`
+        );
       }
-      console.log(`\n  ${pc.dim("Press")} ${pc.bold("Ctrl+C")} ${pc.dim("to stop")}\n`);
-
+      console.log(
+        `\n  ${pc.dim("Press")} ${pc.bold("Ctrl+C")} ${pc.dim("to stop")}\n`
+      );
     } catch (err) {
       console.error(pc.red("\n  Error starting dev server:\n"));
-      console.error(
-        `  ${err instanceof Error ? err.message : String(err)}\n`
-      );
+      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
       process.exit(1);
     }
   });
@@ -1031,12 +1047,15 @@ program
           outDir: resolve(root, opts.outDir),
           emptyOutDir: true,
         },
-        plugins: [
-          tomePlugin({ root }),
-          react(),
-        ],
+        plugins: [tomePlugin({ root }), react()],
         optimizeDeps: {
-          include: ["react", "react/jsx-runtime", "react/jsx-dev-runtime", "react-dom", "react-dom/client"],
+          include: [
+            "react",
+            "react/jsx-runtime",
+            "react/jsx-dev-runtime",
+            "react-dom",
+            "react-dom/client",
+          ],
         },
         resolve: {
           alias: {
@@ -1047,7 +1066,9 @@ program
 
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(`\n  ${pc.green("✓")} Built in ${pc.bold(elapsed + "s")}`);
-      console.log(`  ${pc.dim("Output:")} ${pc.cyan(resolve(root, opts.outDir))}\n`);
+      console.log(
+        `  ${pc.dim("Output:")} ${pc.cyan(resolve(root, opts.outDir))}\n`
+      );
 
       // Run Pagefind to build search index (suppress noisy output, show summary only)
       try {
@@ -1055,38 +1076,67 @@ program
         const pagefindOut = runPagefind(outDirAbs, root);
         // Check if indexing was meaningful
         if (pagefindOut && pagefindOut.includes("Indexed 0 pages")) {
-          console.log(pc.yellow("  ⚠ Search index skipped (no indexable pages found)\n"));
+          console.log(
+            pc.yellow("  ⚠ Search index skipped (no indexable pages found)\n")
+          );
         } else {
           console.log(pc.green("  ✓ Search index built\n"));
         }
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
-        console.log(pc.yellow(`  ⚠ Search index skipped (pagefind not available)\n`));
+        console.log(
+          pc.yellow("  ⚠ Search index skipped (pagefind not available)\n")
+        );
         console.log(pc.dim(`    Reason: ${msg}\n`));
       }
 
       // TOM-50: Generate OG images
       try {
-        const { loadConfig: loadOgConfig, discoverPages: discoverOgPages, generateOgImages } = await import("@tomehq/core");
+        const {
+          loadConfig: loadOgConfig,
+          discoverPages: discoverOgPages,
+          generateOgImages,
+        } = await import("@tomehq/core");
         const ogConfig = await loadOgConfig(root);
         const ogPagesDir = resolve(root, "pages");
-        const ogRoutes = await discoverOgPages(ogPagesDir, ogConfig.versioning ?? undefined, ogConfig.i18n ?? undefined);
-        const ogResult = await generateOgImages(ogRoutes, ogConfig, resolve(root, opts.outDir));
-        console.log(`  ${pc.green("✓")} ${ogResult.generated} OG image${ogResult.generated === 1 ? "" : "s"} generated${ogResult.skipped > 0 ? ` (${ogResult.skipped} custom)` : ""}\n`);
+        const ogRoutes = await discoverOgPages(
+          ogPagesDir,
+          ogConfig.versioning ?? undefined,
+          ogConfig.i18n ?? undefined
+        );
+        const ogResult = await generateOgImages(
+          ogRoutes,
+          ogConfig,
+          resolve(root, opts.outDir)
+        );
+        console.log(
+          `  ${pc.green("✓")} ${ogResult.generated} OG image${ogResult.generated === 1 ? "" : "s"} generated${ogResult.skipped > 0 ? ` (${ogResult.skipped} custom)` : ""}\n`
+        );
       } catch {
         console.log(pc.yellow("  ⚠ OG image generation skipped\n"));
       }
 
       // TOM-51: Run broken link checker
       try {
-        const { loadConfig, discoverPages, checkLinks, formatLinkCheckResults } = await import("@tomehq/core");
+        const {
+          loadConfig,
+          discoverPages,
+          checkLinks,
+          formatLinkCheckResults,
+        } = await import("@tomehq/core");
         const cfg = await loadConfig(root);
         const pagesDir = resolve(root, "pages");
-        const discoveredRoutes = await discoverPages(pagesDir, cfg.versioning ?? undefined, cfg.i18n ?? undefined);
+        const discoveredRoutes = await discoverPages(
+          pagesDir,
+          cfg.versioning ?? undefined,
+          cfg.i18n ?? undefined
+        );
         const result = checkLinks(discoveredRoutes, cfg);
 
         if (result.ok) {
-          console.log(`  ${pc.green("✓")} ${result.totalLinks} internal links checked — all valid\n`);
+          console.log(
+            `  ${pc.green("✓")} ${result.totalLinks} internal links checked — all valid\n`
+          );
         } else {
           const output = formatLinkCheckResults(result);
           if (cfg.strictLinks) {
@@ -1099,12 +1149,9 @@ program
       } catch {
         // Link checking is non-critical, don't fail build
       }
-
     } catch (err) {
       console.error(pc.red("\n  Build failed:\n"));
-      console.error(
-        `  ${err instanceof Error ? err.message : String(err)}\n`
-      );
+      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
       process.exit(1);
     }
   });
@@ -1122,7 +1169,10 @@ program
     if (!token) {
       // Simple non-interactive fallback: require --token flag
       const readline = await import("readline");
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
       token = await new Promise<string>((resolve) => {
         rl.question(pc.dim("  Enter your API token: "), (answer) => {
           rl.close();
@@ -1153,107 +1203,153 @@ program
   .description("Deploy to Tome Cloud")
   .option("-o, --outDir <dir>", "Build output directory", "out")
   .option("--preview", "Create a preview deployment (branch-based)")
-  .option("--branch <name>", "Branch name for preview (auto-detected if omitted)")
+  .option(
+    "--branch <name>",
+    "Branch name for preview (auto-detected if omitted)"
+  )
   .option("--expires <days>", "Preview expiry in days", "7")
-  .action(async (opts: { outDir: string; preview?: boolean; branch?: string; expires: string }) => {
-    console.log(logo);
+  .action(
+    async (opts: {
+      outDir: string;
+      preview?: boolean;
+      branch?: string;
+      expires: string;
+    }) => {
+      console.log(logo);
 
-    const { readAuthToken, deployToCloud } = await import("@tomehq/core/deploy");
+      const { readAuthToken, deployToCloud } = await import(
+        "@tomehq/core/deploy"
+      );
 
-    // Check auth
-    const token = readAuthToken();
-    if (!token) {
-      console.error(pc.red("  Error: Not logged in.\n"));
-      console.log(pc.dim("  Run ") + pc.cyan("tome login") + pc.dim(" first to authenticate.\n"));
-      process.exit(1);
-    }
-
-    // Load config for project slug
-    const root = process.cwd();
-    let slug = "my-docs";
-
-    for (const configFile of ["tome.config.js", "tome.config.mjs", "tome.config.ts"]) {
-      const configPath = join(root, configFile);
-      if (existsSync(configPath)) {
-        try {
-          const { pathToFileURL } = await import("url");
-          const configUrl = pathToFileURL(configPath).href;
-          const mod = await import(configUrl);
-          const config = mod.default || mod;
-          if (config.name) {
-            slug = config.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-          }
-        } catch {
-          // Use default slug
-        }
-        break;
-      }
-    }
-
-    const outDir = resolve(root, opts.outDir);
-
-    // Preview deployment
-    if (opts.preview) {
-      const { deployPreview, detectBranch, detectCommitSha, detectPrNumber } = await import("@tomehq/core");
-
-      const branch = opts.branch || detectBranch();
-      if (!branch) {
-        console.error(pc.red("  Error: Could not detect branch name.\n"));
-        console.log(pc.dim("  Use ") + pc.cyan("--branch <name>") + pc.dim(" to specify manually.\n"));
+      // Check auth
+      const token = readAuthToken();
+      if (!token) {
+        console.error(pc.red("  Error: Not logged in.\n"));
+        console.log(
+          pc.dim("  Run ") +
+            pc.cyan("tome login") +
+            pc.dim(" first to authenticate.\n")
+        );
         process.exit(1);
       }
 
-      console.log(pc.dim("  Deploying preview to Tome Cloud...\n"));
+      // Load config for project slug
+      const root = process.cwd();
+      let slug = "my-docs";
+
+      for (const configFile of [
+        "tome.config.js",
+        "tome.config.mjs",
+        "tome.config.ts",
+      ]) {
+        const configPath = join(root, configFile);
+        if (existsSync(configPath)) {
+          try {
+            const { pathToFileURL } = await import("url");
+            const configUrl = pathToFileURL(configPath).href;
+            const mod = await import(configUrl);
+            const config = mod.default || mod;
+            if (config.name) {
+              slug = config.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "");
+            }
+          } catch {
+            // Use default slug
+          }
+          break;
+        }
+      }
+
+      const outDir = resolve(root, opts.outDir);
+
+      // Preview deployment
+      if (opts.preview) {
+        const { deployPreview, detectBranch, detectCommitSha, detectPrNumber } =
+          await import("@tomehq/core");
+
+        const branch = opts.branch || detectBranch();
+        if (!branch) {
+          console.error(pc.red("  Error: Could not detect branch name.\n"));
+          console.log(
+            pc.dim("  Use ") +
+              pc.cyan("--branch <name>") +
+              pc.dim(" to specify manually.\n")
+          );
+          process.exit(1);
+        }
+
+        console.log(pc.dim("  Deploying preview to Tome Cloud...\n"));
+
+        try {
+          const result = await deployPreview(
+            {
+              apiUrl: process.env.TOME_API_URL ?? "https://api.tome.center",
+              token,
+              slug,
+              branch,
+              commitSha: detectCommitSha() ?? undefined,
+              prNumber: detectPrNumber() ?? undefined,
+              expiresInDays: Number.parseInt(opts.expires),
+            },
+            outDir
+          );
+
+          console.log(`\n  ${pc.green("✓")} Preview deployed successfully!\n`);
+          console.log(
+            `  ${pc.dim("Preview URL:")}   ${pc.cyan(result.previewUrl)}`
+          );
+          console.log(
+            `  ${pc.dim("Branch:")}        ${pc.bold(result.branch)}`
+          );
+          console.log(`  ${pc.dim("Deployment ID:")} ${result.deploymentId}`);
+          console.log(
+            `  ${pc.dim("Expires:")}       ${new Date(result.expiresAt).toLocaleDateString()}`
+          );
+          console.log(`  ${pc.dim("Files:")}         ${result.fileCount}`);
+          console.log(
+            `  ${pc.dim("Size:")}          ${(result.size / 1024).toFixed(1)} KB\n`
+          );
+        } catch (err) {
+          console.error(pc.red("\n  Preview deploy failed:\n"));
+          console.error(
+            `  ${err instanceof Error ? err.message : String(err)}\n`
+          );
+          process.exit(1);
+        }
+        return;
+      }
+
+      // Standard deployment
+      console.log(pc.dim("  Deploying to Tome Cloud...\n"));
 
       try {
-        const result = await deployPreview(
+        const result = await deployToCloud(
           {
             apiUrl: process.env.TOME_API_URL ?? "https://api.tome.center",
             token,
             slug,
-            branch,
-            commitSha: detectCommitSha() ?? undefined,
-            prNumber: detectPrNumber() ?? undefined,
-            expiresInDays: parseInt(opts.expires),
           },
-          outDir,
+          outDir
         );
 
-        console.log(`\n  ${pc.green("✓")} Preview deployed successfully!\n`);
-        console.log(`  ${pc.dim("Preview URL:")}   ${pc.cyan(result.previewUrl)}`);
-        console.log(`  ${pc.dim("Branch:")}        ${pc.bold(result.branch)}`);
+        console.log(`\n  ${pc.green("✓")} Deployed successfully!\n`);
+        console.log(`  ${pc.dim("URL:")}           ${pc.cyan(result.url)}`);
         console.log(`  ${pc.dim("Deployment ID:")} ${result.deploymentId}`);
-        console.log(`  ${pc.dim("Expires:")}       ${new Date(result.expiresAt).toLocaleDateString()}`);
         console.log(`  ${pc.dim("Files:")}         ${result.fileCount}`);
-        console.log(`  ${pc.dim("Size:")}          ${(result.size / 1024).toFixed(1)} KB\n`);
+        console.log(
+          `  ${pc.dim("Size:")}          ${(result.size / 1024).toFixed(1)} KB\n`
+        );
       } catch (err) {
-        console.error(pc.red("\n  Preview deploy failed:\n"));
-        console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
+        console.error(pc.red("\n  Deploy failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
         process.exit(1);
       }
-      return;
     }
-
-    // Standard deployment
-    console.log(pc.dim("  Deploying to Tome Cloud...\n"));
-
-    try {
-      const result = await deployToCloud(
-        { apiUrl: process.env.TOME_API_URL ?? "https://api.tome.center", token, slug },
-        outDir,
-      );
-
-      console.log(`\n  ${pc.green("✓")} Deployed successfully!\n`);
-      console.log(`  ${pc.dim("URL:")}           ${pc.cyan(result.url)}`);
-      console.log(`  ${pc.dim("Deployment ID:")} ${result.deploymentId}`);
-      console.log(`  ${pc.dim("Files:")}         ${result.fileCount}`);
-      console.log(`  ${pc.dim("Size:")}          ${(result.size / 1024).toFixed(1)} KB\n`);
-    } catch (err) {
-      console.error(pc.red("\n  Deploy failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
-    }
-  });
+  );
 
 // ── ALGOLIA INIT (TOM-16) ────────────────────────────────
 program
@@ -1269,7 +1365,11 @@ program
     let siteUrl = opts.url || "https://YOUR_DOCS_URL";
 
     // Try to read tome.config.js for site name and baseUrl
-    for (const configFile of ["tome.config.js", "tome.config.mjs", "tome.config.ts"]) {
+    for (const configFile of [
+      "tome.config.js",
+      "tome.config.mjs",
+      "tome.config.ts",
+    ]) {
       const configPath = join(root, configFile);
       if (existsSync(configPath)) {
         try {
@@ -1277,8 +1377,12 @@ program
           const configUrl = pathToFileURL(configPath).href;
           const mod = await import(configUrl);
           const config = mod.default || mod;
-          if (config.name) siteName = config.name;
-          if (!opts.url && config.baseUrl) siteUrl = config.baseUrl;
+          if (config.name) {
+            siteName = config.name;
+          }
+          if (!opts.url && config.baseUrl) {
+            siteUrl = config.baseUrl;
+          }
         } catch {
           // Ignore config load errors — use defaults
         }
@@ -1287,7 +1391,10 @@ program
     }
 
     const crawlerConfig = {
-      index_name: siteName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      index_name: siteName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, ""),
       start_urls: [siteUrl],
       sitemap_urls: [`${siteUrl.replace(/\/$/, "")}/sitemap.xml`],
       selectors: {
@@ -1319,18 +1426,30 @@ program
 
     console.log(pc.green("  ✓ ") + `Created ${pc.bold(".docsearch.json")}\n`);
     console.log(pc.dim("  Next steps:\n"));
-    console.log(`    1. Update ${pc.cyan("start_urls")} in .docsearch.json with your production URL`);
-    console.log(`    2. Add Algolia search config to your ${pc.cyan("tome.config.js")}:\n`);
+    console.log(
+      `    1. Update ${pc.cyan("start_urls")} in .docsearch.json with your production URL`
+    );
+    console.log(
+      `    2. Add Algolia search config to your ${pc.cyan("tome.config.js")}:\n`
+    );
     console.log(pc.dim("       search: {"));
     console.log(pc.dim('         provider: "algolia",'));
     console.log(pc.dim('         appId: "YOUR_APP_ID",'));
     console.log(pc.dim('         apiKey: "YOUR_SEARCH_API_KEY",'));
     console.log(pc.dim(`         indexName: "${crawlerConfig.index_name}",`));
     console.log(pc.dim("       },\n"));
-    console.log(`    3. Submit .docsearch.json to the Algolia DocSearch program:`);
+    console.log(
+      "    3. Submit .docsearch.json to the Algolia DocSearch program:"
+    );
     console.log(`       ${pc.cyan("https://docsearch.algolia.com/apply/")}\n`);
-    console.log(`    4. Or run the crawler yourself with ${pc.cyan("@algolia/docsearch-scraper")}:\n`);
-    console.log(pc.dim("       docker run -it --env-file=.env -e CONFIG=$(cat .docsearch.json | jq -r tostring) algolia/docsearch-scraper\n"));
+    console.log(
+      `    4. Or run the crawler yourself with ${pc.cyan("@algolia/docsearch-scraper")}:\n`
+    );
+    console.log(
+      pc.dim(
+        "       docker run -it --env-file=.env -e CONFIG=$(cat .docsearch.json | jq -r tostring) algolia/docsearch-scraper\n"
+      )
+    );
   });
 
 // ── MCP SERVER ──────────────────────────────────────────
@@ -1348,9 +1467,7 @@ program
       await startMcpServer({ root: process.cwd(), outDir: opts.outDir });
     } catch (err) {
       console.error(pc.red("\n  MCP server failed:\n"));
-      console.error(
-        `  ${err instanceof Error ? err.message : String(err)}\n`
-      );
+      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
       process.exit(1);
     }
   });
@@ -1369,7 +1486,11 @@ program
     const token = readAuthToken();
     if (!token) {
       console.error(pc.red("  Error: Not logged in.\n"));
-      console.log(pc.dim("  Run ") + pc.cyan("tome login") + pc.dim(" first to authenticate.\n"));
+      console.log(
+        pc.dim("  Run ") +
+          pc.cyan("tome login") +
+          pc.dim(" first to authenticate.\n")
+      );
       process.exit(1);
     }
 
@@ -1384,7 +1505,11 @@ program
     const root = process.cwd();
     let slug = "my-docs";
 
-    for (const configFile of ["tome.config.js", "tome.config.mjs", "tome.config.ts"]) {
+    for (const configFile of [
+      "tome.config.js",
+      "tome.config.mjs",
+      "tome.config.ts",
+    ]) {
       const configPath = join(root, configFile);
       if (existsSync(configPath)) {
         try {
@@ -1393,7 +1518,10 @@ program
           const mod = await import(configUrl);
           const config = mod.default || mod;
           if (config.name) {
-            slug = config.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            slug = config.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "");
           }
         } catch {
           // Use default slug
@@ -1414,7 +1542,11 @@ program
         console.log(`      ${pc.dim("Value:")} ${pc.cyan(record.value)}\n`);
       }
 
-      console.log(pc.dim("  SSL will be provisioned automatically once DNS is verified.\n"));
+      console.log(
+        pc.dim(
+          "  SSL will be provisioned automatically once DNS is verified.\n"
+        )
+      );
     } catch (err) {
       console.error(pc.red("\n  Failed to add domain:\n"));
       console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
@@ -1436,7 +1568,11 @@ program
     const token = readAuthToken();
     if (!token) {
       console.error(pc.red("  Error: Not logged in.\n"));
-      console.log(pc.dim("  Run ") + pc.cyan("tome login") + pc.dim(" first to authenticate.\n"));
+      console.log(
+        pc.dim("  Run ") +
+          pc.cyan("tome login") +
+          pc.dim(" first to authenticate.\n")
+      );
       process.exit(1);
     }
 
@@ -1444,7 +1580,11 @@ program
     const root = process.cwd();
     let slug = "my-docs";
 
-    for (const configFile of ["tome.config.js", "tome.config.mjs", "tome.config.ts"]) {
+    for (const configFile of [
+      "tome.config.js",
+      "tome.config.mjs",
+      "tome.config.ts",
+    ]) {
       const configPath = join(root, configFile);
       if (existsSync(configPath)) {
         try {
@@ -1453,7 +1593,10 @@ program
           const mod = await import(configUrl);
           const config = mod.default || mod;
           if (config.name) {
-            slug = config.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            slug = config.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "");
           }
         } catch {
           // Use default slug
@@ -1467,7 +1610,11 @@ program
 
       if (domains.length === 0) {
         console.log(pc.dim("  No custom domains configured.\n"));
-        console.log(pc.dim("  Run ") + pc.cyan("tome domains:add <domain>") + pc.dim(" to add one.\n"));
+        console.log(
+          pc.dim("  Run ") +
+            pc.cyan("tome domains:add <domain>") +
+            pc.dim(" to add one.\n")
+        );
         return;
       }
 
@@ -1479,11 +1626,13 @@ program
           d.sslStatus === "active"
             ? pc.green("active")
             : d.sslStatus === "failed"
-            ? pc.red("failed")
-            : pc.yellow("pending");
+              ? pc.red("failed")
+              : pc.yellow("pending");
 
         console.log(`    ${verifiedIcon} ${pc.bold(d.domain)}`);
-        console.log(`      ${pc.dim("Verified:")} ${d.verified ? "yes" : "no"}`);
+        console.log(
+          `      ${pc.dim("Verified:")} ${d.verified ? "yes" : "no"}`
+        );
         console.log(`      ${pc.dim("SSL:")}      ${sslLabel}\n`);
       }
     } catch (err) {
@@ -1507,7 +1656,11 @@ program
     const token = readAuthToken();
     if (!token) {
       console.error(pc.red("  Error: Not logged in.\n"));
-      console.log(pc.dim("  Run ") + pc.cyan("tome login") + pc.dim(" first to authenticate.\n"));
+      console.log(
+        pc.dim("  Run ") +
+          pc.cyan("tome login") +
+          pc.dim(" first to authenticate.\n")
+      );
       process.exit(1);
     }
 
@@ -1515,7 +1668,11 @@ program
     const root = process.cwd();
     let slug = "my-docs";
 
-    for (const configFile of ["tome.config.js", "tome.config.mjs", "tome.config.ts"]) {
+    for (const configFile of [
+      "tome.config.js",
+      "tome.config.mjs",
+      "tome.config.ts",
+    ]) {
       const configPath = join(root, configFile);
       if (existsSync(configPath)) {
         try {
@@ -1524,7 +1681,10 @@ program
           const mod = await import(configUrl);
           const config = mod.default || mod;
           if (config.name) {
-            slug = config.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            slug = config.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "");
           }
         } catch {
           // Use default slug
@@ -1542,27 +1702,37 @@ program
         status.sslStatus === "active"
           ? pc.green("active")
           : status.sslStatus === "failed"
-          ? pc.red("failed")
-          : pc.yellow("pending");
+            ? pc.red("failed")
+            : pc.yellow("pending");
 
       console.log(`  ${verifiedIcon} ${pc.bold(status.domain)}\n`);
-      console.log(`    ${pc.dim("Verified:")} ${status.verified ? pc.green("yes") : pc.yellow("no")}`);
+      console.log(
+        `    ${pc.dim("Verified:")} ${status.verified ? pc.green("yes") : pc.yellow("no")}`
+      );
       console.log(`    ${pc.dim("SSL:")}      ${sslLabel}\n`);
 
       if (status.dnsRecords.length > 0) {
         console.log(pc.dim("  Required DNS records:\n"));
         for (const r of status.dnsRecords) {
           const recordIcon = r.verified ? pc.green("✓") : pc.yellow("○");
-          console.log(`    ${recordIcon} ${pc.bold(r.type)} ${pc.cyan(r.name)} → ${r.value}`);
+          console.log(
+            `    ${recordIcon} ${pc.bold(r.type)} ${pc.cyan(r.name)} → ${r.value}`
+          );
         }
         console.log();
       }
 
-      if (!status.verified) {
-        console.log(pc.yellow("  DNS not yet verified. Add the records above at your DNS provider"));
-        console.log(pc.yellow("  and run this command again to check status.\n"));
-      } else {
+      if (status.verified) {
         console.log(pc.green("  Domain is verified and SSL is active!\n"));
+      } else {
+        console.log(
+          pc.yellow(
+            "  DNS not yet verified. Add the records above at your DNS provider"
+          )
+        );
+        console.log(
+          pc.yellow("  and run this command again to check status.\n")
+        );
       }
     } catch (err) {
       console.error(pc.red("\n  Failed to verify domain:\n"));
@@ -1575,58 +1745,74 @@ program
 program
   .command("lint")
   .description("Lint documentation content for style and accessibility issues")
-  .option("--max-paragraph <words>", "Max paragraph length in words (0 to disable)", "200")
+  .option(
+    "--max-paragraph <words>",
+    "Max paragraph length in words (0 to disable)",
+    "200"
+  )
   .option("--no-heading-increment", "Disable heading increment check")
   .option("--no-image-alt", "Disable image alt text check")
   .option("--no-single-h1", "Disable single h1 check")
   .option("--no-empty-links", "Disable empty link check")
   .option("--banned-words <words>", "Comma-separated list of banned words")
   .option("--strict", "Treat warnings as errors (exit 1)")
-  .action(async (opts: {
-    maxParagraph: string;
-    headingIncrement: boolean;
-    imageAlt: boolean;
-    singleH1: boolean;
-    emptyLinks: boolean;
-    bannedWords?: string;
-    strict?: boolean;
-  }) => {
-    console.log(logo);
-    console.log(pc.dim("  Linting documentation content...\n"));
+  .action(
+    async (opts: {
+      maxParagraph: string;
+      headingIncrement: boolean;
+      imageAlt: boolean;
+      singleH1: boolean;
+      emptyLinks: boolean;
+      bannedWords?: string;
+      strict?: boolean;
+    }) => {
+      console.log(logo);
+      console.log(pc.dim("  Linting documentation content...\n"));
 
-    try {
-      const { loadConfig, discoverPages, lintPages, formatLintResults } = await import("@tomehq/core");
+      try {
+        const { loadConfig, discoverPages, lintPages, formatLintResults } =
+          await import("@tomehq/core");
 
-      const root = process.cwd();
-      const pagesDir = resolve(root, "pages");
-      const config = await loadConfig(root);
-      const routes = await discoverPages(pagesDir, config.versioning ?? undefined, config.i18n ?? undefined);
+        const root = process.cwd();
+        const pagesDir = resolve(root, "pages");
+        const config = await loadConfig(root);
+        const routes = await discoverPages(
+          pagesDir,
+          config.versioning ?? undefined,
+          config.i18n ?? undefined
+        );
 
-      const bannedWords = opts.bannedWords
-        ? opts.bannedWords.split(",").map((w) => w.trim()).filter(Boolean)
-        : [];
+        const bannedWords = opts.bannedWords
+          ? opts.bannedWords
+              .split(",")
+              .map((w) => w.trim())
+              .filter(Boolean)
+          : [];
 
-      const result = lintPages(routes, {
-        headingIncrement: opts.headingIncrement,
-        imageAltText: opts.imageAlt,
-        maxParagraphLength: parseInt(opts.maxParagraph),
-        singleH1: opts.singleH1,
-        emptyLinks: opts.emptyLinks,
-        bannedWords,
-      });
+        const result = lintPages(routes, {
+          headingIncrement: opts.headingIncrement,
+          imageAltText: opts.imageAlt,
+          maxParagraphLength: Number.parseInt(opts.maxParagraph),
+          singleH1: opts.singleH1,
+          emptyLinks: opts.emptyLinks,
+          bannedWords,
+        });
 
-      const output = formatLintResults(result);
-      console.log(`  ${output}\n`);
+        const output = formatLintResults(result);
+        console.log(`  ${output}\n`);
 
-      if (!result.ok || (opts.strict && result.warnings > 0)) {
+        if (!result.ok || (opts.strict && result.warnings > 0)) {
+          process.exit(1);
+        }
+      } catch (err) {
+        console.error(pc.red("\n  Lint failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
         process.exit(1);
       }
-    } catch (err) {
-      console.error(pc.red("\n  Lint failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
     }
-  });
+  );
 
 // ── DOMAINS:REMOVE ──────────────────────────────────────
 program
@@ -1642,7 +1828,11 @@ program
     const token = readAuthToken();
     if (!token) {
       console.error(pc.red("  Error: Not logged in.\n"));
-      console.log(pc.dim("  Run ") + pc.cyan("tome login") + pc.dim(" first to authenticate.\n"));
+      console.log(
+        pc.dim("  Run ") +
+          pc.cyan("tome login") +
+          pc.dim(" first to authenticate.\n")
+      );
       process.exit(1);
     }
 
@@ -1672,188 +1862,242 @@ migrate
   .description("Migrate a GitBook project to Tome")
   .option("--out <dir>", "Output directory", ".")
   .option("--dry-run", "Preview migration without writing files")
-  .action(async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
-    console.log(logo);
-    console.log(pc.dim("  Migrating from GitBook...\n"));
+  .action(
+    async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
+      console.log(logo);
+      console.log(pc.dim("  Migrating from GitBook...\n"));
 
-    try {
-      const { migrateFromGitbook } = await import("@tomehq/core/migrate-gitbook");
-      const resolvedSource = resolve(process.cwd(), sourceDir);
-      const resolvedOut = resolve(process.cwd(), opts.out);
+      try {
+        const { migrateFromGitbook } = await import(
+          "@tomehq/core/migrate-gitbook"
+        );
+        const resolvedSource = resolve(process.cwd(), sourceDir);
+        const resolvedOut = resolve(process.cwd(), opts.out);
 
-      const result = await migrateFromGitbook(resolvedSource, resolvedOut, {
-        dryRun: opts.dryRun,
-      });
+        const result = await migrateFromGitbook(resolvedSource, resolvedOut, {
+          dryRun: opts.dryRun,
+        });
 
-      if (opts.dryRun) {
-        console.log(pc.yellow("  Dry run — no files written.\n"));
-      }
-
-      console.log(pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`);
-      if (result.redirects > 0) {
-        console.log(pc.green("  ✓ ") + `${result.redirects} redirects preserved`);
-      }
-      if (result.warnings.length > 0) {
-        console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
-        for (const w of result.warnings) {
-          console.log(pc.dim(`    - ${w}`));
+        if (opts.dryRun) {
+          console.log(pc.yellow("  Dry run — no files written.\n"));
         }
+
+        console.log(
+          pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`
+        );
+        if (result.redirects > 0) {
+          console.log(
+            pc.green("  ✓ ") + `${result.redirects} redirects preserved`
+          );
+        }
+        if (result.warnings.length > 0) {
+          console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
+          for (const w of result.warnings) {
+            console.log(pc.dim(`    - ${w}`));
+          }
+        }
+        console.log();
+      } catch (err) {
+        console.error(pc.red("\n  Migration failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
+        process.exit(1);
       }
-      console.log();
-    } catch (err) {
-      console.error(pc.red("\n  Migration failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
     }
-  });
+  );
 
 migrate
   .command("mintlify <source-dir>")
   .description("Migrate a Mintlify project to Tome")
   .option("--out <dir>", "Output directory", ".")
   .option("--dry-run", "Preview migration without writing files")
-  .action(async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
-    console.log(logo);
-    console.log(pc.dim("  Migrating from Mintlify...\n"));
+  .action(
+    async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
+      console.log(logo);
+      console.log(pc.dim("  Migrating from Mintlify...\n"));
 
-    try {
-      const { migrateFromMintlify } = await import("@tomehq/core/migrate-mintlify");
-      const resolvedSource = resolve(process.cwd(), sourceDir);
-      const resolvedOut = resolve(process.cwd(), opts.out);
+      try {
+        const { migrateFromMintlify } = await import(
+          "@tomehq/core/migrate-mintlify"
+        );
+        const resolvedSource = resolve(process.cwd(), sourceDir);
+        const resolvedOut = resolve(process.cwd(), opts.out);
 
-      const result = await migrateFromMintlify(resolvedSource, resolvedOut, {
-        dryRun: opts.dryRun,
-      });
+        const result = await migrateFromMintlify(resolvedSource, resolvedOut, {
+          dryRun: opts.dryRun,
+        });
 
-      if (opts.dryRun) {
-        console.log(pc.yellow("  Dry run — no files written.\n"));
-      }
-
-      console.log(pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`);
-      if (result.redirects > 0) {
-        console.log(pc.green("  ✓ ") + `${result.redirects} redirects preserved`);
-      }
-      if (result.warnings.length > 0) {
-        console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
-        for (const w of result.warnings) {
-          console.log(pc.dim(`    - ${w}`));
+        if (opts.dryRun) {
+          console.log(pc.yellow("  Dry run — no files written.\n"));
         }
+
+        console.log(
+          pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`
+        );
+        if (result.redirects > 0) {
+          console.log(
+            pc.green("  ✓ ") + `${result.redirects} redirects preserved`
+          );
+        }
+        if (result.warnings.length > 0) {
+          console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
+          for (const w of result.warnings) {
+            console.log(pc.dim(`    - ${w}`));
+          }
+        }
+        console.log();
+      } catch (err) {
+        console.error(pc.red("\n  Migration failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
+        process.exit(1);
       }
-      console.log();
-    } catch (err) {
-      console.error(pc.red("\n  Migration failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
     }
-  });
+  );
 
 migrate
   .command("docusaurus <source-dir>")
   .description("Migrate a Docusaurus project to Tome")
   .option("--out <dir>", "Output directory", ".")
   .option("--dry-run", "Preview migration without writing files")
-  .action(async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
-    console.log(logo);
-    console.log(pc.dim("  Migrating from Docusaurus...\n"));
+  .action(
+    async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
+      console.log(logo);
+      console.log(pc.dim("  Migrating from Docusaurus...\n"));
 
-    try {
-      const { migrateFromDocusaurus } = await import("@tomehq/core/migrate-docusaurus");
-      const resolvedSource = resolve(process.cwd(), sourceDir);
-      const resolvedOut = resolve(process.cwd(), opts.out);
+      try {
+        const { migrateFromDocusaurus } = await import(
+          "@tomehq/core/migrate-docusaurus"
+        );
+        const resolvedSource = resolve(process.cwd(), sourceDir);
+        const resolvedOut = resolve(process.cwd(), opts.out);
 
-      const result = await migrateFromDocusaurus(resolvedSource, resolvedOut, {
-        dryRun: opts.dryRun,
-      });
+        const result = await migrateFromDocusaurus(
+          resolvedSource,
+          resolvedOut,
+          {
+            dryRun: opts.dryRun,
+          }
+        );
 
-      if (opts.dryRun) {
-        console.log(pc.yellow("  Dry run — no files written.\n"));
-      }
-
-      console.log(pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`);
-      if (result.redirects > 0) {
-        console.log(pc.green("  ✓ ") + `${result.redirects} redirects preserved`);
-      }
-      if (result.warnings.length > 0) {
-        console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
-        for (const w of result.warnings) {
-          console.log(pc.dim(`    - ${w}`));
+        if (opts.dryRun) {
+          console.log(pc.yellow("  Dry run — no files written.\n"));
         }
+
+        console.log(
+          pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`
+        );
+        if (result.redirects > 0) {
+          console.log(
+            pc.green("  ✓ ") + `${result.redirects} redirects preserved`
+          );
+        }
+        if (result.warnings.length > 0) {
+          console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
+          for (const w of result.warnings) {
+            console.log(pc.dim(`    - ${w}`));
+          }
+        }
+        console.log();
+      } catch (err) {
+        console.error(pc.red("\n  Migration failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
+        process.exit(1);
       }
-      console.log();
-    } catch (err) {
-      console.error(pc.red("\n  Migration failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
     }
-  });
+  );
 
 migrate
   .command("vitepress <source-dir>")
   .description("Migrate a VitePress project to Tome")
   .option("--out <dir>", "Output directory", ".")
   .option("--dry-run", "Preview migration without writing files")
-  .action(async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
-    console.log(logo);
-    console.log(pc.dim("  Migrating from VitePress...\n"));
+  .action(
+    async (sourceDir: string, opts: { out: string; dryRun?: boolean }) => {
+      console.log(logo);
+      console.log(pc.dim("  Migrating from VitePress...\n"));
 
-    try {
-      const { migrateFromVitepress } = await import("@tomehq/core/migrate-vitepress");
-      const resolvedSource = resolve(process.cwd(), sourceDir);
-      const resolvedOut = resolve(process.cwd(), opts.out);
+      try {
+        const { migrateFromVitepress } = await import(
+          "@tomehq/core/migrate-vitepress"
+        );
+        const resolvedSource = resolve(process.cwd(), sourceDir);
+        const resolvedOut = resolve(process.cwd(), opts.out);
 
-      const result = await migrateFromVitepress(resolvedSource, resolvedOut, {
-        dryRun: opts.dryRun,
-      });
+        const result = await migrateFromVitepress(resolvedSource, resolvedOut, {
+          dryRun: opts.dryRun,
+        });
 
-      if (opts.dryRun) {
-        console.log(pc.yellow("  Dry run — no files written.\n"));
-      }
-
-      console.log(pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`);
-      if (result.redirects > 0) {
-        console.log(pc.green("  ✓ ") + `${result.redirects} redirects preserved`);
-      }
-      if (result.warnings.length > 0) {
-        console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
-        for (const w of result.warnings) {
-          console.log(pc.dim(`    - ${w}`));
+        if (opts.dryRun) {
+          console.log(pc.yellow("  Dry run — no files written.\n"));
         }
+
+        console.log(
+          pc.green("  ✓ ") + `Migrated ${pc.bold(String(result.pages))} pages`
+        );
+        if (result.redirects > 0) {
+          console.log(
+            pc.green("  ✓ ") + `${result.redirects} redirects preserved`
+          );
+        }
+        if (result.warnings.length > 0) {
+          console.log(pc.yellow(`\n  ⚠ ${result.warnings.length} warning(s):`));
+          for (const w of result.warnings) {
+            console.log(pc.dim(`    - ${w}`));
+          }
+        }
+        console.log();
+      } catch (err) {
+        console.error(pc.red("\n  Migration failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
+        process.exit(1);
       }
-      console.log();
-    } catch (err) {
-      console.error(pc.red("\n  Migration failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
     }
-  });
+  );
 
 // ── TYPEDOC ────────────────────────────────────────────
 program
   .command("typedoc")
   .description("Generate API documentation from TypeScript source files")
   .argument("<files...>", "TypeScript entry point files to document")
-  .option("-o, --output <dir>", "Output directory for generated .md files", "pages/api")
+  .option(
+    "-o, --output <dir>",
+    "Output directory for generated .md files",
+    "pages/api"
+  )
   .option("--tsconfig <path>", "Path to tsconfig.json")
-  .action(async (files: string[], opts: { output: string; tsconfig?: string }) => {
-    console.log(logo);
-    console.log(pc.dim("  Generating TypeDoc pages...\n"));
+  .action(
+    async (files: string[], opts: { output: string; tsconfig?: string }) => {
+      console.log(logo);
+      console.log(pc.dim("  Generating TypeDoc pages...\n"));
 
-    try {
-      const { generateTypeDocs } = await import("@tomehq/core/typedoc");
+      try {
+        const { generateTypeDocs } = await import("@tomehq/core/typedoc");
 
-      generateTypeDocs({
-        entryPoints: files.map((f) => resolve(process.cwd(), f)),
-        outputDir: opts.output,
-        tsconfig: opts.tsconfig ? resolve(process.cwd(), opts.tsconfig) : undefined,
-      });
+        generateTypeDocs({
+          entryPoints: files.map((f) => resolve(process.cwd(), f)),
+          outputDir: opts.output,
+          tsconfig: opts.tsconfig
+            ? resolve(process.cwd(), opts.tsconfig)
+            : undefined,
+        });
 
-      console.log(pc.green("\n  ✓ TypeDoc pages generated\n"));
-    } catch (err) {
-      console.error(pc.red("\n  TypeDoc generation failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
+        console.log(pc.green("\n  ✓ TypeDoc pages generated\n"));
+      } catch (err) {
+        console.error(pc.red("\n  TypeDoc generation failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
+        process.exit(1);
+      }
     }
-  });
+  );
 
 // ── PASSWORD PROTECTION ─────────────────────────────────
 
@@ -1864,34 +2108,52 @@ program
   .description("Compare two OpenAPI specs and show changes")
   .option("--json", "Output as JSON instead of markdown")
   .option("--fail-on-breaking", "Exit with code 1 if breaking changes detected")
-  .action(async (oldSpecPath: string, newSpecPath: string, opts: { json?: boolean; failOnBreaking?: boolean }) => {
-    console.log(logo);
-    console.log(pc.dim("  Comparing API specs...\n"));
+  .action(
+    async (
+      oldSpecPath: string,
+      newSpecPath: string,
+      opts: { json?: boolean; failOnBreaking?: boolean }
+    ) => {
+      console.log(logo);
+      console.log(pc.dim("  Comparing API specs...\n"));
 
-    try {
-      const { parseOpenApiSpec } = await import("@tomehq/core/openapi");
-      const { diffOpenApiSpecs, generateChangelogEntry, formatChangelogMarkdown } = await import("@tomehq/core/api-diff");
+      try {
+        const { parseOpenApiSpec } = await import("@tomehq/core/openapi");
+        const {
+          diffOpenApiSpecs,
+          generateChangelogEntry,
+          formatChangelogMarkdown,
+        } = await import("@tomehq/core/api-diff");
 
-      const oldSpec = await parseOpenApiSpec(resolve(process.cwd(), oldSpecPath));
-      const newSpec = await parseOpenApiSpec(resolve(process.cwd(), newSpecPath));
+        const oldSpec = await parseOpenApiSpec(
+          resolve(process.cwd(), oldSpecPath)
+        );
+        const newSpec = await parseOpenApiSpec(
+          resolve(process.cwd(), newSpecPath)
+        );
 
-      const diff = diffOpenApiSpecs(oldSpec, newSpec);
+        const diff = diffOpenApiSpecs(oldSpec, newSpec);
 
-      if (opts.json) {
-        console.log(JSON.stringify(diff, null, 2));
-      } else {
-        if (diff.changes.length === 0) {
+        if (opts.json) {
+          console.log(JSON.stringify(diff, null, 2));
+        } else if (diff.changes.length === 0) {
           console.log(pc.green("  ✓ No changes detected.\n"));
         } else {
-          console.log(`  ${pc.bold(String(diff.summary.total))} change(s) detected:\n`);
+          console.log(
+            `  ${pc.bold(String(diff.summary.total))} change(s) detected:\n`
+          );
           if (diff.summary.breaking > 0) {
             console.log(pc.red(`    ✗ ${diff.summary.breaking} breaking`));
           }
           if (diff.summary.nonBreaking > 0) {
-            console.log(pc.green(`    ✓ ${diff.summary.nonBreaking} non-breaking`));
+            console.log(
+              pc.green(`    ✓ ${diff.summary.nonBreaking} non-breaking`)
+            );
           }
           if (diff.summary.deprecations > 0) {
-            console.log(pc.yellow(`    ⚠ ${diff.summary.deprecations} deprecation(s)`));
+            console.log(
+              pc.yellow(`    ⚠ ${diff.summary.deprecations} deprecation(s)`)
+            );
           }
           if (diff.summary.docsOnly > 0) {
             console.log(pc.dim(`    ○ ${diff.summary.docsOnly} docs-only`));
@@ -1902,18 +2164,24 @@ program
           const md = formatChangelogMarkdown(entry);
           console.log(md);
         }
-      }
 
-      if (opts.failOnBreaking && diff.hasBreaking) {
-        console.error(pc.red(`\n  ✗ ${diff.summary.breaking} breaking change(s) detected.\n`));
+        if (opts.failOnBreaking && diff.hasBreaking) {
+          console.error(
+            pc.red(
+              `\n  ✗ ${diff.summary.breaking} breaking change(s) detected.\n`
+            )
+          );
+          process.exit(1);
+        }
+      } catch (err) {
+        console.error(pc.red("\n  API diff failed:\n"));
+        console.error(
+          `  ${err instanceof Error ? err.message : String(err)}\n`
+        );
         process.exit(1);
       }
-    } catch (err) {
-      console.error(pc.red("\n  API diff failed:\n"));
-      console.error(`  ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
     }
-  });
+  );
 
 program
   .command("protect")
@@ -1926,14 +2194,22 @@ program
     const token = readAuthToken();
     if (!token) {
       console.error(pc.red("  Error: Not logged in.\n"));
-      console.log(pc.dim("  Run ") + pc.cyan("tome login") + pc.dim(" first to authenticate.\n"));
+      console.log(
+        pc.dim("  Run ") +
+          pc.cyan("tome login") +
+          pc.dim(" first to authenticate.\n")
+      );
       process.exit(1);
     }
 
     // Load config for project slug
     const root = process.cwd();
     let slug = "my-docs";
-    for (const configFile of ["tome.config.js", "tome.config.mjs", "tome.config.ts"]) {
+    for (const configFile of [
+      "tome.config.js",
+      "tome.config.mjs",
+      "tome.config.ts",
+    ]) {
       const configPath = join(root, configFile);
       if (existsSync(configPath)) {
         try {
@@ -1942,7 +2218,10 @@ program
           const mod = await import(configUrl);
           const config = mod.default || mod;
           if (config.name) {
-            slug = config.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            slug = config.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "");
           }
         } catch {}
         break;
@@ -1962,19 +2241,31 @@ program
           body: JSON.stringify({ slug }),
         });
         if (!res.ok) {
-          const body = await res.json().catch(() => ({ error: "Unknown error" }));
+          const body = await res
+            .json()
+            .catch(() => ({ error: "Unknown error" }));
           console.error(pc.red(`  Error: ${(body as any).error}\n`));
           process.exit(1);
         }
-        console.log(pc.green("  ✓ ") + `Password protection removed from ${pc.bold(slug)}.\n`);
+        console.log(
+          pc.green("  ✓ ") +
+            `Password protection removed from ${pc.bold(slug)}.\n`
+        );
       } catch (err) {
-        console.error(pc.red(`  Error: ${err instanceof Error ? err.message : String(err)}\n`));
+        console.error(
+          pc.red(
+            `  Error: ${err instanceof Error ? err.message : String(err)}\n`
+          )
+        );
         process.exit(1);
       }
     } else {
       // Prompt for password
       const readline = await import("readline");
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
       const password = await new Promise<string>((resolve) => {
         rl.question("  Enter a password for your site: ", (answer) => {
           rl.close();
@@ -1983,7 +2274,9 @@ program
       });
 
       if (!password || password.length < 4) {
-        console.error(pc.red("  Error: Password must be at least 4 characters.\n"));
+        console.error(
+          pc.red("  Error: Password must be at least 4 characters.\n")
+        );
         process.exit(1);
       }
 
@@ -2000,14 +2293,27 @@ program
           body: JSON.stringify({ slug, passwordHash: hash }),
         });
         if (!res.ok) {
-          const body = await res.json().catch(() => ({ error: "Unknown error" }));
+          const body = await res
+            .json()
+            .catch(() => ({ error: "Unknown error" }));
           console.error(pc.red(`  Error: ${(body as any).error}\n`));
           process.exit(1);
         }
-        console.log(pc.green("  ✓ ") + `Password protection enabled for ${pc.bold(slug)}.\n`);
-        console.log(pc.dim("  Visitors will be prompted for the password before accessing your docs.\n"));
+        console.log(
+          pc.green("  ✓ ") +
+            `Password protection enabled for ${pc.bold(slug)}.\n`
+        );
+        console.log(
+          pc.dim(
+            "  Visitors will be prompted for the password before accessing your docs.\n"
+          )
+        );
       } catch (err) {
-        console.error(pc.red(`  Error: ${err instanceof Error ? err.message : String(err)}\n`));
+        console.error(
+          pc.red(
+            `  Error: ${err instanceof Error ? err.message : String(err)}\n`
+          )
+        );
         process.exit(1);
       }
     }

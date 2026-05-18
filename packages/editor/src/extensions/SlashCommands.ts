@@ -7,11 +7,11 @@ import { Extension } from "@tiptap/core";
 import type { EditorView } from "@tiptap/pm/view";
 
 export interface SlashCommand {
-  name: string;
-  label: string;
+  action: (view: EditorView) => void;
   description: string;
   icon?: string;
-  action: (view: EditorView) => void;
+  label: string;
+  name: string;
 }
 
 const SLASH_COMMANDS: SlashCommand[] = [
@@ -23,7 +23,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     action: (view) => {
       const { state, dispatch } = view;
       // Delete the "/" character
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       // Insert heading
       const { commands } = (view as any).editor;
@@ -37,7 +40,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "H2",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
       commands?.toggleHeading({ level: 2 });
@@ -50,7 +56,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "H3",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
       commands?.toggleHeading({ level: 3 });
@@ -63,7 +72,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "•",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
       commands?.toggleBulletList();
@@ -76,7 +88,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "1.",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
       commands?.toggleOrderedList();
@@ -89,7 +104,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "</>",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
       commands?.toggleCodeBlock();
@@ -102,7 +120,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: '"',
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
       commands?.toggleBlockquote();
@@ -115,7 +136,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "—",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
       commands?.setHorizontalRule();
@@ -128,7 +152,10 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "!",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       // Insert callout MDX via markdown
       const { commands } = (view as any).editor;
@@ -142,10 +169,15 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "⊞",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
-      commands?.insertContent('<Tabs items={["Tab 1", "Tab 2"]}>\n<Tab>\n\n</Tab>\n<Tab>\n\n</Tab>\n</Tabs>');
+      commands?.insertContent(
+        '<Tabs items={["Tab 1", "Tab 2"]}>\n<Tab>\n\n</Tab>\n<Tab>\n\n</Tab>\n</Tabs>'
+      );
     },
   },
   {
@@ -155,10 +187,15 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "①",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
-      commands?.insertContent('<Steps>\n\nStep 1 content\n\nStep 2 content\n\n</Steps>');
+      commands?.insertContent(
+        "<Steps>\n\nStep 1 content\n\nStep 2 content\n\n</Steps>"
+      );
     },
   },
   {
@@ -168,10 +205,15 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "▶",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
-      commands?.insertContent('<Accordion title="Click to expand">\n\n</Accordion>');
+      commands?.insertContent(
+        '<Accordion title="Click to expand">\n\n</Accordion>'
+      );
     },
   },
   {
@@ -181,10 +223,15 @@ const SLASH_COMMANDS: SlashCommand[] = [
     icon: "□",
     action: (view) => {
       const { state, dispatch } = view;
-      const tr = state.tr.delete(state.selection.from - 1, state.selection.from);
+      const tr = state.tr.delete(
+        state.selection.from - 1,
+        state.selection.from
+      );
       dispatch(tr);
       const { commands } = (view as any).editor;
-      commands?.insertContent('<Card title="Card Title" icon="book">\nCard description\n</Card>');
+      commands?.insertContent(
+        '<Card title="Card Title" icon="book">\nCard description\n</Card>'
+      );
     },
   },
 ];
@@ -193,10 +240,13 @@ const SLASH_COMMANDS: SlashCommand[] = [
  * Get slash commands filtered by query string.
  */
 export function filterSlashCommands(query: string): SlashCommand[] {
-  if (!query) return SLASH_COMMANDS;
+  if (!query) {
+    return SLASH_COMMANDS;
+  }
   const q = query.toLowerCase();
   return SLASH_COMMANDS.filter(
-    (cmd) => cmd.name.toLowerCase().includes(q) || cmd.label.toLowerCase().includes(q),
+    (cmd) =>
+      cmd.name.toLowerCase().includes(q) || cmd.label.toLowerCase().includes(q)
   );
 }
 

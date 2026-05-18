@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
-import { sso } from "./sso.js";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
+import { sso } from "./sso.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -191,7 +191,9 @@ describe("SSO site-level routes", () => {
     const db = mockDb();
     const app = makeApp(db);
 
-    const res = await app.request("/api/sso/sites/acme-docs/oidc/callback?state=abc");
+    const res = await app.request(
+      "/api/sso/sites/acme-docs/oidc/callback?state=abc"
+    );
     expect(res.status).toBe(400);
   });
 
@@ -199,7 +201,9 @@ describe("SSO site-level routes", () => {
     const db = mockDb();
     const app = makeApp(db);
 
-    const res = await app.request("/api/sso/sites/acme-docs/oidc/callback?error=access_denied");
+    const res = await app.request(
+      "/api/sso/sites/acme-docs/oidc/callback?error=access_denied"
+    );
     expect(res.status).toBe(400);
     const body = await res.json();
     expect((body as any).error).toContain("access_denied");

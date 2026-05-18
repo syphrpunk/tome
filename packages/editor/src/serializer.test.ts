@@ -4,8 +4,12 @@
  * 2. Sanitizer interaction with typical editor markdown output
  *    (headings, code blocks, component tags, mixed content)
  */
-import { describe, it, expect } from "vitest";
-import { buildFrontmatter, buildDocument, parseFrontmatter } from "./frontmatter.js";
+import { describe, expect, it } from "vitest";
+import {
+  buildDocument,
+  buildFrontmatter,
+  parseFrontmatter,
+} from "./frontmatter.js";
 import { sanitizeEditorContent } from "./sanitize.js";
 
 // ── Frontmatter generation ──────────────────────────────
@@ -93,17 +97,17 @@ describe("buildFrontmatter", () => {
 
   it("escapes backslashes before double quotes", () => {
     const result = buildFrontmatter({
-      title: 'Path: C:\\Users\\docs',
+      title: "Path: C:\\Users\\docs",
     });
     // Backslashes must be escaped first, then quotes
-    expect(result).toContain('C:\\\\Users\\\\docs');
+    expect(result).toContain("C:\\\\Users\\\\docs");
   });
 
   it("handles strings with both backslashes and quotes", () => {
     const result = buildFrontmatter({
       title: 'Say \\"hello\\": world',
     });
-    expect(result).toContain('\\\\');
+    expect(result).toContain("\\\\");
     expect(result).toContain('\\"');
   });
 });
@@ -111,7 +115,9 @@ describe("buildFrontmatter", () => {
 describe("buildDocument", () => {
   it("combines frontmatter and body with blank line separator", () => {
     const doc = buildDocument({ title: "Hello" }, "# Hello\n\nContent here.");
-    expect(doc).toMatch(/^---\ntitle: Hello\n---\n\n# Hello\n\nContent here\.$/);
+    expect(doc).toMatch(
+      /^---\ntitle: Hello\n---\n\n# Hello\n\nContent here\.$/
+    );
   });
 
   it("preserves multiline body content", () => {
@@ -146,7 +152,7 @@ describe("parseFrontmatter", () => {
   it("round-trips with buildDocument", () => {
     const original = buildDocument(
       { title: "Round Trip", description: "Testing" },
-      "Body text.",
+      "Body text."
     );
     const { fields, body } = parseFrontmatter(original);
     expect(fields.title).toBe("Round Trip");
@@ -156,18 +162,18 @@ describe("parseFrontmatter", () => {
 
   it("round-trips backslashes in quoted values", () => {
     const original = buildDocument(
-      { title: 'Path: C:\\Users\\docs' },
-      "Content.",
+      { title: "Path: C:\\Users\\docs" },
+      "Content."
     );
     const { fields } = parseFrontmatter(original);
-    expect(fields.title).toBe('Path: C:\\Users\\docs');
+    expect(fields.title).toBe("Path: C:\\Users\\docs");
   });
 
   it("unescapes backslashes and quotes in parsed values", () => {
     const doc = '---\ntitle: "He said \\\\\\"hi\\\\\\""\n---\n\nBody';
     const { fields } = parseFrontmatter(doc);
     expect(fields.title).toContain('"');
-    expect(fields.title).toContain('\\');
+    expect(fields.title).toContain("\\");
   });
 });
 
@@ -263,7 +269,7 @@ describe("sanitizer with editor-like markdown", () => {
   it("full document with frontmatter and body sanitizes cleanly", () => {
     const doc = buildDocument(
       { title: "Safe Page", description: "A doc page" },
-      "# Introduction\n\nSafe content here.\n\n```js\nconst x = 1;\n```",
+      "# Introduction\n\nSafe content here.\n\n```js\nconst x = 1;\n```"
     );
     // The frontmatter block uses --- delimiters, should pass through sanitizer
     expect(sanitizeEditorContent(doc)).toBe(doc);

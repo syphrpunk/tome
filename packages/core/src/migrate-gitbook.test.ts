@@ -1,14 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
 import {
-  parseSummaryNavigation,
-  convertGitbookContent,
-  parseGitbookConfig,
-  migrateFromGitbook,
-} from "./migrate-gitbook.js";
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { NavigationGroup } from "./migrate-gitbook.js";
+import {
+  convertGitbookContent,
+  migrateFromGitbook,
+  parseGitbookConfig,
+  parseSummaryNavigation,
+} from "./migrate-gitbook.js";
 
 // ── parseSummaryNavigation ────────────────────────────────
 
@@ -94,18 +100,18 @@ describe("convertGitbookContent", () => {
 
   it("converts warning, danger, and success hint styles", () => {
     const warning = convertGitbookContent(
-      `{% hint style="warning" %}Watch out{% endhint %}`,
+      `{% hint style="warning" %}Watch out{% endhint %}`
     );
     expect(warning.converted).toContain('<Callout type="warning">');
 
     const danger = convertGitbookContent(
-      `{% hint style="danger" %}Dangerous{% endhint %}`,
+      `{% hint style="danger" %}Dangerous{% endhint %}`
     );
     expect(danger.converted).toContain('<Callout type="danger">');
 
     // success maps to tip
     const success = convertGitbookContent(
-      `{% hint style="success" %}Great{% endhint %}`,
+      `{% hint style="success" %}Great{% endhint %}`
     );
     expect(success.converted).toContain('<Callout type="tip">');
   });
@@ -144,7 +150,7 @@ print("hi")
   });
 
   it("sets hasJsx=false when no GitBook syntax is present", () => {
-    const input = `# Hello World\n\nJust plain markdown.`;
+    const input = "# Hello World\n\nJust plain markdown.";
     const { converted, hasJsx } = convertGitbookContent(input);
     expect(hasJsx).toBe(false);
     expect(converted).toBe(input);
@@ -216,7 +222,7 @@ structure:
   summary: SUMMARY.md
 redirects:
   old: new`,
-      "utf-8",
+      "utf-8"
     );
 
     // SUMMARY.md
@@ -224,19 +230,19 @@ redirects:
       join(sourceDir, "SUMMARY.md"),
       `* [Welcome](README.md)
 * [Guide](guide.md)`,
-      "utf-8",
+      "utf-8"
     );
 
     // Markdown pages
     writeFileSync(
       join(sourceDir, "README.md"),
-      `# Welcome\n\nHello world.`,
-      "utf-8",
+      "# Welcome\n\nHello world.",
+      "utf-8"
     );
     writeFileSync(
       join(sourceDir, "guide.md"),
       `# Guide\n\n{% hint style="info" %}Important{% endhint %}`,
-      "utf-8",
+      "utf-8"
     );
   }
 

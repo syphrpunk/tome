@@ -5,10 +5,14 @@ const authRoutes = new Hono<{ Bindings: Env; Variables: { user: User } }>();
 
 // ── GET /providers — list available OAuth providers ────
 authRoutes.get("/providers", async (c) => {
-  const providers: Array<{ id: string; name: string; authorizeUrl: string }> = [];
+  const providers: Array<{ id: string; name: string; authorizeUrl: string }> =
+    [];
 
   // Build redirect URI from request origin, falling back to production
-  const origin = c.req.header("origin") || c.req.header("referer")?.replace(/\/+$/, "") || "https://tome.center";
+  const origin =
+    c.req.header("origin") ||
+    c.req.header("referer")?.replace(/\/+$/, "") ||
+    "https://tome.center";
   const redirectUri = `${origin}/dashboard`;
   const encodedRedirect = encodeURIComponent(redirectUri);
 
@@ -39,7 +43,7 @@ authRoutes.post("/oauth/callback", async (c) => {
     redirectUri: string;
   }>();
 
-  if (!provider || !code) {
+  if (!(provider && code)) {
     return c.json({ error: "Missing provider or code" }, 400);
   }
 
@@ -49,53 +53,86 @@ authRoutes.post("/oauth/callback", async (c) => {
 
   try {
     if (provider === "github") {
-      if (!c.env.GITHUB_CLIENT_ID || !c.env.GITHUB_CLIENT_SECRET) {
+      if (!(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET)) {
         return c.json({ error: "GitHub OAuth not configured" }, 501);
       }
 
       // Exchange code for access token
-      const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          client_id: c.env.GITHUB_CLIENT_ID,
-          client_secret: c.env.GITHUB_CLIENT_SECRET,
-          code,
-          redirect_uri: redirectUri,
-        }),
-      });
-      const tokenData = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
+      const tokenRes = await fetch(
+        "https://github.com/login/oauth/access_token",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            client_id: c.env.GITHUB_CLIENT_ID,
+            client_secret: c.env.GITHUB_CLIENT_SECRET,
+            code,
+            redirect_uri: redirectUri,
+          }),
+        }
+      );
+      const tokenData = (await tokenRes.json()) as {
+        access_token?: string;
+        error?: string;
+        error_description?: string;
+      };
 
       if (tokenData.error || !tokenData.access_token) {
-        return c.json({ error: tokenData.error_description || "GitHub auth failed" }, 400);
+        return c.json(
+          { error: tokenData.error_description || "GitHub auth failed" },
+          400
+        );
       }
 
       // Fetch user profile
       const userRes = await fetch("https://api.github.com/user", {
-        headers: { Authorization: `Bearer ${tokenData.access_token}`, "User-Agent": "Tome/1.0" },
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+          "User-Agent": "Tome/1.0",
+        },
       });
-      const userData = await userRes.json() as { email?: string; name?: string; login?: string; avatar_url?: string };
+      const userData = (await userRes.json()) as {
+        email?: string;
+        name?: string;
+        login?: string;
+        avatar_url?: string;
+      };
 
       // Fetch primary email if not public
-      if (!userData.email) {
+      if (userData.email) {
+        email = userData.email;
+      } else {
         const emailRes = await fetch("https://api.github.com/user/emails", {
-          headers: { Authorization: `Bearer ${tokenData.access_token}`, "User-Agent": "Tome/1.0" },
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+            "User-Agent": "Tome/1.0",
+          },
         });
-        const emails = await emailRes.json() as Array<{ email: string; primary: boolean; verified: boolean }>;
-        const primary = emails.find((e) => e.primary && e.verified) || emails.find((e) => e.verified) || emails[0];
+        const emails = (await emailRes.json()) as Array<{
+          email: string;
+          primary: boolean;
+          verified: boolean;
+        }>;
+        const primary =
+          emails.find((e) => e.primary && e.verified) ||
+          emails.find((e) => e.verified) ||
+          emails[0];
         if (!primary) {
-          return c.json({ error: "No verified email found on GitHub account" }, 400);
+          return c.json(
+            { error: "No verified email found on GitHub account" },
+            400
+          );
         }
         email = primary.email;
-      } else {
-        email = userData.email;
       }
 
       name = userData.name || userData.login || null;
       avatarUrl = userData.avatar_url || null;
-
     } else if (provider === "google") {
-      if (!c.env.GOOGLE_CLIENT_ID || !c.env.GOOGLE_CLIENT_SECRET) {
+      if (!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET)) {
         return c.json({ error: "Google OAuth not configured" }, 501);
       }
 
@@ -111,17 +148,31 @@ authRoutes.post("/oauth/callback", async (c) => {
           grant_type: "authorization_code",
         }),
       });
-      const tokenData = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
+      const tokenData = (await tokenRes.json()) as {
+        access_token?: string;
+        error?: string;
+        error_description?: string;
+      };
 
       if (tokenData.error || !tokenData.access_token) {
-        return c.json({ error: tokenData.error_description || "Google auth failed" }, 400);
+        return c.json(
+          { error: tokenData.error_description || "Google auth failed" },
+          400
+        );
       }
 
       // Fetch user info
-      const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      });
-      const userData = await userRes.json() as { email?: string; name?: string; picture?: string };
+      const userRes = await fetch(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        }
+      );
+      const userData = (await userRes.json()) as {
+        email?: string;
+        name?: string;
+        picture?: string;
+      };
 
       if (!userData.email) {
         return c.json({ error: "No email found on Google account" }, 400);
@@ -130,7 +181,6 @@ authRoutes.post("/oauth/callback", async (c) => {
       email = userData.email;
       name = userData.name || null;
       avatarUrl = userData.picture || null;
-
     } else {
       return c.json({ error: "Unknown provider" }, 400);
     }
@@ -138,7 +188,9 @@ authRoutes.post("/oauth/callback", async (c) => {
     // Find or create user by email
     const existingUser = await c.env.TOME_DB.prepare(
       "SELECT * FROM users WHERE email = ?"
-    ).bind(email).first<User>();
+    )
+      .bind(email)
+      .first<User>();
 
     if (existingUser) {
       // Update name and avatar if missing
@@ -156,7 +208,9 @@ authRoutes.post("/oauth/callback", async (c) => {
         updates.push("updated_at = datetime('now')");
         await c.env.TOME_DB.prepare(
           `UPDATE users SET ${updates.join(", ")} WHERE id = ?`
-        ).bind(...values, existingUser.id).run();
+        )
+          .bind(...values, existingUser.id)
+          .run();
       }
 
       return c.json({
@@ -172,10 +226,11 @@ authRoutes.post("/oauth/callback", async (c) => {
 
     await c.env.TOME_DB.prepare(
       "INSERT INTO users (id, email, name, avatar_url, api_token) VALUES (?, ?, ?, ?, ?)"
-    ).bind(id, email, name, avatarUrl, token).run();
+    )
+      .bind(id, email, name, avatarUrl, token)
+      .run();
 
     return c.json({ token, userId: id, email });
-
   } catch (err) {
     console.error("OAuth callback error:", err);
     return c.json({ error: "Authentication failed" }, 500);
@@ -187,7 +242,10 @@ authRoutes.post("/token", async (c) => {
   const { token } = await c.req.json<{ token?: string }>();
 
   if (!token) {
-    return c.json({ error: "Sign in with GitHub or Google to create an account" }, 400);
+    return c.json(
+      { error: "Sign in with GitHub or Google to create an account" },
+      400
+    );
   }
 
   // Validate an existing token (CLI uses this to verify their saved token)

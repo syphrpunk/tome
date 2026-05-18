@@ -9,23 +9,23 @@
  * Variables in snippet content are substituted using {{varName}} syntax.
  */
 
-import { readFileSync, existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
+import type { Paragraph, Root, Text } from "mdast";
 import { resolve } from "path";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
-import type { Root, Paragraph, Text } from "mdast";
+import remarkParse from "remark-parse";
 import type { Plugin } from "unified";
+import { unified } from "unified";
 
 /** Regex to match YAML frontmatter block at start of content */
 const FRONTMATTER_REGEX = /^---\n[\s\S]*?\n---\n/;
 
 export interface RemarkSnippetsOptions {
-  /** Absolute path to the snippets directory */
-  snippetsDir: string;
   /** Maximum recursion depth to prevent infinite loops */
   maxDepth?: number;
+  /** Absolute path to the snippets directory */
+  snippetsDir: string;
 }
 
 /** Regex to match ::snippet{file="..." ...} directives */
@@ -43,10 +43,13 @@ function parseAttributes(attrString: string): Record<string, string> {
 }
 
 /** Substitute {{varName}} placeholders in content */
-function substituteVariables(content: string, vars: Record<string, string>): string {
-  return content.replace(/\{\{(\w+)\}\}/g, (_, name) => {
-    return vars[name] !== undefined ? vars[name] : `{{${name}}}`;
-  });
+function substituteVariables(
+  content: string,
+  vars: Record<string, string>
+): string {
+  return content.replace(/\{\{(\w+)\}\}/g, (_, name) =>
+    vars[name] === undefined ? `{{${name}}}` : vars[name]
+  );
 }
 
 /** Parse markdown string into an mdast tree */
@@ -66,7 +69,9 @@ export function resolveSnippet(snippetsDir: string, filePath: string): string {
   const fullPath = resolve(snippetsDir, filePath);
 
   if (!existsSync(fullPath)) {
-    throw new Error(`Snippet not found: ${filePath} (looked in ${snippetsDir})`);
+    throw new Error(
+      `Snippet not found: ${filePath} (looked in ${snippetsDir})`
+    );
   }
 
   return readFileSync(fullPath, "utf-8");
@@ -81,7 +86,7 @@ function resolveSnippetsInTree(
   snippetsDir: string,
   variables: Record<string, string>,
   depth: number,
-  maxDepth: number,
+  maxDepth: number
 ): Root {
   if (depth > maxDepth) {
     return tree;
@@ -127,7 +132,7 @@ function resolveSnippetsInTree(
               snippetsDir,
               mergedVars,
               depth + 1,
-              maxDepth,
+              maxDepth
             );
 
             // Splice snippet children into parent

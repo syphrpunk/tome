@@ -1,15 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   diffOpenApiSpecs,
-  generateChangelogEntry,
   formatChangelogMarkdown,
-  type ApiDiffResult,
+  generateChangelogEntry,
 } from "./api-diff.js";
-import type { ApiManifest, ApiEndpoint } from "./openapi.js";
+import type { ApiEndpoint, ApiManifest } from "./openapi.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
-function makeManifest(endpoints: ApiEndpoint[], version = "1.0.0"): ApiManifest {
+function makeManifest(
+  endpoints: ApiEndpoint[],
+  version = "1.0.0"
+): ApiManifest {
   return {
     title: "Test API",
     version,
@@ -81,7 +83,9 @@ describe("diffOpenApiSpecs", () => {
     const newSpec = makeManifest([makeEndpoint({ deprecated: false })]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
 
-    const change = diff.changes.find((c) => c.description.includes("Un-deprecated"));
+    const change = diff.changes.find((c) =>
+      c.description.includes("Un-deprecated")
+    );
     expect(change).toBeDefined();
     expect(change!.severity).toBe("non-breaking");
   });
@@ -100,12 +104,16 @@ describe("diffOpenApiSpecs", () => {
     const oldSpec = makeManifest([makeEndpoint({ parameters: [] })]);
     const newSpec = makeManifest([
       makeEndpoint({
-        parameters: [{ name: "page", in: "query", required: true, type: "integer" }],
+        parameters: [
+          { name: "page", in: "query", required: true, type: "integer" },
+        ],
       }),
     ]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
 
-    const paramChange = diff.changes.find((c) => c.field?.includes("parameter.page"));
+    const paramChange = diff.changes.find((c) =>
+      c.field?.includes("parameter.page")
+    );
     expect(paramChange).toBeDefined();
     expect(paramChange!.severity).toBe("breaking");
     expect(paramChange!.description).toContain("required");
@@ -115,12 +123,16 @@ describe("diffOpenApiSpecs", () => {
     const oldSpec = makeManifest([makeEndpoint({ parameters: [] })]);
     const newSpec = makeManifest([
       makeEndpoint({
-        parameters: [{ name: "limit", in: "query", required: false, type: "integer" }],
+        parameters: [
+          { name: "limit", in: "query", required: false, type: "integer" },
+        ],
       }),
     ]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
 
-    const paramChange = diff.changes.find((c) => c.field?.includes("parameter.limit"));
+    const paramChange = diff.changes.find((c) =>
+      c.field?.includes("parameter.limit")
+    );
     expect(paramChange).toBeDefined();
     expect(paramChange!.severity).toBe("non-breaking");
   });
@@ -128,13 +140,17 @@ describe("diffOpenApiSpecs", () => {
   it("detects removed required parameter (breaking)", () => {
     const oldSpec = makeManifest([
       makeEndpoint({
-        parameters: [{ name: "id", in: "path", required: true, type: "string" }],
+        parameters: [
+          { name: "id", in: "path", required: true, type: "string" },
+        ],
       }),
     ]);
     const newSpec = makeManifest([makeEndpoint({ parameters: [] })]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
 
-    const paramChange = diff.changes.find((c) => c.field?.includes("parameter.id"));
+    const paramChange = diff.changes.find((c) =>
+      c.field?.includes("parameter.id")
+    );
     expect(paramChange).toBeDefined();
     expect(paramChange!.severity).toBe("breaking");
   });
@@ -142,12 +158,16 @@ describe("diffOpenApiSpecs", () => {
   it("detects parameter type change (breaking)", () => {
     const oldSpec = makeManifest([
       makeEndpoint({
-        parameters: [{ name: "id", in: "path", required: true, type: "string" }],
+        parameters: [
+          { name: "id", in: "path", required: true, type: "string" },
+        ],
       }),
     ]);
     const newSpec = makeManifest([
       makeEndpoint({
-        parameters: [{ name: "id", in: "path", required: true, type: "integer" }],
+        parameters: [
+          { name: "id", in: "path", required: true, type: "integer" },
+        ],
       }),
     ]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
@@ -162,12 +182,16 @@ describe("diffOpenApiSpecs", () => {
   it("detects parameter becoming required (breaking)", () => {
     const oldSpec = makeManifest([
       makeEndpoint({
-        parameters: [{ name: "filter", in: "query", required: false, type: "string" }],
+        parameters: [
+          { name: "filter", in: "query", required: false, type: "string" },
+        ],
       }),
     ]);
     const newSpec = makeManifest([
       makeEndpoint({
-        parameters: [{ name: "filter", in: "query", required: true, type: "string" }],
+        parameters: [
+          { name: "filter", in: "query", required: true, type: "string" },
+        ],
       }),
     ]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
@@ -179,7 +203,9 @@ describe("diffOpenApiSpecs", () => {
   });
 
   it("detects added request body", () => {
-    const oldSpec = makeManifest([makeEndpoint({ method: "post", path: "/users" })]);
+    const oldSpec = makeManifest([
+      makeEndpoint({ method: "post", path: "/users" }),
+    ]);
     const newSpec = makeManifest([
       makeEndpoint({
         method: "post",
@@ -202,7 +228,9 @@ describe("diffOpenApiSpecs", () => {
         requestBody: { required: true, contentType: "application/json" },
       }),
     ]);
-    const newSpec = makeManifest([makeEndpoint({ method: "post", path: "/users" })]);
+    const newSpec = makeManifest([
+      makeEndpoint({ method: "post", path: "/users" }),
+    ]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
 
     const bodyChange = diff.changes.find((c) => c.field === "requestBody");
@@ -256,7 +284,11 @@ describe("diffOpenApiSpecs", () => {
       makeEndpoint({ method: "delete", path: "/users/{id}" }),
     ]);
     const newSpec = makeManifest([
-      makeEndpoint({ method: "get", path: "/users", summary: "Updated summary" }),
+      makeEndpoint({
+        method: "get",
+        path: "/users",
+        summary: "Updated summary",
+      }),
       makeEndpoint({ method: "post", path: "/users" }),
     ]);
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
@@ -283,10 +315,13 @@ describe("generateChangelogEntry", () => {
       makeEndpoint({ method: "get", path: "/users" }),
       makeEndpoint({ method: "delete", path: "/old" }),
     ]);
-    const newSpec = makeManifest([
-      makeEndpoint({ method: "get", path: "/users", deprecated: true }),
-      makeEndpoint({ method: "post", path: "/new" }),
-    ], "2.0.0");
+    const newSpec = makeManifest(
+      [
+        makeEndpoint({ method: "get", path: "/users", deprecated: true }),
+        makeEndpoint({ method: "post", path: "/new" }),
+      ],
+      "2.0.0"
+    );
 
     const diff = diffOpenApiSpecs(oldSpec, newSpec);
     const entry = generateChangelogEntry(diff);
@@ -332,7 +367,10 @@ describe("formatChangelogMarkdown", () => {
         changed: ["Parameter `filter` is now required on GET /users"],
         deprecated: ["Deprecated GET /legacy"],
         removed: ["Removed DELETE /old"],
-        breaking: ["Removed DELETE /old", "Parameter `filter` is now required on GET /users"],
+        breaking: [
+          "Removed DELETE /old",
+          "Parameter `filter` is now required on GET /users",
+        ],
       },
     };
 

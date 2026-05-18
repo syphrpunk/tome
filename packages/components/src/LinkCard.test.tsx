@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { LinkCard, CardGrid } from "./LinkCard";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { CardGrid, LinkCard } from "./LinkCard";
 
 describe("LinkCard", () => {
   it("renders the title", () => {
@@ -15,7 +15,7 @@ describe("LinkCard", () => {
   });
 
   it("renders description when provided", () => {
-    render(<LinkCard href="/docs" title="Docs" description="Read the docs" />);
+    render(<LinkCard description="Read the docs" href="/docs" title="Docs" />);
     expect(screen.getByText("Read the docs")).toBeInTheDocument();
   });
 
@@ -25,7 +25,7 @@ describe("LinkCard", () => {
   });
 
   it("renders icon when provided", () => {
-    render(<LinkCard href="/docs" title="Docs" icon="📚" />);
+    render(<LinkCard href="/docs" icon="📚" title="Docs" />);
     expect(screen.getByText("📚")).toBeInTheDocument();
   });
 
@@ -52,21 +52,31 @@ describe("LinkCard", () => {
   });
 
   it("explicit external=true overrides href detection for relative links", () => {
-    render(<LinkCard href="/local-page" title="Forced External" external={true} />);
+    render(
+      <LinkCard external={true} href="/local-page" title="Forced External" />
+    );
     const link = screen.getByRole("link", { name: /Forced External/ });
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("explicit external=false overrides href detection for http links", () => {
-    render(<LinkCard href="https://example.com" title="Forced Internal" external={false} />);
+    render(
+      <LinkCard
+        external={false}
+        href="https://example.com"
+        title="Forced Internal"
+      />
+    );
     const link = screen.getByRole("link", { name: /Forced Internal/ });
     expect(link).not.toHaveAttribute("target");
     expect(link).not.toHaveAttribute("rel");
   });
 
   it("external link shows '↗' arrow and internal shows '→'", () => {
-    const { rerender } = render(<LinkCard href="https://ext.com" title="Ext" />);
+    const { rerender } = render(
+      <LinkCard href="https://ext.com" title="Ext" />
+    );
     expect(screen.getByText("↗")).toBeInTheDocument();
 
     rerender(<LinkCard href="/internal" title="Int" />);

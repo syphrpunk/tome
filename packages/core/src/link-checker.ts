@@ -1,28 +1,28 @@
 import { readFileSync } from "fs";
-import type { PageRoute } from "./routes.js";
+import matter from "gray-matter";
 import type { TomeConfig } from "./config.js";
 import { extractHeadingsFromSource } from "./markdown.js";
-import matter from "gray-matter";
+import type { PageRoute } from "./routes.js";
 
 // ── TYPES ────────────────────────────────────────────────
 export interface BrokenLink {
   /** Source file where the link was found */
   file: string;
-  /** Line number (1-based) */
-  line: number;
   /** The link target */
   href: string;
+  /** Line number (1-based) */
+  line: number;
   /** Why this link is broken */
   reason: string;
 }
 
 export interface LinkCheckResult {
-  /** Total internal links checked */
-  totalLinks: number;
   /** Broken links found */
   broken: BrokenLink[];
   /** Whether the check passed (no broken links) */
   ok: boolean;
+  /** Total internal links checked */
+  totalLinks: number;
 }
 
 // ── LINK EXTRACTION ──────────────────────────────────────
@@ -74,15 +74,25 @@ export function extractInternalLinks(
  * Determine if a URL is an internal link (not external, mailto, tel, or pure anchor).
  */
 function isInternalLink(href: string): boolean {
-  if (!href) return false;
+  if (!href) {
+    return false;
+  }
   // External
-  if (href.startsWith("http://") || href.startsWith("https://")) return false;
+  if (href.startsWith("http://") || href.startsWith("https://")) {
+    return false;
+  }
   // Mailto / Tel
-  if (href.startsWith("mailto:") || href.startsWith("tel:")) return false;
+  if (href.startsWith("mailto:") || href.startsWith("tel:")) {
+    return false;
+  }
   // Pure anchor link (handled separately)
-  if (href.startsWith("#")) return false;
+  if (href.startsWith("#")) {
+    return false;
+  }
   // Protocol-relative
-  if (href.startsWith("//")) return false;
+  if (href.startsWith("//")) {
+    return false;
+  }
   return true;
 }
 
@@ -96,12 +106,18 @@ function extractNavigationPageIds(
 ): string[] {
   const ids: string[] = [];
 
-  function walk(pages: Array<string | { group: string; pages: Array<unknown> }>) {
+  function walk(
+    pages: Array<string | { group: string; pages: Array<unknown> }>
+  ) {
     for (const entry of pages) {
       if (typeof entry === "string") {
         ids.push(entry);
       } else if (entry && typeof entry === "object" && "pages" in entry) {
-        walk(entry.pages as Array<string | { group: string; pages: Array<unknown> }>);
+        walk(
+          entry.pages as Array<
+            string | { group: string; pages: Array<unknown> }
+          >
+        );
       }
     }
   }
@@ -125,17 +141,20 @@ function extractNavigationPageIds(
  *  - "quickstart#section" → page "quickstart", anchor "section"
  *  - "/docs/quickstart" → "quickstart" (strips basePath)
  */
-function resolveLink(href: string, basePath?: string): { pageId: string; anchor?: string } {
+function resolveLink(
+  href: string,
+  basePath?: string
+): { pageId: string; anchor?: string } {
   // Split off anchor
   const [path, anchor] = href.split("#", 2);
 
   // Normalize the path to a page ID
   let pageId = path
-    .replace(/^\.\//, "")        // strip leading ./
-    .replace(/^\//, "")          // strip leading /
-    .replace(/\.mdx?$/, "")      // strip .md / .mdx extension
-    .replace(/\/index$/, "")     // /index → root
-    .replace(/\/$/, "");         // trailing slash
+    .replace(/^\.\//, "") // strip leading ./
+    .replace(/^\//, "") // strip leading /
+    .replace(/\.mdx?$/, "") // strip .md / .mdx extension
+    .replace(/\/index$/, "") // /index → root
+    .replace(/\/$/, ""); // trailing slash
 
   // Strip basePath prefix (e.g. "docs/" from "/docs/quickstart")
   if (basePath) {
@@ -150,7 +169,9 @@ function resolveLink(href: string, basePath?: string): { pageId: string; anchor?
   // Handle relative paths with ../ — simplistic but works for flat structures
   pageId = pageId.replace(/^(\.\.\/)+/, "");
 
-  if (!pageId) pageId = "index";
+  if (!pageId) {
+    pageId = "index";
+  }
 
   return { pageId, anchor: anchor || undefined };
 }

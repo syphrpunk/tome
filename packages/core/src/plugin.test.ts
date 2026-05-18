@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "fs";
-import { join } from "path";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import tomePlugin from "./vite-plugin.js";
+import { join } from "path";
 import type { Plugin } from "vite";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import tomePlugin from "./vite-plugin.js";
 
 // ── HELPERS ──────────────────────────────────────────────
 
@@ -24,7 +24,7 @@ function setupPluginEnv() {
   // Write test pages
   writeFileSync(
     join(tmpDir, "pages", "intro.md"),
-    `---\ntitle: Introduction\ndescription: The intro page\n---\n\n# Introduction\n\nHello world.`
+    "---\ntitle: Introduction\ndescription: The intro page\n---\n\n# Introduction\n\nHello world."
   );
   writeFileSync(
     join(tmpDir, "pages", "getting-started.md"),
@@ -239,7 +239,7 @@ describe("load — MDX pages", () => {
     // Add an MDX page
     writeFileSync(
       join(tmpDir, "pages", "components.mdx"),
-      `---\ntitle: Components\ndescription: UI components\n---\n\n# Components\n\n## Button\n\nSome MDX content.`
+      "---\ntitle: Components\ndescription: UI components\n---\n\n# Components\n\n## Button\n\nSome MDX content."
     );
 
     // Update config navigation to include the mdx page
@@ -300,7 +300,9 @@ describe("generateBundle — MCP manifest", () => {
     expect(mcpFile.type).toBe("asset");
     // Also emits llms.txt and llms-full.txt
     expect(emitted.find((f: any) => f.fileName === "llms.txt")).toBeDefined();
-    expect(emitted.find((f: any) => f.fileName === "llms-full.txt")).toBeDefined();
+    expect(
+      emitted.find((f: any) => f.fileName === "llms-full.txt")
+    ).toBeDefined();
   });
 
   it("manifest contains page URLs and titles", async () => {
@@ -314,7 +316,9 @@ describe("generateBundle — MCP manifest", () => {
       emitFile: (f: any) => emitted.push(f),
     });
 
-    const manifest = JSON.parse(emitted.find((f: any) => f.fileName === "mcp.json").source);
+    const manifest = JSON.parse(
+      emitted.find((f: any) => f.fileName === "mcp.json").source
+    );
     expect(manifest.name).toBe("Test Site");
     expect(manifest.pages).toBeInstanceOf(Array);
     expect(manifest.pages.length).toBeGreaterThanOrEqual(2);
@@ -406,7 +410,7 @@ describe("generateBundle — llms.txt", () => {
     // Add a hidden page
     writeFileSync(
       join(tmpDir, "pages", "secret.md"),
-      `---\ntitle: Secret Page\nhidden: true\n---\n\n# Secret\n\nHidden content.`
+      "---\ntitle: Secret Page\nhidden: true\n---\n\n# Secret\n\nHidden content."
     );
 
     plugins = tomePlugin({ root: tmpDir });
@@ -442,9 +446,9 @@ describe("sandbox CSP meta tag", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const html = '<html><head><title>Test</title></head><body></body></html>';
+    const html = "<html><head><title>Test</title></head><body></body></html>";
     const result = (corePlugin.transformIndexHtml as Function)(html);
-    expect(result).toContain('Content-Security-Policy');
+    expect(result).toContain("Content-Security-Policy");
     expect(result).toContain("default-src 'self'");
     expect(result).toContain("connect-src");
   });
@@ -458,9 +462,9 @@ describe("sandbox CSP meta tag", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const html = '<html><head><title>Test</title></head><body></body></html>';
+    const html = "<html><head><title>Test</title></head><body></body></html>";
     const result = (corePlugin.transformIndexHtml as Function)(html);
-    expect(result).not.toContain('Content-Security-Policy');
+    expect(result).not.toContain("Content-Security-Policy");
   });
 
   it("always injects WebSite JSON-LD even without sandbox", async () => {
@@ -472,9 +476,9 @@ describe("sandbox CSP meta tag", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const html = '<html><head><title>Test</title></head><body></body></html>';
+    const html = "<html><head><title>Test</title></head><body></body></html>";
     const result = (corePlugin.transformIndexHtml as Function)(html);
-    expect(result).toContain('application/ld+json');
+    expect(result).toContain("application/ld+json");
     expect(result).toContain('"@type":"WebSite"');
     expect(result).toContain("Test");
   });
@@ -488,9 +492,9 @@ describe("sandbox CSP meta tag", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const html = '<html><head><title>Test</title></head><body></body></html>';
+    const html = "<html><head><title>Test</title></head><body></body></html>";
     const result = (corePlugin.transformIndexHtml as Function)(html);
-    expect(result).toContain('api.openai.com');
+    expect(result).toContain("api.openai.com");
   });
 });
 
@@ -535,7 +539,7 @@ describe("redirect handling", () => {
 
     const htmlFile = emittedFiles.find((f) => f.fileName === "old-page.html");
     expect(htmlFile).toBeDefined();
-    expect(htmlFile!.source).toContain('url=/new-page');
+    expect(htmlFile!.source).toContain("url=/new-page");
   });
 
   it("does not emit _redirects when no redirects configured", async () => {
@@ -554,7 +558,7 @@ describe("redirect handling", () => {
   it("collects frontmatter redirect_from into _redirects file", async () => {
     writeFileSync(
       join(tmpDir, "pages", "intro.md"),
-      `---\ntitle: Introduction\nredirect_from:\n  - /old-intro\n  - /legacy/intro\n---\n\n# Introduction\n\nHello world.`
+      "---\ntitle: Introduction\nredirect_from:\n  - /old-intro\n  - /legacy/intro\n---\n\n# Introduction\n\nHello world."
     );
     plugins = tomePlugin({ root: tmpDir });
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
@@ -621,7 +625,7 @@ describe("generateBundle — skill.md", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "secret.md"),
-      `---\ntitle: Secret Page\nhidden: true\n---\n\n# Secret\n\nHidden content.`
+      "---\ntitle: Secret Page\nhidden: true\n---\n\n# Secret\n\nHidden content."
     );
 
     plugins = tomePlugin({ root: tmpDir });
@@ -739,7 +743,9 @@ describe("generateBundle — robots.txt", () => {
     });
 
     const robotsTxt = emitted.find((f: any) => f.fileName === "robots.txt");
-    expect(robotsTxt.source).toContain("Sitemap: https://docs.example.com/sitemap.xml");
+    expect(robotsTxt.source).toContain(
+      "Sitemap: https://docs.example.com/sitemap.xml"
+    );
   });
 });
 
@@ -790,7 +796,9 @@ describe("generateBundle — JSON-LD schema markup", () => {
     );
 
     // Per-page HTML shells are emitted as assets — check the emitted files
-    const introHtml = emitted.find((f: any) => f.fileName === "intro/index.html");
+    const introHtml = emitted.find(
+      (f: any) => f.fileName === "intro/index.html"
+    );
     expect(introHtml).toBeDefined();
     // The JSON-LD is injected into the bundle (not emitted files),
     // but per-page shells should have TechArticle schema
@@ -869,7 +877,9 @@ describe("generateBundle — search.json", () => {
       emitFile: (f: any) => emitted.push(f),
     });
 
-    const parsed = JSON.parse(emitted.find((f: any) => f.fileName === "search.json").source);
+    const parsed = JSON.parse(
+      emitted.find((f: any) => f.fileName === "search.json").source
+    );
     expect(parsed.totalPages).toBeGreaterThanOrEqual(2);
     expect(parsed.pages).toBeInstanceOf(Array);
 
@@ -889,7 +899,9 @@ describe("generateBundle — search.json", () => {
       emitFile: (f: any) => emitted.push(f),
     });
 
-    const parsed = JSON.parse(emitted.find((f: any) => f.fileName === "search.json").source);
+    const parsed = JSON.parse(
+      emitted.find((f: any) => f.fileName === "search.json").source
+    );
     const introPage = parsed.pages.find((p: any) => p.id === "intro");
     expect(introPage).toBeDefined();
     expect(introPage.title).toBe("Introduction");
@@ -902,7 +914,7 @@ describe("generateBundle — search.json", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "secret.md"),
-      `---\ntitle: Secret Page\nhidden: true\n---\n\n# Secret\n\nHidden content.`
+      "---\ntitle: Secret Page\nhidden: true\n---\n\n# Secret\n\nHidden content."
     );
 
     plugins = tomePlugin({ root: tmpDir });
@@ -914,7 +926,9 @@ describe("generateBundle — search.json", () => {
       emitFile: (f: any) => emitted.push(f),
     });
 
-    const parsed = JSON.parse(emitted.find((f: any) => f.fileName === "search.json").source);
+    const parsed = JSON.parse(
+      emitted.find((f: any) => f.fileName === "search.json").source
+    );
     const ids = parsed.pages.map((p: any) => p.id);
     expect(ids).not.toContain("secret");
   });
@@ -930,7 +944,9 @@ describe("generateBundle — search.json", () => {
       emitFile: (f: any) => emitted.push(f),
     });
 
-    const parsed = JSON.parse(emitted.find((f: any) => f.fileName === "search.json").source);
+    const parsed = JSON.parse(
+      emitted.find((f: any) => f.fileName === "search.json").source
+    );
     expect(parsed.searchEndpoint).toBe("/pagefind/pagefind.js");
   });
 
@@ -950,7 +966,9 @@ describe("generateBundle — search.json", () => {
       emitFile: (f: any) => emitted.push(f),
     });
 
-    const parsed = JSON.parse(emitted.find((f: any) => f.fileName === "search.json").source);
+    const parsed = JSON.parse(
+      emitted.find((f: any) => f.fileName === "search.json").source
+    );
     const introPage = parsed.pages.find((p: any) => p.id === "intro");
     expect(introPage.url).toBe("https://docs.example.com/intro");
   });
@@ -967,7 +985,7 @@ describe("draft pages — production mode", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "draft-page.md"),
-      `---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.`
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
     );
     writeFileSync(
       join(tmpDir, "tome.config.js"),
@@ -979,7 +997,10 @@ describe("draft pages — production mode", () => {
     // Production mode: command is NOT "serve"
     await (corePlugin.configResolved as Function)({});
 
-    const result = await (corePlugin.load as Function).call(null, "\0virtual:tome/routes");
+    const result = await (corePlugin.load as Function).call(
+      null,
+      "\0virtual:tome/routes"
+    );
     expect(result).toContain('"intro"');
     expect(result).toContain('"getting-started"');
     expect(result).not.toContain('"draft-page"');
@@ -989,7 +1010,7 @@ describe("draft pages — production mode", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "draft-page.md"),
-      `---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.`
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
     );
 
     plugins = tomePlugin({ root: tmpDir });
@@ -1011,7 +1032,7 @@ describe("draft pages — production mode", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "draft-page.md"),
-      `---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.`
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
     );
 
     plugins = tomePlugin({ root: tmpDir });
@@ -1031,7 +1052,7 @@ describe("draft pages — production mode", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "draft-page.md"),
-      `---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.`
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
     );
 
     plugins = tomePlugin({ root: tmpDir });
@@ -1057,7 +1078,7 @@ describe("draft pages — dev mode", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "draft-page.md"),
-      `---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.`
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
     );
     writeFileSync(
       join(tmpDir, "tome.config.js"),
@@ -1069,7 +1090,10 @@ describe("draft pages — dev mode", () => {
     // Dev mode: command is "serve"
     await (corePlugin.configResolved as Function)({ command: "serve" });
 
-    const result = await (corePlugin.load as Function).call(null, "\0virtual:tome/routes");
+    const result = await (corePlugin.load as Function).call(
+      null,
+      "\0virtual:tome/routes"
+    );
     expect(result).toContain('"intro"');
     expect(result).toContain('"getting-started"');
     expect(result).toContain('"draft-page"');
@@ -1079,14 +1103,17 @@ describe("draft pages — dev mode", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "draft-page.md"),
-      `---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.`
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
     );
 
     plugins = tomePlugin({ root: tmpDir });
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({ command: "serve" });
 
-    const result = await (corePlugin.load as Function).call(null, "\0virtual:tome/page-loader");
+    const result = await (corePlugin.load as Function).call(
+      null,
+      "\0virtual:tome/page-loader"
+    );
     expect(result).toContain('"draft-page"');
   });
 
@@ -1094,14 +1121,17 @@ describe("draft pages — dev mode", () => {
     setupPluginEnv();
     writeFileSync(
       join(tmpDir, "pages", "draft-page.md"),
-      `---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress.`
+      "---\ntitle: Draft Page\ndraft: true\n---\n\n# Draft\n\nWork in progress."
     );
 
     plugins = tomePlugin({ root: tmpDir });
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({});
 
-    const result = await (corePlugin.load as Function).call(null, "\0virtual:tome/page-loader");
+    const result = await (corePlugin.load as Function).call(
+      null,
+      "\0virtual:tome/page-loader"
+    );
     expect(result).not.toContain('"draft-page"');
   });
 });
@@ -1119,7 +1149,10 @@ describe("virtual:tome/overrides", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const resolved = (corePlugin.resolveId as Function).call(null, "virtual:tome/overrides");
+    const resolved = (corePlugin.resolveId as Function).call(
+      null,
+      "virtual:tome/overrides"
+    );
     expect(resolved).toBe("\0virtual:tome/overrides");
   });
 
@@ -1129,7 +1162,10 @@ describe("virtual:tome/overrides", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const result = await (corePlugin.load as Function).call(null, "\0virtual:tome/overrides");
+    const result = await (corePlugin.load as Function).call(
+      null,
+      "\0virtual:tome/overrides"
+    );
     expect(result).toContain("export default");
     expect(result).toContain("export default {");
     // Should not contain any import statements
@@ -1147,7 +1183,10 @@ describe("virtual:tome/overrides", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const result = await (corePlugin.load as Function).call(null, "\0virtual:tome/overrides");
+    const result = await (corePlugin.load as Function).call(
+      null,
+      "\0virtual:tome/overrides"
+    );
     expect(result).toContain('import Header from "./components/MyHeader.tsx"');
     expect(result).toContain('import Footer from "./components/MyFooter.tsx"');
     expect(result).toContain("Header");
@@ -1169,21 +1208,25 @@ describe("virtual:tome/overrides", () => {
     corePlugin = plugins.find((p) => p.name === "vite-plugin-tome")!;
     await (corePlugin.configResolved as Function)({} as any);
 
-    const result = await (corePlugin.load as Function).call(null, "\0virtual:tome/overrides");
+    const result = await (corePlugin.load as Function).call(
+      null,
+      "\0virtual:tome/overrides"
+    );
     expect(result).toContain("import Header");
     expect(result).toContain("import Footer");
     expect(result).toContain("import Sidebar");
     expect(result).toContain("import Toc");
     expect(result).toContain("import PageFooter");
-    expect(result).toContain("export default { Header, Footer, Sidebar, Toc, PageFooter }");
+    expect(result).toContain(
+      "export default { Header, Footer, Sidebar, Toc, PageFooter }"
+    );
   });
 });
 
 // ── Tome Plugin System (Phase 4.1) ─────────────────────
 
-import type { TomePlugin } from "./config.js";
-import type { TomeConfig } from "./config.js";
 import { vi } from "vitest";
+import type { TomeConfig, TomePlugin } from "./config.js";
 
 describe("TomePlugin — configResolved hook", () => {
   afterEach(() => {
@@ -1208,19 +1251,29 @@ describe("TomePlugin — configResolved hook", () => {
 
 describe("TomePlugin — hook runner unit tests", () => {
   // Inline the helper functions to test them in isolation
-  function runPluginHook<T>(tomePlugins: TomePlugin[], hook: keyof NonNullable<TomePlugin['hooks']>, arg?: T): T {
+  function runPluginHook<T>(
+    tomePlugins: TomePlugin[],
+    hook: keyof NonNullable<TomePlugin["hooks"]>,
+    arg?: T
+  ): T {
     let result = arg as T;
     for (const plugin of tomePlugins) {
       const fn = plugin.hooks?.[hook] as ((a: any) => any) | undefined;
       if (fn) {
         const ret = fn(result);
-        if (ret !== undefined) result = ret;
+        if (ret !== undefined) {
+          result = ret;
+        }
       }
     }
     return result;
   }
 
-  async function runPluginHookAsync(tomePlugins: TomePlugin[], hook: 'buildStart' | 'buildEnd', arg?: string): Promise<void> {
+  async function runPluginHookAsync(
+    tomePlugins: TomePlugin[],
+    hook: "buildStart" | "buildEnd",
+    arg?: string
+  ): Promise<void> {
     for (const plugin of tomePlugins) {
       const fn = plugin.hooks?.[hook];
       if (fn) {
@@ -1243,9 +1296,8 @@ describe("TomePlugin — hook runner unit tests", () => {
     const plugin: TomePlugin = {
       name: "rename-plugin",
       hooks: {
-        configResolved: (config) => {
-          return { ...config, name: "Modified Docs" } as TomeConfig;
-        },
+        configResolved: (config) =>
+          ({ ...config, name: "Modified Docs" }) as TomeConfig,
       },
     };
     const baseConfig = { name: "Original Docs" } as TomeConfig;
@@ -1257,7 +1309,9 @@ describe("TomePlugin — hook runner unit tests", () => {
     const plugin: TomePlugin = {
       name: "noop-plugin",
       hooks: {
-        configResolved: () => { /* void */ },
+        configResolved: () => {
+          /* void */
+        },
       },
     };
     const baseConfig = { name: "Original" } as TomeConfig;
@@ -1269,23 +1323,28 @@ describe("TomePlugin — hook runner unit tests", () => {
     const plugin: TomePlugin = {
       name: "extra-routes",
       hooks: {
-        routesResolved: (routes: any[]) => {
-          return [
-            ...routes,
-            {
-              id: "injected",
-              filePath: "injected.md",
-              absolutePath: "/fake/injected.md",
-              urlPath: "/injected",
-              frontmatter: { title: "Injected" },
-              isMdx: false,
-            },
-          ];
-        },
+        routesResolved: (routes: any[]) => [
+          ...routes,
+          {
+            id: "injected",
+            filePath: "injected.md",
+            absolutePath: "/fake/injected.md",
+            urlPath: "/injected",
+            frontmatter: { title: "Injected" },
+            isMdx: false,
+          },
+        ],
       },
     };
     const baseRoutes = [
-      { id: "index", filePath: "index.md", absolutePath: "/f/index.md", urlPath: "/", frontmatter: { title: "Home" }, isMdx: false },
+      {
+        id: "index",
+        filePath: "index.md",
+        absolutePath: "/f/index.md",
+        urlPath: "/",
+        frontmatter: { title: "Home" },
+        isMdx: false,
+      },
     ];
     const result = runPluginHook([plugin], "routesResolved", baseRoutes);
     expect(result).toHaveLength(2);
@@ -1374,7 +1433,9 @@ describe("TomePlugin — hook runner unit tests", () => {
         },
       },
     };
-    const result = runPluginHook([pluginA, pluginB], "configResolved", { name: "Docs" } as TomeConfig);
+    const result = runPluginHook([pluginA, pluginB], "configResolved", {
+      name: "Docs",
+    } as TomeConfig);
     expect(order).toEqual(["a", "b"]);
     expect(result.name).toBe("Docs-A-B");
   });
@@ -1384,16 +1445,21 @@ describe("TomePlugin — hook runner unit tests", () => {
     const withHook: TomePlugin = {
       name: "real",
       hooks: {
-        configResolved: (config) => ({ ...config, name: "Modified" } as TomeConfig),
+        configResolved: (config) =>
+          ({ ...config, name: "Modified" }) as TomeConfig,
       },
     };
-    const result = runPluginHook([noHooks, withHook], "configResolved", { name: "Original" } as TomeConfig);
+    const result = runPluginHook([noHooks, withHook], "configResolved", {
+      name: "Original",
+    } as TomeConfig);
     expect(result.name).toBe("Modified");
   });
 
   it("plugin with empty hooks object does not break", () => {
     const plugin: TomePlugin = { name: "empty-hooks", hooks: {} };
-    const result = runPluginHook([plugin], "configResolved", { name: "Docs" } as TomeConfig);
+    const result = runPluginHook([plugin], "configResolved", {
+      name: "Docs",
+    } as TomeConfig);
     expect(result.name).toBe("Docs");
   });
 
@@ -1403,8 +1469,14 @@ describe("TomePlugin — hook runner unit tests", () => {
   });
 
   it("headTags from multiple plugins are collected in order", () => {
-    const a: TomePlugin = { name: "a", hooks: { headTags: () => ['<meta name="a">'] } };
-    const b: TomePlugin = { name: "b", hooks: { headTags: () => ['<meta name="b">'] } };
+    const a: TomePlugin = {
+      name: "a",
+      hooks: { headTags: () => ['<meta name="a">'] },
+    };
+    const b: TomePlugin = {
+      name: "b",
+      hooks: { headTags: () => ['<meta name="b">'] },
+    };
     const tags = collectHeadTags([a, b]);
     expect(tags).toHaveLength(2);
     expect(tags[0]).toContain('"a"');

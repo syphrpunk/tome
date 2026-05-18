@@ -1,58 +1,64 @@
-import React, { useState, useEffect, useCallback } from "react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import EditorPage from "./EditorPage";
 
 // ── Types ──────────────────────────────────────────────────
 
 interface User {
-  id: string;
-  email: string;
-  name: string | null;
   avatarUrl: string | null;
-  plan: string;
   createdAt: string;
+  email: string;
+  id: string;
+  name: string | null;
+  plan: string;
 }
 
 interface Project {
-  id: string;
-  slug: string;
-  name: string;
+  createdAt: string;
   deployStatus: string | null;
-  lastDeployAt: string | null;
   fileCount: number;
+  id: string;
+  lastDeployAt: string | null;
+  name: string;
+  slug: string;
   totalSize: number;
   url: string | null;
-  createdAt: string;
 }
 
 interface Deployment {
+  createdAt: string;
+  fileCount: number;
+  finalizedAt: string | null;
   id: string;
   status: string;
-  fileCount: number;
   totalSize: number;
-  createdAt: string;
-  finalizedAt: string | null;
   url: string | null;
 }
 
 interface DomainStatus {
+  dnsRecords: {
+    type: string;
+    name: string;
+    value: string;
+    verified: boolean;
+  }[];
   domain: string;
-  verified: boolean;
   sslStatus: string;
-  dnsRecords: { type: string; name: string; value: string; verified: boolean }[];
+  verified: boolean;
 }
 
 interface AnalyticsSummary {
-  totalPageViews: number;
-  uniqueVisitors: number;
   topPages: { url: string; views: number }[];
   topReferrers: { referrer: string; count: number }[];
+  totalPageViews: number;
+  uniqueVisitors: number;
   viewsByDay: { date: string; views: number }[];
 }
 
 interface OAuthProvider {
+  authorizeUrl: string;
   id: string;
   name: string;
-  authorizeUrl: string;
 }
 
 type AuthState =
@@ -66,31 +72,84 @@ const API_URL = import.meta.env.VITE_API_URL ?? "https://api.tome.center";
 const DEV_MOCK = import.meta.env.DEV && import.meta.env.VITE_MOCK === "1";
 
 const MOCK_USER: User = {
-  id: "usr_1", email: "dev@tome.center", name: "Dev User",
-  plan: "cloud", avatarUrl: null, createdAt: "2025-01-15T00:00:00Z",
+  id: "usr_1",
+  email: "dev@tome.center",
+  name: "Dev User",
+  plan: "cloud",
+  avatarUrl: null,
+  createdAt: "2025-01-15T00:00:00Z",
 };
 const MOCK_PROJECTS: Project[] = [
-  { id: "prj_1", slug: "acme-docs", name: "Acme Docs", deployStatus: "live", lastDeployAt: "2026-03-14T12:00:00Z", fileCount: 42, totalSize: 1048576, url: "https://acme-docs.tome.sh", createdAt: "2025-06-01T00:00:00Z" },
-  { id: "prj_2", slug: "internal-wiki", name: "Internal Wiki", deployStatus: "building", lastDeployAt: "2026-03-15T08:00:00Z", fileCount: 18, totalSize: 524288, url: null, createdAt: "2025-09-20T00:00:00Z" },
+  {
+    id: "prj_1",
+    slug: "acme-docs",
+    name: "Acme Docs",
+    deployStatus: "live",
+    lastDeployAt: "2026-03-14T12:00:00Z",
+    fileCount: 42,
+    totalSize: 1_048_576,
+    url: "https://acme-docs.tome.sh",
+    createdAt: "2025-06-01T00:00:00Z",
+  },
+  {
+    id: "prj_2",
+    slug: "internal-wiki",
+    name: "Internal Wiki",
+    deployStatus: "building",
+    lastDeployAt: "2026-03-15T08:00:00Z",
+    fileCount: 18,
+    totalSize: 524_288,
+    url: null,
+    createdAt: "2025-09-20T00:00:00Z",
+  },
 ];
 const MOCK_DEPLOYMENTS: Deployment[] = [
-  { id: "dpl_1", status: "live", fileCount: 42, totalSize: 1048576, createdAt: "2026-03-14T12:00:00Z", finalizedAt: "2026-03-14T12:01:30Z", url: "https://acme-docs.tome.sh" },
-  { id: "dpl_2", status: "superseded", fileCount: 40, totalSize: 1024000, createdAt: "2026-03-12T09:00:00Z", finalizedAt: "2026-03-12T09:01:00Z", url: "https://acme-docs--dpl_2.tome.sh" },
+  {
+    id: "dpl_1",
+    status: "live",
+    fileCount: 42,
+    totalSize: 1_048_576,
+    createdAt: "2026-03-14T12:00:00Z",
+    finalizedAt: "2026-03-14T12:01:30Z",
+    url: "https://acme-docs.tome.sh",
+  },
+  {
+    id: "dpl_2",
+    status: "superseded",
+    fileCount: 40,
+    totalSize: 1_024_000,
+    createdAt: "2026-03-12T09:00:00Z",
+    finalizedAt: "2026-03-12T09:01:00Z",
+    url: "https://acme-docs--dpl_2.tome.sh",
+  },
 ];
 const MOCK_DATA: Record<string, unknown> = {
   "/api/auth/me": MOCK_USER,
   "/api/deploy/projects": MOCK_PROJECTS,
-  "/api/analytics": { totalPageViews: 12453, uniqueVisitors: 3891, avgTimeOnPage: 42, topPages: [{ url: "/quickstart", views: 2341 }, { url: "/guides/search", views: 1102 }, { url: "/reference/config", views: 890 }] },
+  "/api/analytics": {
+    totalPageViews: 12_453,
+    uniqueVisitors: 3891,
+    avgTimeOnPage: 42,
+    topPages: [
+      { url: "/quickstart", views: 2341 },
+      { url: "/guides/search", views: 1102 },
+      { url: "/reference/config", views: 890 },
+    ],
+  },
 };
 
 async function api<T>(
   path: string,
-  opts: { method?: string; body?: unknown; token?: string } = {},
+  opts: { method?: string; body?: unknown; token?: string } = {}
 ): Promise<T> {
   if (DEV_MOCK) {
-    if (path.includes("/deployments")) return MOCK_DEPLOYMENTS as T;
+    if (path.includes("/deployments")) {
+      return MOCK_DEPLOYMENTS as T;
+    }
     const mockKey = Object.keys(MOCK_DATA).find((k) => path.startsWith(k));
-    if (mockKey) return MOCK_DATA[mockKey] as T;
+    if (mockKey) {
+      return MOCK_DATA[mockKey] as T;
+    }
     return {} as T;
   }
   const res = await fetch(`${API_URL}${path}`, {
@@ -111,39 +170,81 @@ async function api<T>(
 // ── Icons ──────────────────────────────────────────────────
 
 const MoonIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+  <svg
+    fill="none"
+    height="16"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width="16"
+  >
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </svg>
 );
 
 const SunIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+  <svg
+    fill="none"
+    height="16"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width="16"
+  >
     <circle cx="12" cy="12" r="5" />
-    <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-    <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    <line x1="12" x2="12" y1="1" y2="3" />
+    <line x1="12" x2="12" y1="21" y2="23" />
+    <line x1="4.22" x2="5.64" y1="4.22" y2="5.64" />
+    <line x1="18.36" x2="19.78" y1="18.36" y2="19.78" />
+    <line x1="1" x2="3" y1="12" y2="12" />
+    <line x1="21" x2="23" y1="12" y2="12" />
+    <line x1="4.22" x2="5.64" y1="19.78" y2="18.36" />
+    <line x1="18.36" x2="19.78" y1="5.64" y2="4.22" />
   </svg>
 );
 
 const GitHubIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+  <svg fill="currentColor" height="18" viewBox="0 0 24 24" width="18">
     <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z" />
   </svg>
 );
 
 const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+  <svg height="18" viewBox="0 0 24 24" width="18">
+    <path
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+      fill="#4285F4"
+    />
+    <path
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      fill="#34A853"
+    />
+    <path
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+      fill="#FBBC05"
+    />
+    <path
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      fill="#EA4335"
+    />
   </svg>
 );
 
 const ExternalLinkIcon = () => (
-  <svg className="external-link-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+  <svg
+    className="external-link-icon"
+    fill="none"
+    height="12"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="2"
+    viewBox="0 0 24 24"
+    width="12"
+  >
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" x2="21" y1="14" y2="3" />
   </svg>
 );
 
@@ -151,43 +252,97 @@ const ExternalLinkIcon = () => (
 
 const THEMES = {
   light: {
-    "--bg": "#f5f2ed", "--sf": "#ffffff", "--sfH": "#eeece6",
-    "--bd": "#ddd9d0", "--bdA": "#c8c3b8", "--bdLight": "#e8e4dc",
-    "--tx": "#1a1716", "--tx2": "#4a443e", "--txM": "#696360",
-    "--accent": "#8b3a2f", "--accentLight": "#a34838",
-    "--accentFaint": "rgba(139,58,47,0.08)", "--accentGlow": "rgba(139,58,47,0.25)",
-    "--coralBtn": "#8b3a2f", "--coral": "#8b3a2f",
-    "--coralD": "rgba(139,58,47,0.08)", "--coralT": "#a34838",
-    "--green": "#15803d", "--yellow": "#a16207", "--red": "#b91c1c",
-    "--cdBg": "#edeae4", "--cdTx": "#3a3530", "--cdBd": "#ddd9d0",
-    "--shadowColor": "rgba(0,0,0,0.18)", "--shadowHeavy": "rgba(0,0,0,0.3)",
-    "--shadowFloat": "0 8px 32px rgba(0,0,0,0.14), 0 3px 12px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.12)",
-    "--shadowFloatHover": "0 20px 60px rgba(0,0,0,0.22), 0 8px 28px rgba(0,0,0,0.14), 0 0 1px rgba(0,0,0,0.12)",
+    "--bg": "#f5f2ed",
+    "--sf": "#ffffff",
+    "--sfH": "#eeece6",
+    "--bd": "#ddd9d0",
+    "--bdA": "#c8c3b8",
+    "--bdLight": "#e8e4dc",
+    "--tx": "#1a1716",
+    "--tx2": "#4a443e",
+    "--txM": "#696360",
+    "--accent": "#8b3a2f",
+    "--accentLight": "#a34838",
+    "--accentFaint": "rgba(139,58,47,0.08)",
+    "--accentGlow": "rgba(139,58,47,0.25)",
+    "--coralBtn": "#8b3a2f",
+    "--coral": "#8b3a2f",
+    "--coralD": "rgba(139,58,47,0.08)",
+    "--coralT": "#a34838",
+    "--green": "#15803d",
+    "--yellow": "#a16207",
+    "--red": "#b91c1c",
+    "--cdBg": "#edeae4",
+    "--cdTx": "#3a3530",
+    "--cdBd": "#ddd9d0",
+    "--shadowColor": "rgba(0,0,0,0.18)",
+    "--shadowHeavy": "rgba(0,0,0,0.3)",
+    "--shadowFloat":
+      "0 8px 32px rgba(0,0,0,0.14), 0 3px 12px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.12)",
+    "--shadowFloatHover":
+      "0 20px 60px rgba(0,0,0,0.22), 0 8px 28px rgba(0,0,0,0.14), 0 0 1px rgba(0,0,0,0.12)",
     "--btnGlow": "rgba(0,0,0,0.2)",
   },
   dark: {
-    "--bg": "#080c1f", "--sf": "#0e1333", "--sfH": "#141940",
-    "--bd": "#1a2050", "--bdA": "#252d66", "--bdLight": "#252d66",
-    "--tx": "#e8e6f0", "--tx2": "#b5b1c8", "--txM": "#9490ae",
-    "--accent": "#ff6b4a", "--accentLight": "#ff8a70",
-    "--accentFaint": "rgba(255,107,74,0.1)", "--accentGlow": "rgba(255,107,74,0.3)",
-    "--coralBtn": "#c0402a", "--coral": "#ff6b4a",
-    "--coralD": "rgba(255,107,74,0.1)", "--coralT": "#ff8a70",
-    "--green": "#22c55e", "--yellow": "#eab308", "--red": "#f87171",
-    "--cdBg": "#0a0e27", "--cdTx": "#b8b4cc", "--cdBd": "#1a2050",
-    "--shadowColor": "rgba(0,0,0,0.4)", "--shadowHeavy": "rgba(0,0,0,0.6)",
-    "--shadowFloat": "0 8px 32px rgba(0,0,0,0.5), 0 3px 12px rgba(0,0,0,0.35), 0 0 1px rgba(0,0,0,0.4)",
-    "--shadowFloatHover": "0 20px 60px rgba(0,0,0,0.6), 0 8px 28px rgba(0,0,0,0.4), 0 0 1px rgba(0,0,0,0.5)",
+    "--bg": "#080c1f",
+    "--sf": "#0e1333",
+    "--sfH": "#141940",
+    "--bd": "#1a2050",
+    "--bdA": "#252d66",
+    "--bdLight": "#252d66",
+    "--tx": "#e8e6f0",
+    "--tx2": "#b5b1c8",
+    "--txM": "#9490ae",
+    "--accent": "#ff6b4a",
+    "--accentLight": "#ff8a70",
+    "--accentFaint": "rgba(255,107,74,0.1)",
+    "--accentGlow": "rgba(255,107,74,0.3)",
+    "--coralBtn": "#c0402a",
+    "--coral": "#ff6b4a",
+    "--coralD": "rgba(255,107,74,0.1)",
+    "--coralT": "#ff8a70",
+    "--green": "#22c55e",
+    "--yellow": "#eab308",
+    "--red": "#f87171",
+    "--cdBg": "#0a0e27",
+    "--cdTx": "#b8b4cc",
+    "--cdBd": "#1a2050",
+    "--shadowColor": "rgba(0,0,0,0.4)",
+    "--shadowHeavy": "rgba(0,0,0,0.6)",
+    "--shadowFloat":
+      "0 8px 32px rgba(0,0,0,0.5), 0 3px 12px rgba(0,0,0,0.35), 0 0 1px rgba(0,0,0,0.4)",
+    "--shadowFloatHover":
+      "0 20px 60px rgba(0,0,0,0.6), 0 8px 28px rgba(0,0,0,0.4), 0 0 1px rgba(0,0,0,0.5)",
     "--btnGlow": "rgba(0,0,0,0.4)",
   },
 } as const;
 
 // ── Plans ──────────────────────────────────────────────────
 
-const PLANS: Record<string, { name: string; price: string; features: string[] }> = {
-  community: { name: "Community", price: "Free", features: ["10 deploys/mo", "Pagefind search", "Community support"] },
-  cloud: { name: "Cloud", price: "$19.99/mo", features: ["Unlimited deploys", "1 custom domain", "Analytics", "Priority support"] },
-  team: { name: "Team", price: "$49.99/mo", features: ["Unlimited everything", "SSO", "AI chat", "Team collaboration"] },
+const PLANS: Record<
+  string,
+  { name: string; price: string; features: string[] }
+> = {
+  community: {
+    name: "Community",
+    price: "Free",
+    features: ["10 deploys/mo", "Pagefind search", "Community support"],
+  },
+  cloud: {
+    name: "Cloud",
+    price: "$19.99/mo",
+    features: [
+      "Unlimited deploys",
+      "1 custom domain",
+      "Analytics",
+      "Priority support",
+    ],
+  },
+  team: {
+    name: "Team",
+    price: "$49.99/mo",
+    features: ["Unlimited everything", "SSO", "AI chat", "Team collaboration"],
+  },
 };
 
 // ── CSS ────────────────────────────────────────────────────
@@ -474,30 +629,43 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--coral);outline-offs
 // ── Utilities ──────────────────────────────────────────────
 
 function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return "Never";
+  if (!dateStr) {
+    return "Never";
+  }
   const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) {
+    return "Just now";
+  }
+  if (mins < 60) {
+    return `${mins}m ago`;
+  }
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) {
+    return `${hrs}h ago`;
+  }
   const days = Math.floor(hrs / 24);
   return `${days}d ago`;
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
+  if (bytes === 0) {
+    return "0 B";
+  }
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
 }
 
 // ── Router ─────────────────────────────────────────────────
 
 const BASE = "/dashboard";
 
-function matchRoute(path: string): { page: string; params: Record<string, string> } {
+function matchRoute(path: string): {
+  page: string;
+  params: Record<string, string>;
+} {
   const route = path.replace(BASE, "") || "/";
   const editorMatch = route.match(/^\/project\/([^/]+)\/editor$/);
   if (editorMatch) {
@@ -523,7 +691,11 @@ function navigate(to: string) {
 
 // ── Login Page ─────────────────────────────────────────────
 
-function LoginPage({ onLogin }: { onLogin: (token: string, user: User) => void }) {
+function LoginPage({
+  onLogin,
+}: {
+  onLogin: (token: string, user: User) => void;
+}) {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<OAuthProvider[]>([]);
@@ -531,9 +703,16 @@ function LoginPage({ onLogin }: { onLogin: (token: string, user: User) => void }
 
   // Fetch available OAuth providers
   useEffect(() => {
-    api<{ providers: OAuthProvider[]; emailEnabled: boolean }>("/api/auth/providers")
-      .then((data) => { setProviders(data.providers); setProvidersLoaded(true); })
-      .catch(() => { setProvidersLoaded(true); });
+    api<{ providers: OAuthProvider[]; emailEnabled: boolean }>(
+      "/api/auth/providers"
+    )
+      .then((data) => {
+        setProviders(data.providers);
+        setProvidersLoaded(true);
+      })
+      .catch(() => {
+        setProvidersLoaded(true);
+      });
   }, []);
 
   // Handle OAuth callback on mount
@@ -550,10 +729,13 @@ function LoginPage({ onLogin }: { onLogin: (token: string, user: User) => void }
       window.history.replaceState({}, "", window.location.pathname);
 
       const redirectUri = `${window.location.origin}/dashboard`;
-      api<{ token: string; userId: string; email: string }>("/api/auth/oauth/callback", {
-        method: "POST",
-        body: { provider: state, code, redirectUri },
-      })
+      api<{ token: string; userId: string; email: string }>(
+        "/api/auth/oauth/callback",
+        {
+          method: "POST",
+          body: { provider: state, code, redirectUri },
+        }
+      )
         .then(async (data) => {
           const user = await api<User>("/api/auth/me", { token: data.token });
           onLogin(data.token, user);
@@ -567,12 +749,37 @@ function LoginPage({ onLogin }: { onLogin: (token: string, user: User) => void }
 
   if (oauthLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", padding: 24 }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bg)",
+          padding: 24,
+        }}
+      >
         <div className="rv" style={{ textAlign: "center" }}>
-          <span style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: "italic", fontSize: 36, color: "var(--tx)", fontWeight: 300 }}>
+          <span
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontStyle: "italic",
+              fontSize: 36,
+              color: "var(--tx)",
+              fontWeight: 300,
+            }}
+          >
             Tome<span style={{ color: "var(--coral)" }}>.</span>
           </span>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)", marginTop: 24, animation: "pulse 2s infinite" }}>
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 14,
+              color: "var(--txM)",
+              marginTop: 24,
+              animation: "pulse 2s infinite",
+            }}
+          >
             Completing sign in…
           </p>
         </div>
@@ -581,55 +788,145 @@ function LoginPage({ onLogin }: { onLogin: (token: string, user: User) => void }
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", padding: 24 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "var(--bg)",
+        padding: 24,
+      }}
+    >
       <div className="rv" style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <a href="/" style={{ textDecoration: "none" }}>
-            <span style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: "italic", fontSize: 36, color: "var(--tx)", fontWeight: 300 }}>
+            <span
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontStyle: "italic",
+                fontSize: 36,
+                color: "var(--tx)",
+                fontWeight: 300,
+              }}
+            >
               Tome<span style={{ color: "var(--coral)" }}>.</span>
             </span>
           </a>
         </div>
-        <div style={{ border: "1px solid var(--bd)", background: "var(--sf)", padding: 32, borderRadius: 12, boxShadow: "0 4px 16px var(--shadowColor)" }}>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)", marginBottom: 20 }}>
+        <div
+          style={{
+            border: "1px solid var(--bd)",
+            background: "var(--sf)",
+            padding: 32,
+            borderRadius: 12,
+            boxShadow: "0 4px 16px var(--shadowColor)",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 14,
+              color: "var(--txM)",
+              marginBottom: 20,
+            }}
+          >
             Sign in to your account
           </p>
 
           {error && (
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--red)", marginBottom: 16 }}>{error}</p>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--red)",
+                marginBottom: 16,
+              }}
+            >
+              {error}
+            </p>
           )}
 
           {/* OAuth Providers */}
-          {!providersLoaded ? (
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", textAlign: "center", padding: "16px 0", animation: "pulse 2s infinite" }}>
-              Loading…
-            </p>
-          ) : providers.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {providers.map((p) => (
-                <LiquidRing key={p.id} block radius={6} bg="var(--sf)">
-                  <a href={p.authorizeUrl} className="btn-oauth" style={{ borderRadius: 6, width: "100%" }}>
-                    {p.id === "github" && <GitHubIcon />}
-                    {p.id === "google" && <GoogleIcon />}
-                    Continue with {p.name}
-                  </a>
-                </LiquidRing>
-              ))}
-            </div>
+          {providersLoaded ? (
+            providers.length > 0 ? (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
+                {providers.map((p) => (
+                  <LiquidRing bg="var(--sf)" block key={p.id} radius={6}>
+                    <a
+                      className="btn-oauth"
+                      href={p.authorizeUrl}
+                      style={{ borderRadius: 6, width: "100%" }}
+                    >
+                      {p.id === "github" && <GitHubIcon />}
+                      {p.id === "google" && <GoogleIcon />}
+                      Continue with {p.name}
+                    </a>
+                  </LiquidRing>
+                ))}
+              </div>
+            ) : (
+              <p
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  color: "var(--txM)",
+                  textAlign: "center",
+                  padding: "16px 0",
+                }}
+              >
+                No sign-in providers available. Please contact the
+                administrator.
+              </p>
+            )
           ) : (
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", textAlign: "center", padding: "16px 0" }}>
-              No sign-in providers available. Please contact the administrator.
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--txM)",
+                textAlign: "center",
+                padding: "16px 0",
+                animation: "pulse 2s infinite",
+              }}
+            >
+              Loading…
             </p>
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, padding: "0 4px" }}>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--txM)" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 16,
+            padding: "0 4px",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              color: "var(--txM)",
+            }}
+          >
             No account? One will be created automatically.
           </p>
-          <a href="/" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--txM)", textDecoration: "none", transition: "color .2s" }}
+          <a
+            href="/"
+            onMouseOut={(e) => (e.currentTarget.style.color = "var(--txM)")}
             onMouseOver={(e) => (e.currentTarget.style.color = "var(--coral)")}
-            onMouseOut={(e) => (e.currentTarget.style.color = "var(--txM)")}>
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              color: "var(--txM)",
+              textDecoration: "none",
+              transition: "color .2s",
+            }}
+          >
             &larr; Home
           </a>
         </div>
@@ -641,38 +938,97 @@ function LoginPage({ onLogin }: { onLogin: (token: string, user: User) => void }
 // ── Sidebar Icons ─────────────────────────────────────────
 
 const ProjectsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="3" width="20" height="18" rx="2" /><path d="M8 3v18" /><path d="M2 9h6" /><path d="M2 15h6" />
+  <svg
+    fill="none"
+    height="18"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width="18"
+  >
+    <rect height="18" rx="2" width="20" x="2" y="3" />
+    <path d="M8 3v18" />
+    <path d="M2 9h6" />
+    <path d="M2 15h6" />
   </svg>
 );
 
 const BillingIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
+  <svg
+    fill="none"
+    height="18"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width="18"
+  >
+    <rect height="16" rx="2" width="22" x="1" y="4" />
+    <line x1="1" x2="23" y1="10" y2="10" />
   </svg>
 );
 
 const SettingsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  <svg
+    fill="none"
+    height="18"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width="18"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </svg>
 );
 
 const DocsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+  <svg
+    fill="none"
+    height="18"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width="18"
+  >
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
   </svg>
 );
 
 const HomeIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+  <svg
+    fill="none"
+    height="18"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="1.5"
+    viewBox="0 0 24 24"
+    width="18"
+  >
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 
 // ── LiquidRing ────────────────────────────────────────────
 
-function LiquidRing({ children, bg, radius = 6, block, style, onAccent }: {
+function LiquidRing({
+  children,
+  bg,
+  radius = 6,
+  block,
+  style,
+  onAccent,
+}: {
   children: React.ReactNode;
   bg?: string;
   radius?: number;
@@ -722,29 +1078,44 @@ function LiquidRing({ children, bg, radius = 6, block, style, onAccent }: {
         ...style,
       }}
     >
-      <InnerTag style={{
-        position: "absolute",
-        top: "50%", left: "50%",
-        width: "150%",
-        height: block ? "150%" : "400%",
-        background: gradient,
-        opacity: hovered ? 1 : 0,
-        transition: "opacity 0.4s ease",
-        animation: "liquidSpin 6s linear infinite",
-        pointerEvents: "none",
-        zIndex: 0,
-      }} />
-      <InnerTag style={{
-        position: "absolute",
-        inset: -2,
-        borderRadius: radius + 4,
-        background: onAccent ? "#ffffff" : "#1a1a1a",
-        filter: "blur(8px)",
-        opacity: hovered ? (onAccent ? 0.25 : 0.15) : 0,
-        transition: "opacity 0.4s ease",
-        pointerEvents: "none",
-      }} />
-      <InnerTag style={{ position: "relative", zIndex: 2, display: block ? "block" : "inline-flex", borderRadius: radius, overflow: "hidden", background: bg ?? "transparent", ...(block ? { height: "100%" } : {}) }}>
+      <InnerTag
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "150%",
+          height: block ? "150%" : "400%",
+          background: gradient,
+          opacity: hovered ? 1 : 0,
+          transition: "opacity 0.4s ease",
+          animation: "liquidSpin 6s linear infinite",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <InnerTag
+        style={{
+          position: "absolute",
+          inset: -2,
+          borderRadius: radius + 4,
+          background: onAccent ? "#ffffff" : "#1a1a1a",
+          filter: "blur(8px)",
+          opacity: hovered ? (onAccent ? 0.25 : 0.15) : 0,
+          transition: "opacity 0.4s ease",
+          pointerEvents: "none",
+        }}
+      />
+      <InnerTag
+        style={{
+          position: "relative",
+          zIndex: 2,
+          display: block ? "block" : "inline-flex",
+          borderRadius: radius,
+          overflow: "hidden",
+          background: bg ?? "transparent",
+          ...(block ? { height: "100%" } : {}),
+        }}
+      >
         {children}
       </InnerTag>
     </Tag>
@@ -754,50 +1125,125 @@ function LiquidRing({ children, bg, radius = 6, block, style, onAccent }: {
 // ── Shell (sidebar layout) ────────────────────────────────
 
 function Shell({
-  user, isDark, setDark, children,
+  user,
+  isDark,
+  setDark,
+  children,
 }: {
   user: User;
   isDark: boolean;
   setDark: (v: boolean) => void;
   children: React.ReactNode;
 }) {
-  const pathname = typeof window !== "undefined" ? window.location.pathname : BASE;
+  const pathname =
+    typeof window === "undefined" ? BASE : window.location.pathname;
   const { page } = matchRoute(pathname);
 
   const sidebarLinkStyle = (active: boolean): React.CSSProperties => ({
-    display: "flex", alignItems: "center", gap: 12, padding: "10px 16px",
-    borderRadius: 8, textDecoration: "none", transition: "all .2s",
-    fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 400,
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "10px 16px",
+    borderRadius: 8,
+    textDecoration: "none",
+    transition: "all .2s",
+    fontFamily: "Inter, sans-serif",
+    fontSize: 14,
+    fontWeight: 400,
     color: active ? "var(--coral)" : "var(--txM)",
     background: active ? "var(--coralD)" : "transparent",
     cursor: "pointer",
   });
 
   return (
-    <div className="dash-layout" style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
+    <div
+      className="dash-layout"
+      style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}
+    >
       {/* Sidebar */}
-      <aside className="dash-sidebar" style={{
-        width: 220, flexShrink: 0, display: "flex", flexDirection: "column",
-        padding: "24px 16px", borderRight: "1px solid var(--bd)",
-        background: "var(--sf)", position: "sticky", top: 0, height: "100vh",
-        overflowY: "auto",
-      }}>
+      <aside
+        className="dash-sidebar"
+        style={{
+          width: 220,
+          flexShrink: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "24px 16px",
+          borderRight: "1px solid var(--bd)",
+          background: "var(--sf)",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowY: "auto",
+        }}
+      >
         {/* Logo */}
-        <a className="dash-logo" href={`${BASE}/`} onClick={(e) => { e.preventDefault(); navigate("/"); }} style={{ textDecoration: "none", marginBottom: 8, padding: "0 16px", display: "block", textAlign: "left" }}>
-          <span style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: "italic", fontSize: 24, color: "var(--tx)", fontWeight: 300 }}>
-            T<span className="dash-logo-text">ome</span><span style={{ color: "var(--coral)" }}>.</span>
+        <a
+          className="dash-logo"
+          href={`${BASE}/`}
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("/");
+          }}
+          style={{
+            textDecoration: "none",
+            marginBottom: 8,
+            padding: "0 16px",
+            display: "block",
+            textAlign: "left",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontStyle: "italic",
+              fontSize: 24,
+              color: "var(--tx)",
+              fontWeight: 300,
+            }}
+          >
+            T<span className="dash-logo-text">ome</span>
+            <span style={{ color: "var(--coral)" }}>.</span>
           </span>
         </a>
 
         {/* Main nav */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 24 }}>
-          <a href={`${BASE}/`} onClick={(e) => { e.preventDefault(); navigate("/"); }} style={sidebarLinkStyle(page === "projects" || page === "project")}>
+        <nav
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            marginTop: 24,
+          }}
+        >
+          <a
+            href={`${BASE}/`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/");
+            }}
+            style={sidebarLinkStyle(page === "projects" || page === "project")}
+          >
             <ProjectsIcon /> <span>Projects</span>
           </a>
-          <a href={`${BASE}/billing`} onClick={(e) => { e.preventDefault(); navigate("/billing"); }} style={sidebarLinkStyle(page === "billing")}>
+          <a
+            href={`${BASE}/billing`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/billing");
+            }}
+            style={sidebarLinkStyle(page === "billing")}
+          >
             <BillingIcon /> <span>Billing</span>
           </a>
-          <a href={`${BASE}/settings`} onClick={(e) => { e.preventDefault(); navigate("/settings"); }} style={sidebarLinkStyle(page === "settings")}>
+          <a
+            href={`${BASE}/settings`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/settings");
+            }}
+            style={sidebarLinkStyle(page === "settings")}
+          >
             <SettingsIcon /> <span>Settings</span>
           </a>
         </nav>
@@ -807,10 +1253,16 @@ function Shell({
 
         {/* External links */}
         <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <a href="/docs/" style={{ ...sidebarLinkStyle(false), color: "var(--txM)" }}>
+          <a
+            href="/docs/"
+            style={{ ...sidebarLinkStyle(false), color: "var(--txM)" }}
+          >
             <DocsIcon /> <span>Docs</span> <ExternalLinkIcon />
           </a>
-          <a href="/" style={{ ...sidebarLinkStyle(false), color: "var(--txM)" }}>
+          <a
+            href="/"
+            style={{ ...sidebarLinkStyle(false), color: "var(--txM)" }}
+          >
             <HomeIcon /> <span>Home</span> <ExternalLinkIcon />
           </a>
         </nav>
@@ -819,36 +1271,105 @@ function Shell({
         <div style={{ flex: 1 }} />
 
         {/* Bottom: user + theme toggle */}
-        <div className="dash-bottom" style={{ borderTop: "1px solid var(--bd)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-          <a href={`${BASE}/settings`} onClick={(e) => { e.preventDefault(); navigate("/settings"); }} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", padding: "0 4px" }}>
+        <div
+          className="dash-bottom"
+          style={{
+            borderTop: "1px solid var(--bd)",
+            paddingTop: 16,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          <a
+            href={`${BASE}/settings`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/settings");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              textDecoration: "none",
+              padding: "0 4px",
+            }}
+          >
             {user.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" style={{ width: 28, height: 28, borderRadius: "50%", border: "1px solid var(--bd)" }} />
+              <img
+                alt=""
+                src={user.avatarUrl}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  border: "1px solid var(--bd)",
+                }}
+              />
             ) : (
-              <div style={{
-                width: 28, height: 28, borderRadius: "50%", background: "var(--coral)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, color: "#fff",
-              }}>
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "var(--coral)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#fff",
+                }}
+              >
                 {(user.name || user.email).charAt(0).toUpperCase()}
               </div>
             )}
             <span className="dash-user-name" style={{ overflow: "hidden" }}>
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500, color: "var(--tx)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+              <span
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "var(--tx)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "block",
+                }}
+              >
                 {user.name || user.email}
               </span>
             </span>
           </a>
           <button
-            onClick={() => setDark(!isDark)}
-            style={{
-              display: "flex", alignItems: "center", gap: 8, padding: "8px 16px",
-              background: "none", border: "1px solid var(--bd)", borderRadius: 8,
-              cursor: "pointer", color: "var(--txM)", fontFamily: "Inter, sans-serif",
-              fontSize: 12, transition: "all .3s cubic-bezier(.34,1.56,.64,1)", width: "100%",
-            }}
             aria-label="Toggle theme"
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = "var(--coral)"; e.currentTarget.style.color = "var(--coral)"; e.currentTarget.style.transform = "scale(1.03)"; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--bd)"; e.currentTarget.style.color = "var(--txM)"; e.currentTarget.style.transform = "scale(1)"; }}
+            onClick={() => setDark(!isDark)}
+            onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = "var(--bd)";
+              e.currentTarget.style.color = "var(--txM)";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = "var(--coral)";
+              e.currentTarget.style.color = "var(--coral)";
+              e.currentTarget.style.transform = "scale(1.03)";
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 16px",
+              background: "none",
+              border: "1px solid var(--bd)",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: "var(--txM)",
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              transition: "all .3s cubic-bezier(.34,1.56,.64,1)",
+              width: "100%",
+            }}
           >
             {isDark ? <SunIcon /> : <MoonIcon />}
             <span>{isDark ? "Light mode" : "Dark mode"}</span>
@@ -857,7 +1378,15 @@ function Shell({
       </aside>
 
       {/* Main content */}
-      <main className="dash-main" style={{ flex: 1, padding: "40px 48px", maxWidth: 1000, overflowY: "auto" }}>
+      <main
+        className="dash-main"
+        style={{
+          flex: 1,
+          padding: "40px 48px",
+          maxWidth: 1000,
+          overflowY: "auto",
+        }}
+      >
         {children}
       </main>
     </div>
@@ -873,7 +1402,8 @@ function GettingStartedCard() {
     {
       title: "Install Tome CLI",
       code: "npm install -g @tomehq/cli",
-      description: "The CLI is your main tool for creating, developing, and deploying docs.",
+      description:
+        "The CLI is your main tool for creating, developing, and deploying docs.",
     },
     {
       title: "Create a new project",
@@ -883,7 +1413,8 @@ function GettingStartedCard() {
     {
       title: "Start developing",
       code: "tome dev",
-      description: "Opens a local dev server with hot reload at localhost:3000.",
+      description:
+        "Opens a local dev server with hot reload at localhost:3000.",
     },
     {
       title: "Deploy to production",
@@ -894,25 +1425,52 @@ function GettingStartedCard() {
 
   return (
     <div className="card rv" style={{ marginBottom: 32, padding: 32 }}>
-      <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 22, color: "var(--tx)", marginBottom: 4 }}>
+      <h3
+        style={{
+          fontFamily: '"Cormorant Garamond", serif',
+          fontWeight: 400,
+          fontStyle: "italic",
+          fontSize: 22,
+          color: "var(--tx)",
+          marginBottom: 4,
+        }}
+      >
         Get started with Tome
       </h3>
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", marginBottom: 24 }}>
+      <p
+        style={{
+          fontFamily: "Inter, sans-serif",
+          fontSize: 13,
+          color: "var(--txM)",
+          marginBottom: 24,
+        }}
+      >
         Deploy your first documentation site in under 5 minutes.
       </p>
 
       {/* Step indicators */}
-      <div className="step-buttons" style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+      <div
+        className="step-buttons"
+        style={{ display: "flex", gap: 8, marginBottom: 20 }}
+      >
         {steps.map((s, i) => (
           <button
             key={i}
             onClick={() => setStep(i)}
             style={{
-              flex: 1, padding: "8px 12px", background: i === step ? "var(--coralD)" : "var(--cdBg)",
-              border: i === step ? "1px solid var(--coral)" : "1px solid var(--bd)",
-              cursor: "pointer", fontFamily: "Inter, sans-serif",
-              fontSize: 11, fontWeight: 600, letterSpacing: ".5px", textTransform: "uppercase",
-              color: i === step ? "var(--coral)" : "var(--txM)", transition: "all .2s",
+              flex: 1,
+              padding: "8px 12px",
+              background: i === step ? "var(--coralD)" : "var(--cdBg)",
+              border:
+                i === step ? "1px solid var(--coral)" : "1px solid var(--bd)",
+              cursor: "pointer",
+              fontFamily: "Inter, sans-serif",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: ".5px",
+              textTransform: "uppercase",
+              color: i === step ? "var(--coral)" : "var(--txM)",
+              transition: "all .2s",
             }}
           >
             {i + 1}. {s.title}
@@ -920,7 +1478,14 @@ function GettingStartedCard() {
         ))}
       </div>
 
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--tx2)", marginBottom: 12 }}>
+      <p
+        style={{
+          fontFamily: "Inter, sans-serif",
+          fontSize: 13,
+          color: "var(--tx2)",
+          marginBottom: 12,
+        }}
+      >
         {steps[step].description}
       </p>
       <div className="code-snippet">
@@ -949,12 +1514,20 @@ function ProjectsPage({ token }: { token: string }) {
       .finally(() => setLoading(false));
   }, [token]);
 
-  useEffect(() => { loadProjects(); }, [loadProjects]);
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   const deleteProject = async (slug: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm(`Delete "${slug}"? All deployments, files, and custom domains will be permanently removed.`)) return;
+    if (
+      !window.confirm(
+        `Delete "${slug}"? All deployments, files, and custom domains will be permanently removed.`
+      )
+    ) {
+      return;
+    }
     try {
       await api(`/api/deploy/projects/${slug}`, { method: "DELETE", token });
       loadProjects();
@@ -965,66 +1538,156 @@ function ProjectsPage({ token }: { token: string }) {
 
   return (
     <div className="rv">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 32,
+        }}
+      >
         <div>
-          <h2 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 32, color: "var(--tx)", marginBottom: 8 }}>
+          <h2
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontWeight: 400,
+              fontStyle: "italic",
+              fontSize: 32,
+              color: "var(--tx)",
+              marginBottom: 8,
+            }}
+          >
             Your Projects
           </h2>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)", maxWidth: 460 }}>
-            Manage your documentation sites. Each project is deployed to a global CDN with instant updates.
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 14,
+              color: "var(--txM)",
+              maxWidth: 460,
+            }}
+          >
+            Manage your documentation sites. Each project is deployed to a
+            global CDN with instant updates.
           </p>
         </div>
       </div>
 
       {loading ? (
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)", animation: "pulse 2s infinite" }}>Loading projects…</p>
+        <p
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 14,
+            color: "var(--txM)",
+            animation: "pulse 2s infinite",
+          }}
+        >
+          Loading projects…
+        </p>
       ) : projects.length === 0 ? (
         <>
           <GettingStartedCard />
           <div className="card" style={{ textAlign: "center", padding: 48 }}>
-            <p style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: "italic", fontSize: 20, color: "var(--tx)", marginBottom: 12 }}>No projects yet</p>
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)" }}>
-              Deploy your first docs site with <code style={{ fontFamily: '"Fira Code", monospace', background: "var(--cdBg)", padding: "2px 6px", borderRadius: 4, fontSize: 12 }}>tome deploy</code>
+            <p
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontStyle: "italic",
+                fontSize: 20,
+                color: "var(--tx)",
+                marginBottom: 12,
+              }}
+            >
+              No projects yet
+            </p>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                color: "var(--txM)",
+              }}
+            >
+              Deploy your first docs site with{" "}
+              <code
+                style={{
+                  fontFamily: '"Fira Code", monospace',
+                  background: "var(--cdBg)",
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  fontSize: 12,
+                }}
+              >
+                tome deploy
+              </code>
             </p>
           </div>
         </>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 20 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+            gap: 20,
+          }}
+        >
           {projects.map((p) => (
-            <LiquidRing key={p.id} block radius={12} bg="var(--sf)">
-              <a href={`${BASE}/project/${p.slug}`} onClick={(e) => { e.preventDefault(); navigate(`/project/${p.slug}`); }} style={{ textDecoration: "none", cursor: "pointer", display: "block", padding: 24, background: "var(--sf)", borderRadius: 12 }}>
+            <LiquidRing bg="var(--sf)" block key={p.id} radius={12}>
+              <a
+                href={`${BASE}/project/${p.slug}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/project/${p.slug}`);
+                }}
+                style={{
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  display: "block",
+                  padding: 24,
+                  background: "var(--sf)",
+                  borderRadius: 12,
+                }}
+              >
                 {/* Deployment Preview */}
-                <div style={{
-                  width: "100%", height: 160, borderRadius: 8, overflow: "hidden",
-                  border: "1px solid var(--bd)", marginBottom: 16, position: "relative",
-                  background: "var(--bgAlt, var(--cdBg))",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
+                <div
+                  style={{
+                    width: "100%",
+                    height: 160,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    border: "1px solid var(--bd)",
+                    marginBottom: 16,
+                    position: "relative",
+                    background: "var(--bgAlt, var(--cdBg))",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   {/* Branded placeholder */}
-                  <span style={{
-                    fontFamily: '"Cormorant Garamond", serif', fontStyle: "italic",
-                    fontSize: 36, color: "var(--txM)", fontWeight: 300, userSelect: "none",
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontStyle: "italic",
+                      fontSize: 36,
+                      color: "var(--txM)",
+                      fontWeight: 300,
+                      userSelect: "none",
+                    }}
+                  >
                     T<span style={{ color: "var(--coral)" }}>.</span>
                   </span>
                   {/* Live preview overlay — hidden until successfully loaded */}
                   {p.url && (
                     <iframe
-                      src={p.url}
-                      title={`${p.slug} preview`}
-                      style={{
-                        position: "absolute", top: 0, left: 0,
-                        width: "200%", height: "200%", border: "none",
-                        transform: "scale(0.5)", transformOrigin: "top left",
-                        pointerEvents: "none", opacity: 0, transition: "opacity 0.3s ease",
-                      }}
                       loading="lazy"
-                      sandbox="allow-scripts allow-same-origin"
-                      tabIndex={-1}
                       onLoad={(e) => {
                         try {
-                          const doc = (e.target as HTMLIFrameElement).contentDocument;
-                          if (doc && doc.body && doc.body.innerHTML.length > 100) {
+                          const doc = (e.target as HTMLIFrameElement)
+                            .contentDocument;
+                          if (
+                            doc &&
+                            doc.body &&
+                            doc.body.innerHTML.length > 100
+                          ) {
                             (e.target as HTMLIFrameElement).style.opacity = "1";
                           }
                         } catch {
@@ -1032,27 +1695,84 @@ function ProjectsPage({ token }: { token: string }) {
                           (e.target as HTMLIFrameElement).style.opacity = "1";
                         }
                       }}
+                      sandbox="allow-scripts allow-same-origin"
+                      src={p.url}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "200%",
+                        height: "200%",
+                        border: "none",
+                        transform: "scale(0.5)",
+                        transformOrigin: "top left",
+                        pointerEvents: "none",
+                        opacity: 0,
+                        transition: "opacity 0.3s ease",
+                      }}
+                      tabIndex={-1}
+                      title={`${p.slug} preview`}
                     />
                   )}
                 </div>
 
                 {/* Header: name + status */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <span style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 500, fontSize: 22, color: "var(--tx)" }}>{p.slug}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{
-                      fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 600,
-                      textTransform: "uppercase", letterSpacing: "0.5px",
-                      padding: "3px 10px", borderRadius: 4,
-                      background: p.deployStatus === "live" ? "rgba(21,128,61,0.1)" : p.deployStatus === "failed" ? "rgba(185,28,28,0.1)" : "var(--coralD)",
-                      color: p.deployStatus === "live" ? "var(--green)" : p.deployStatus === "failed" ? "var(--red)" : "var(--txM)",
-                    }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontWeight: 500,
+                      fontSize: 22,
+                      color: "var(--tx)",
+                    }}
+                  >
+                    {p.slug}
+                  </span>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        padding: "3px 10px",
+                        borderRadius: 4,
+                        background:
+                          p.deployStatus === "live"
+                            ? "rgba(21,128,61,0.1)"
+                            : p.deployStatus === "failed"
+                              ? "rgba(185,28,28,0.1)"
+                              : "var(--coralD)",
+                        color:
+                          p.deployStatus === "live"
+                            ? "var(--green)"
+                            : p.deployStatus === "failed"
+                              ? "var(--red)"
+                              : "var(--txM)",
+                      }}
+                    >
                       {p.deployStatus ?? "No deploys"}
                     </span>
                     <button
                       className="btn-ghost btn-sm"
-                      style={{ color: "var(--red)", fontSize: 11, padding: "3px 10px", minHeight: 0, borderRadius: 4 }}
                       onClick={(e) => deleteProject(p.slug, e)}
+                      style={{
+                        color: "var(--red)",
+                        fontSize: 11,
+                        padding: "3px 10px",
+                        minHeight: 0,
+                        borderRadius: 4,
+                      }}
                       title="Delete project"
                     >
                       Delete
@@ -1063,19 +1783,86 @@ function ProjectsPage({ token }: { token: string }) {
                 {/* Stats row */}
                 <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
                   <div>
-                    <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Files</div>
-                    <div style={{ fontFamily: "Inter, sans-serif", fontSize: 18, fontWeight: 600, color: "var(--tx)" }}>{p.fileCount.toLocaleString()}</div>
+                    <div
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 11,
+                        color: "var(--txM)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Files
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: "var(--tx)",
+                      }}
+                    >
+                      {p.fileCount.toLocaleString()}
+                    </div>
                   </div>
                   <div>
-                    <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Size</div>
-                    <div style={{ fontFamily: "Inter, sans-serif", fontSize: 18, fontWeight: 600, color: "var(--tx)" }}>{formatBytes(p.totalSize)}</div>
+                    <div
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 11,
+                        color: "var(--txM)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Size
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: "var(--tx)",
+                      }}
+                    >
+                      {formatBytes(p.totalSize)}
+                    </div>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 16, borderTop: "1px solid var(--bd)" }}>
-                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--txM)", display: "flex", alignItems: "center", gap: 6 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingTop: 16,
+                    borderTop: "1px solid var(--bd)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 12,
+                      color: "var(--txM)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <svg
+                      fill="none"
+                      height="14"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      viewBox="0 0 24 24"
+                      width="14"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
                     Last update: {timeAgo(p.lastDeployAt)}
                   </span>
                   <span className="action-link">
@@ -1093,7 +1880,15 @@ function ProjectsPage({ token }: { token: string }) {
 
 // ── Project Detail Page ────────────────────────────────────
 
-function ProjectDetailPage({ slug, token, user }: { slug: string; token: string; user: User }) {
+function ProjectDetailPage({
+  slug,
+  token,
+  user,
+}: {
+  slug: string;
+  token: string;
+  user: User;
+}) {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [domains, setDomains] = useState<DomainStatus[]>([]);
@@ -1114,39 +1909,68 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
   const [ssoConfig, setSsoConfig] = useState<any>(null);
   const [ssoType, setSsoType] = useState<"saml" | "oidc">("oidc");
   const [ssoSaving, setSsoSaving] = useState(false);
-  const [ssoFields, setSsoFields] = useState({ idpSsoUrl: "", idpCert: "", entityId: "", issuer: "", clientId: "", clientSecret: "", allowedDomains: "" });
+  const [ssoFields, setSsoFields] = useState({
+    idpSsoUrl: "",
+    idpCert: "",
+    entityId: "",
+    issuer: "",
+    clientId: "",
+    clientSecret: "",
+    allowedDomains: "",
+  });
   // RBAC
-  const [roles, setRoles] = useState<Array<{ email: string; role: string }>>([]);
+  const [roles, setRoles] = useState<Array<{ email: string; role: string }>>(
+    []
+  );
   const [newRoleEmail, setNewRoleEmail] = useState("");
   const [newRole, setNewRole] = useState("viewer");
   // Analytics tab
-  const [analyticsTab, setAnalyticsTab] = useState<"overview" | "search" | "feedback">("overview");
+  const [analyticsTab, setAnalyticsTab] = useState<
+    "overview" | "search" | "feedback"
+  >("overview");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [deps, doms] = await Promise.all([
-        api<Deployment[]>(`/api/deploy/projects/${slug}/deployments`, { token }),
-        api<DomainStatus[]>(`/api/domains?projectSlug=${slug}`, { token }).catch(() => [] as DomainStatus[]),
+        api<Deployment[]>(`/api/deploy/projects/${slug}/deployments`, {
+          token,
+        }),
+        api<DomainStatus[]>(`/api/domains?projectSlug=${slug}`, {
+          token,
+        }).catch(() => [] as DomainStatus[]),
       ]);
       setDeployments(deps);
       setDomains(doms);
-      const defaultAnalytics: AnalyticsSummary = { totalPageViews: 0, uniqueVisitors: 0, avgTimeOnPage: 0, topPages: [] };
-      api<AnalyticsSummary>(`/api/analytics/summary?siteId=${slug}&range=30`, { token })
+      const defaultAnalytics: AnalyticsSummary = {
+        totalPageViews: 0,
+        uniqueVisitors: 0,
+        avgTimeOnPage: 0,
+        topPages: [],
+      };
+      api<AnalyticsSummary>(`/api/analytics/summary?siteId=${slug}&range=30`, {
+        token,
+      })
         .then(setAnalytics)
         .catch(() => setAnalytics(defaultAnalytics));
 
       // Load password protection status from projects list
-      api<any[]>(`/api/deploy/projects`, { token })
+      api<any[]>("/api/deploy/projects", { token })
         .then((projects) => {
           const proj = projects?.find((p: any) => p.slug === slug);
-          if (proj?.passwordRequired) setPasswordEnabled(true);
+          if (proj?.passwordRequired) {
+            setPasswordEnabled(true);
+          }
         })
         .catch(() => {});
 
       // Load GitHub status
       api<any>(`/api/github/status/${slug}`, { token })
-        .then((data) => { setGithubConnected(data.connected); setGithubRepo(data.repository || ""); setGithubBranch(data.branch || "main"); })
+        .then((data) => {
+          setGithubConnected(data.connected);
+          setGithubRepo(data.repository || "");
+          setGithubBranch(data.branch || "main");
+        })
         .catch(() => {});
 
       // Load SSO config
@@ -1165,7 +1989,9 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
     }
   }, [slug, token]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Capture GitHub App installation callback
   useEffect(() => {
@@ -1185,15 +2011,26 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
   const addDomain = async (e: React.FormEvent) => {
     e.preventDefault();
     // Strip protocol and trailing slashes from domain input
-    const cleanDomain = newDomain.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
-    if (!cleanDomain) return;
+    const cleanDomain = newDomain
+      .trim()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/+$/, "");
+    if (!cleanDomain) {
+      return;
+    }
     setDomainError(null);
     try {
-      await api("/api/domains", { method: "POST", body: { domain: cleanDomain, projectSlug: slug }, token });
+      await api("/api/domains", {
+        method: "POST",
+        body: { domain: cleanDomain, projectSlug: slug },
+        token,
+      });
       setNewDomain("");
       loadData();
     } catch (err) {
-      setDomainError(err instanceof Error ? err.message : "Failed to add domain");
+      setDomainError(
+        err instanceof Error ? err.message : "Failed to add domain"
+      );
     }
   };
 
@@ -1207,9 +2044,14 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
   };
 
   const deleteDeployment = async (deploymentId: string) => {
-    if (!window.confirm("Delete this deployment? This cannot be undone.")) return;
+    if (!window.confirm("Delete this deployment? This cannot be undone.")) {
+      return;
+    }
     try {
-      await api(`/api/deploy/projects/${slug}/deployments/${deploymentId}`, { method: "DELETE", token });
+      await api(`/api/deploy/projects/${slug}/deployments/${deploymentId}`, {
+        method: "DELETE",
+        token,
+      });
       loadData();
     } catch {
       // silently fail
@@ -1217,7 +2059,13 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
   };
 
   const deleteProject = async () => {
-    if (!window.confirm(`Delete project "${slug}"? This will remove all deployments, files, and custom domains. This cannot be undone.`)) return;
+    if (
+      !window.confirm(
+        `Delete project "${slug}"? This will remove all deployments, files, and custom domains. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
     try {
       await api(`/api/deploy/projects/${slug}`, { method: "DELETE", token });
       navigate("/");
@@ -1228,87 +2076,171 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
   // ── Password Protection handlers ──
   const savePassword = async () => {
-    if (!passwordValue.trim() || passwordValue.length < 4) return;
+    if (!passwordValue.trim() || passwordValue.length < 4) {
+      return;
+    }
     setPasswordSaving(true);
     try {
       // Hash password client-side using Web Crypto (PBKDF2)
       const iterations = 100_000;
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const encoder = new TextEncoder();
-      const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(passwordValue), "PBKDF2", false, ["deriveBits"]);
-      const hash = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(passwordValue),
+        "PBKDF2",
+        false,
+        ["deriveBits"]
+      );
+      const hash = await crypto.subtle.deriveBits(
+        { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+        keyMaterial,
+        256
+      );
       const saltB64 = btoa(String.fromCharCode(...salt));
       const hashB64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
       const passwordHash = `pbkdf2:${iterations}:${saltB64}:${hashB64}`;
 
-      await api("/api/deploy/protect", { method: "POST", body: { slug, passwordHash }, token });
+      await api("/api/deploy/protect", {
+        method: "POST",
+        body: { slug, passwordHash },
+        token,
+      });
       setPasswordEnabled(true);
       setPasswordValue("");
     } catch (err) {
       console.error("Failed to enable protection:", err);
-    } finally { setPasswordSaving(false); }
+    } finally {
+      setPasswordSaving(false);
+    }
   };
   const removePassword = async () => {
     setPasswordSaving(true);
     try {
-      await api("/api/deploy/protect", { method: "DELETE", body: { slug }, token });
+      await api("/api/deploy/protect", {
+        method: "DELETE",
+        body: { slug },
+        token,
+      });
       setPasswordEnabled(false);
       setPasswordValue("");
     } catch (err) {
       console.error("Failed to remove protection:", err);
-    } finally { setPasswordSaving(false); }
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   // ── GitHub handlers ──
   const connectGithub = async () => {
-    if (!githubRepoInput.trim()) return;
+    if (!githubRepoInput.trim()) {
+      return;
+    }
     try {
-      await api(`/api/github/connect`, { method: "POST", body: { slug, repository: githubRepoInput, branch: githubBranch, installationId: githubInstallId }, token });
+      await api("/api/github/connect", {
+        method: "POST",
+        body: {
+          slug,
+          repository: githubRepoInput,
+          branch: githubBranch,
+          installationId: githubInstallId,
+        },
+        token,
+      });
       setGithubConnected(true);
       setGithubRepo(githubRepoInput);
       setGithubRepoInput("");
       setGithubInstallId("");
-    } catch { /* silently fail */ }
+    } catch {
+      /* silently fail */
+    }
   };
   const disconnectGithub = async () => {
     try {
       await api(`/api/github/disconnect/${slug}`, { method: "POST", token });
       setGithubConnected(false);
       setGithubRepo("");
-    } catch { /* silently fail */ }
+    } catch {
+      /* silently fail */
+    }
   };
 
   // ── SSO handlers ──
   const saveSso = async () => {
     setSsoSaving(true);
     try {
-      const body = ssoType === "saml"
-        ? { type: "saml", idpSsoUrl: ssoFields.idpSsoUrl, idpCert: ssoFields.idpCert, entityId: ssoFields.entityId, allowedDomains: ssoFields.allowedDomains }
-        : { type: "oidc", issuer: ssoFields.issuer, clientId: ssoFields.clientId, clientSecret: ssoFields.clientSecret, allowedDomains: ssoFields.allowedDomains };
-      const config = await api<any>(`/api/sso/config/${slug}`, { method: "POST", body, token });
+      const body =
+        ssoType === "saml"
+          ? {
+              type: "saml",
+              idpSsoUrl: ssoFields.idpSsoUrl,
+              idpCert: ssoFields.idpCert,
+              entityId: ssoFields.entityId,
+              allowedDomains: ssoFields.allowedDomains,
+            }
+          : {
+              type: "oidc",
+              issuer: ssoFields.issuer,
+              clientId: ssoFields.clientId,
+              clientSecret: ssoFields.clientSecret,
+              allowedDomains: ssoFields.allowedDomains,
+            };
+      const config = await api<any>(`/api/sso/config/${slug}`, {
+        method: "POST",
+        body,
+        token,
+      });
       setSsoConfig(config);
-    } catch { /* silently fail */ } finally { setSsoSaving(false); }
+    } catch {
+      /* silently fail */
+    } finally {
+      setSsoSaving(false);
+    }
   };
 
   // ── Role management handlers ──
   const addRole = async () => {
-    if (!newRoleEmail.trim()) return;
+    if (!newRoleEmail.trim()) {
+      return;
+    }
     try {
-      await api(`/api/roles/${slug}`, { method: "POST", body: { email: newRoleEmail, role: newRole }, token });
+      await api(`/api/roles/${slug}`, {
+        method: "POST",
+        body: { email: newRoleEmail, role: newRole },
+        token,
+      });
       setRoles((prev) => [...prev, { email: newRoleEmail, role: newRole }]);
       setNewRoleEmail("");
       setNewRole("viewer");
-    } catch { /* silently fail */ }
+    } catch {
+      /* silently fail */
+    }
   };
   const removeRole = async (email: string) => {
     try {
-      await api(`/api/roles/${slug}/${encodeURIComponent(email)}`, { method: "DELETE", token });
+      await api(`/api/roles/${slug}/${encodeURIComponent(email)}`, {
+        method: "DELETE",
+        token,
+      });
       setRoles((prev) => prev.filter((r) => r.email !== email));
-    } catch { /* silently fail */ }
+    } catch {
+      /* silently fail */
+    }
   };
 
   if (loading) {
-    return <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)", animation: "pulse 2s infinite" }}>Loading…</p>;
+    return (
+      <p
+        style={{
+          fontFamily: "Inter, sans-serif",
+          fontSize: 14,
+          color: "var(--txM)",
+          animation: "pulse 2s infinite",
+        }}
+      >
+        Loading…
+      </p>
+    );
   }
 
   const gridCols = "2fr 1fr 1fr 1fr 1.5fr auto";
@@ -1318,10 +2250,30 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
   return (
     <div className="rv">
       {/* Breadcrumb */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, fontFamily: "Inter, sans-serif", fontSize: 13 }}>
-        <a href={`${BASE}/`} onClick={(e) => { e.preventDefault(); navigate("/"); }} style={{ color: "var(--txM)", textDecoration: "none", transition: "color .2s" }}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 24,
+          fontFamily: "Inter, sans-serif",
+          fontSize: 13,
+        }}
+      >
+        <a
+          href={`${BASE}/`}
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("/");
+          }}
+          onMouseOut={(e) => (e.currentTarget.style.color = "var(--txM)")}
           onMouseOver={(e) => (e.currentTarget.style.color = "var(--coral)")}
-          onMouseOut={(e) => (e.currentTarget.style.color = "var(--txM)")}>
+          style={{
+            color: "var(--txM)",
+            textDecoration: "none",
+            transition: "color .2s",
+          }}
+        >
           Projects
         </a>
         <span style={{ color: "var(--txM)" }}>›</span>
@@ -1329,60 +2281,203 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
       </div>
 
       {/* Project Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 32,
+        }}
+      >
         <div>
-          <h1 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 500, fontSize: 42, color: "var(--tx)", marginBottom: 8, letterSpacing: "-0.02em" }}>
+          <h1
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontWeight: 500,
+              fontSize: 42,
+              color: "var(--tx)",
+              marginBottom: 8,
+              letterSpacing: "-0.02em",
+            }}
+          >
             {slug}
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button
             className="btn-ghost"
-            style={{ whiteSpace: "nowrap", padding: "10px 20px", fontSize: 13, display: "flex", alignItems: "center", gap: 8, borderRadius: 6 }}
             onClick={() => navigate(`/project/${slug}/editor`)}
+            style={{
+              whiteSpace: "nowrap",
+              padding: "10px 20px",
+              fontSize: 13,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              borderRadius: 6,
+            }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            <svg
+              fill="none"
+              height="14"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+              width="14"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
             Editor
           </button>
           {latestDeployment?.url && (
-              <a
-                href={latestDeployment.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary"
-                style={{ whiteSpace: "nowrap", textDecoration: "none", padding: "10px 20px", fontSize: 13, display: "flex", alignItems: "center", gap: 8, borderRadius: 6 }}
-              >
-                Visit Site <ExternalLinkIcon />
-              </a>
+            <a
+              className="btn-primary"
+              href={latestDeployment.url}
+              rel="noopener noreferrer"
+              style={{
+                whiteSpace: "nowrap",
+                textDecoration: "none",
+                padding: "10px 20px",
+                fontSize: 13,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                borderRadius: 6,
+              }}
+              target="_blank"
+            >
+              Visit Site <ExternalLinkIcon />
+            </a>
           )}
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 40 }}>
-        <LiquidRing block radius={12} bg="var(--sf)">
-          <div style={{ textAlign: "left", padding: 24, background: "var(--sf)", borderRadius: 12 }}>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Current Status</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 16,
+          marginBottom: 40,
+        }}
+      >
+        <LiquidRing bg="var(--sf)" block radius={12}>
+          <div
+            style={{
+              textAlign: "left",
+              padding: 24,
+              background: "var(--sf)",
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 11,
+                color: "var(--txM)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: 8,
+              }}
+            >
+              Current Status
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: activeDeployment ? "var(--green)" : "var(--txM)" }} />
-              <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 24, fontWeight: 400, color: "var(--tx)" }}>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: activeDeployment ? "var(--green)" : "var(--txM)",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: '"Cormorant Garamond", serif',
+                  fontSize: 24,
+                  fontWeight: 400,
+                  color: "var(--tx)",
+                }}
+              >
                 {activeDeployment ? "Live" : "Offline"}
               </span>
             </div>
           </div>
         </LiquidRing>
-        <LiquidRing block radius={12} bg="var(--sf)">
-          <div style={{ textAlign: "left", padding: 24, background: "var(--sf)", borderRadius: 12 }}>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Total Assets</div>
-            <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 24, fontWeight: 400, color: "var(--tx)" }}>
-              {(latestDeployment?.fileCount ?? 0).toLocaleString()} <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)" }}>Files</span>
+        <LiquidRing bg="var(--sf)" block radius={12}>
+          <div
+            style={{
+              textAlign: "left",
+              padding: 24,
+              background: "var(--sf)",
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 11,
+                color: "var(--txM)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: 8,
+              }}
+            >
+              Total Assets
+            </div>
+            <div
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: 24,
+                fontWeight: 400,
+                color: "var(--tx)",
+              }}
+            >
+              {(latestDeployment?.fileCount ?? 0).toLocaleString()}{" "}
+              <span
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 14,
+                  color: "var(--txM)",
+                }}
+              >
+                Files
+              </span>
             </div>
           </div>
         </LiquidRing>
-        <LiquidRing block radius={12} bg="var(--sf)">
-          <div style={{ textAlign: "left", padding: 24, background: "var(--sf)", borderRadius: 12 }}>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Total Size</div>
-            <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 24, fontWeight: 400, color: "var(--tx)" }}>
+        <LiquidRing bg="var(--sf)" block radius={12}>
+          <div
+            style={{
+              textAlign: "left",
+              padding: 24,
+              background: "var(--sf)",
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 11,
+                color: "var(--txM)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: 8,
+              }}
+            >
+              Total Size
+            </div>
+            <div
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: 24,
+                fontWeight: 400,
+                color: "var(--tx)",
+              }}
+            >
               {formatBytes(latestDeployment?.totalSize ?? 0)}
             </div>
           </div>
@@ -1392,19 +2487,49 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
       {/* Analytics Summary */}
       {analytics && (
         <div style={{ marginBottom: 40 }}>
-          <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--tx)", marginBottom: 16 }}>Analytics</h3>
+          <h3
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontWeight: 400,
+              fontStyle: "italic",
+              fontSize: 24,
+              color: "var(--tx)",
+              marginBottom: 16,
+            }}
+          >
+            Analytics
+          </h3>
 
           {/* Tab bar */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--bd)", paddingBottom: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 4,
+              marginBottom: 20,
+              borderBottom: "1px solid var(--bd)",
+              paddingBottom: 0,
+            }}
+          >
             {(["overview", "search", "feedback"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setAnalyticsTab(tab)}
                 style={{
-                  padding: "8px 16px", background: "none", border: "none", borderBottom: analyticsTab === tab ? "2px solid var(--coral)" : "2px solid transparent",
-                  fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: analyticsTab === tab ? 600 : 400,
-                  color: analyticsTab === tab ? "var(--coral)" : "var(--txM)", cursor: "pointer",
-                  textTransform: "capitalize", transition: "all .2s", marginBottom: -1,
+                  padding: "8px 16px",
+                  background: "none",
+                  border: "none",
+                  borderBottom:
+                    analyticsTab === tab
+                      ? "2px solid var(--coral)"
+                      : "2px solid transparent",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  fontWeight: analyticsTab === tab ? 600 : 400,
+                  color: analyticsTab === tab ? "var(--coral)" : "var(--txM)",
+                  cursor: "pointer",
+                  textTransform: "capitalize",
+                  transition: "all .2s",
+                  marginBottom: -1,
                 }}
               >
                 {tab}
@@ -1415,27 +2540,105 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
           {/* Overview tab */}
           {analyticsTab === "overview" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16, marginBottom: 16 }}>
-                <div className="stat-card" style={{ textAlign: "left", padding: 24 }}>
-                  <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 32, fontWeight: 300, color: "var(--tx)" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                  gap: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <div
+                  className="stat-card"
+                  style={{ textAlign: "left", padding: 24 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: "var(--tx)",
+                    }}
+                  >
                     {analytics.totalPageViews.toLocaleString()}
                   </div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 4 }}>Page Views</div>
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginTop: 4,
+                    }}
+                  >
+                    Page Views
+                  </div>
                 </div>
-                <div className="stat-card" style={{ textAlign: "left", padding: 24 }}>
-                  <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 32, fontWeight: 300, color: "var(--tx)" }}>
+                <div
+                  className="stat-card"
+                  style={{ textAlign: "left", padding: 24 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: "var(--tx)",
+                    }}
+                  >
                     {analytics.uniqueVisitors.toLocaleString()}
                   </div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 4 }}>Visitors</div>
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginTop: 4,
+                    }}
+                  >
+                    Visitors
+                  </div>
                 </div>
               </div>
               {analytics.topPages.length > 0 && (
                 <div>
-                  <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Top Pages</p>
+                  <p
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Top Pages
+                  </p>
                   {analytics.topPages.slice(0, 5).map((p) => (
-                    <div key={p.url} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--bd)", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
+                    <div
+                      key={p.url}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 0",
+                        borderBottom: "1px solid var(--bd)",
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 13,
+                      }}
+                    >
                       <span style={{ color: "var(--tx2)" }}>{p.url}</span>
-                      <span style={{ color: "var(--txM)", fontFamily: '"Fira Code", monospace', fontSize: 12 }}>{p.views}</span>
+                      <span
+                        style={{
+                          color: "var(--txM)",
+                          fontFamily: '"Fira Code", monospace',
+                          fontSize: 12,
+                        }}
+                      >
+                        {p.views}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1446,38 +2649,154 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
           {/* Search tab */}
           {analyticsTab === "search" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16, marginBottom: 16 }}>
-                <div className="stat-card" style={{ textAlign: "left", padding: 24 }}>
-                  <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 32, fontWeight: 300, color: "var(--tx)" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                  gap: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <div
+                  className="stat-card"
+                  style={{ textAlign: "left", padding: 24 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: "var(--tx)",
+                    }}
+                  >
                     {((analytics as any).totalSearches ?? 0).toLocaleString()}
                   </div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 4 }}>Total Searches</div>
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginTop: 4,
+                    }}
+                  >
+                    Total Searches
+                  </div>
                 </div>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Top Queries</p>
+                <p
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 8,
+                  }}
+                >
+                  Top Queries
+                </p>
                 {((analytics as any).topQueries ?? []).length > 0 ? (
-                  ((analytics as any).topQueries as { query: string; count: number }[]).slice(0, 10).map((q: { query: string; count: number }) => (
-                    <div key={q.query} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--bd)", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
-                      <span style={{ color: "var(--tx2)" }}>{q.query}</span>
-                      <span style={{ color: "var(--txM)", fontFamily: '"Fira Code", monospace', fontSize: 12 }}>{q.count}</span>
-                    </div>
-                  ))
+                  (
+                    (analytics as any).topQueries as {
+                      query: string;
+                      count: number;
+                    }[]
+                  )
+                    .slice(0, 10)
+                    .map((q: { query: string; count: number }) => (
+                      <div
+                        key={q.query}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "8px 0",
+                          borderBottom: "1px solid var(--bd)",
+                          fontFamily: "Inter, sans-serif",
+                          fontSize: 13,
+                        }}
+                      >
+                        <span style={{ color: "var(--tx2)" }}>{q.query}</span>
+                        <span
+                          style={{
+                            color: "var(--txM)",
+                            fontFamily: '"Fira Code", monospace',
+                            fontSize: 12,
+                          }}
+                        >
+                          {q.count}
+                        </span>
+                      </div>
+                    ))
                 ) : (
-                  <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)" }}>No search data yet.</p>
+                  <p
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 13,
+                      color: "var(--txM)",
+                    }}
+                  >
+                    No search data yet.
+                  </p>
                 )}
               </div>
               <div>
-                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Zero-Result Queries</p>
+                <p
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 8,
+                  }}
+                >
+                  Zero-Result Queries
+                </p>
                 {((analytics as any).zeroResultQueries ?? []).length > 0 ? (
-                  ((analytics as any).zeroResultQueries as { query: string; count: number }[]).slice(0, 10).map((q: { query: string; count: number }) => (
-                    <div key={q.query} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--bd)", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
-                      <span style={{ color: "var(--red)" }}>{q.query}</span>
-                      <span style={{ color: "var(--txM)", fontFamily: '"Fira Code", monospace', fontSize: 12 }}>{q.count}</span>
-                    </div>
-                  ))
+                  (
+                    (analytics as any).zeroResultQueries as {
+                      query: string;
+                      count: number;
+                    }[]
+                  )
+                    .slice(0, 10)
+                    .map((q: { query: string; count: number }) => (
+                      <div
+                        key={q.query}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "8px 0",
+                          borderBottom: "1px solid var(--bd)",
+                          fontFamily: "Inter, sans-serif",
+                          fontSize: 13,
+                        }}
+                      >
+                        <span style={{ color: "var(--red)" }}>{q.query}</span>
+                        <span
+                          style={{
+                            color: "var(--txM)",
+                            fontFamily: '"Fira Code", monospace',
+                            fontSize: 12,
+                          }}
+                        >
+                          {q.count}
+                        </span>
+                      </div>
+                    ))
                 ) : (
-                  <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)" }}>No zero-result queries.</p>
+                  <p
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 13,
+                      color: "var(--txM)",
+                    }}
+                  >
+                    No zero-result queries.
+                  </p>
                 )}
               </div>
             </>
@@ -1486,24 +2805,97 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
           {/* Feedback tab */}
           {analyticsTab === "feedback" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16, marginBottom: 16 }}>
-                <div className="stat-card" style={{ textAlign: "left", padding: 24 }}>
-                  <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 32, fontWeight: 300, color: "var(--green)" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                  gap: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <div
+                  className="stat-card"
+                  style={{ textAlign: "left", padding: 24 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: "var(--green)",
+                    }}
+                  >
                     {((analytics as any).thumbsUp ?? 0).toLocaleString()}
                   </div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 4 }}>Thumbs Up</div>
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginTop: 4,
+                    }}
+                  >
+                    Thumbs Up
+                  </div>
                 </div>
-                <div className="stat-card" style={{ textAlign: "left", padding: 24 }}>
-                  <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 32, fontWeight: 300, color: "var(--red)" }}>
+                <div
+                  className="stat-card"
+                  style={{ textAlign: "left", padding: 24 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: "var(--red)",
+                    }}
+                  >
                     {((analytics as any).thumbsDown ?? 0).toLocaleString()}
                   </div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 4 }}>Thumbs Down</div>
-                </div>
-                <div className="stat-card" style={{ textAlign: "left", padding: 24 }}>
-                  <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 32, fontWeight: 300, color: "var(--tx)" }}>
-                    {(((analytics as any).thumbsUp ?? 0) + ((analytics as any).thumbsDown ?? 0)).toLocaleString()}
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginTop: 4,
+                    }}
+                  >
+                    Thumbs Down
                   </div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: 4 }}>Total Feedback</div>
+                </div>
+                <div
+                  className="stat-card"
+                  style={{ textAlign: "left", padding: 24 }}
+                >
+                  <div
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 32,
+                      fontWeight: 300,
+                      color: "var(--tx)",
+                    }}
+                  >
+                    {(
+                      ((analytics as any).thumbsUp ?? 0) +
+                      ((analytics as any).thumbsDown ?? 0)
+                    ).toLocaleString()}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginTop: 4,
+                    }}
+                  >
+                    Total Feedback
+                  </div>
                 </div>
               </div>
             </>
@@ -1513,28 +2905,93 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
       {/* Deployments */}
       <div style={{ marginBottom: 40 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--tx)" }}>Deployments</h3>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontWeight: 400,
+              fontStyle: "italic",
+              fontSize: 24,
+              color: "var(--tx)",
+            }}
+          >
+            Deployments
+          </h3>
         </div>
         {deployments.length === 0 ? (
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)" }}>No deployments yet.</p>
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 14,
+              color: "var(--txM)",
+            }}
+          >
+            No deployments yet.
+          </p>
         ) : (
           <div className="deploy-table-wrap">
-            <div className="table-header" style={{ gridTemplateColumns: gridCols }}>
-              <span>Deployment ID</span><span>Status</span><span>Files</span><span>Size</span><span>Created</span><span>Action</span>
+            <div
+              className="table-header"
+              style={{ gridTemplateColumns: gridCols }}
+            >
+              <span>Deployment ID</span>
+              <span>Status</span>
+              <span>Files</span>
+              <span>Size</span>
+              <span>Created</span>
+              <span>Action</span>
             </div>
             {deployments.map((d) => (
-              <div key={d.id} className="table-row" style={{ gridTemplateColumns: gridCols }}>
-                <span style={{ fontFamily: '"Fira Code", monospace', fontSize: 12, color: d.status === "live" ? "var(--coral)" : "var(--tx2)" }}>{d.id.slice(0, 12)}</span>
+              <div
+                className="table-row"
+                key={d.id}
+                style={{ gridTemplateColumns: gridCols }}
+              >
+                <span
+                  style={{
+                    fontFamily: '"Fira Code", monospace',
+                    fontSize: 12,
+                    color: d.status === "live" ? "var(--coral)" : "var(--tx2)",
+                  }}
+                >
+                  {d.id.slice(0, 12)}
+                </span>
                 <span>
-                  <span style={{
-                    fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 600,
-                    textTransform: "uppercase", letterSpacing: "0.3px",
-                    padding: "3px 10px", borderRadius: 4,
-                    background: d.status === "live" ? "rgba(21,128,61,0.1)" : d.status === "failed" ? "rgba(185,28,28,0.1)" : "var(--coralD)",
-                    color: d.status === "live" ? "var(--green)" : d.status === "failed" ? "var(--red)" : "var(--txM)",
-                  }}>
-                    {d.status === "live" ? "LIVE" : d.status === "failed" ? "FAILED" : "SUPERSEDED"}
+                  <span
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.3px",
+                      padding: "3px 10px",
+                      borderRadius: 4,
+                      background:
+                        d.status === "live"
+                          ? "rgba(21,128,61,0.1)"
+                          : d.status === "failed"
+                            ? "rgba(185,28,28,0.1)"
+                            : "var(--coralD)",
+                      color:
+                        d.status === "live"
+                          ? "var(--green)"
+                          : d.status === "failed"
+                            ? "var(--red)"
+                            : "var(--txM)",
+                    }}
+                  >
+                    {d.status === "live"
+                      ? "LIVE"
+                      : d.status === "failed"
+                        ? "FAILED"
+                        : "SUPERSEDED"}
                   </span>
                 </span>
                 <span>{d.fileCount.toLocaleString()}</span>
@@ -1543,9 +3000,19 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
                 <span>
                   <button
                     className="btn-ghost btn-sm"
-                    style={{ color: "var(--red)", fontSize: 11, padding: "4px 12px", minHeight: 0, borderRadius: 4 }}
                     onClick={() => deleteDeployment(d.id)}
-                    title={d.id === activeDeployment?.id ? "Delete active deployment (site will go offline)" : "Delete deployment"}
+                    style={{
+                      color: "var(--red)",
+                      fontSize: 11,
+                      padding: "4px 12px",
+                      minHeight: 0,
+                      borderRadius: 4,
+                    }}
+                    title={
+                      d.id === activeDeployment?.id
+                        ? "Delete active deployment (site will go offline)"
+                        : "Delete deployment"
+                    }
                   >
                     Delete
                   </button>
@@ -1558,42 +3025,123 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
       {/* Custom Domains */}
       <div style={{ marginBottom: 40 }}>
-        <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--tx)", marginBottom: 16 }}>Custom Domains</h3>
+        <h3
+          style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 24,
+            color: "var(--tx)",
+            marginBottom: 16,
+          }}
+        >
+          Custom Domains
+        </h3>
         {domains.length > 0 && (
           <div style={{ marginBottom: 20 }}>
             {domains.map((d) => (
-              <div key={d.domain} className="card" style={{ marginBottom: 12, padding: 20 }}>
-                <div className="dash-domain-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: d.dnsRecords.length > 0 ? 12 : 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={d.verified ? "var(--green)" : "var(--yellow)"} strokeWidth="1.5">
-                      <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              <div
+                className="card"
+                key={d.domain}
+                style={{ marginBottom: 12, padding: 20 }}
+              >
+                <div
+                  className="dash-domain-header"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: d.dnsRecords.length > 0 ? 12 : 0,
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <svg
+                      fill="none"
+                      height="18"
+                      stroke={d.verified ? "var(--green)" : "var(--yellow)"}
+                      strokeWidth="1.5"
+                      viewBox="0 0 24 24"
+                      width="18"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="2" x2="22" y1="12" y2="12" />
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
                     <div>
-                      <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 14, color: "var(--tx)" }}>{d.domain}</span>
-                      <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: d.verified ? "var(--green)" : "var(--yellow)", marginTop: 2 }}>
-                        {d.verified ? "Verified & Active" : "Pending Verification"}
+                      <span
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: 600,
+                          fontSize: 14,
+                          color: "var(--tx)",
+                        }}
+                      >
+                        {d.domain}
+                      </span>
+                      <div
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                          color: d.verified ? "var(--green)" : "var(--yellow)",
+                          marginTop: 2,
+                        }}
+                      >
+                        {d.verified
+                          ? "Verified & Active"
+                          : "Pending Verification"}
                       </div>
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {!d.verified && (
-                      <button className="btn-primary btn-sm" onClick={async () => {
-                        try {
-                          const result = await api<DomainStatus>(`/api/domains/${d.domain}/verify`, { token });
-                          if (result.verified) { loadData(); }
-                          else { setDomainError("DNS not yet propagated. Try again in a few minutes."); }
-                        } catch { setDomainError("Verification check failed."); }
-                      }} style={{ padding: "4px 12px", borderRadius: 4, minHeight: 0 }}>
+                      <button
+                        className="btn-primary btn-sm"
+                        onClick={async () => {
+                          try {
+                            const result = await api<DomainStatus>(
+                              `/api/domains/${d.domain}/verify`,
+                              { token }
+                            );
+                            if (result.verified) {
+                              loadData();
+                            } else {
+                              setDomainError(
+                                "DNS not yet propagated. Try again in a few minutes."
+                              );
+                            }
+                          } catch {
+                            setDomainError("Verification check failed.");
+                          }
+                        }}
+                        style={{
+                          padding: "4px 12px",
+                          borderRadius: 4,
+                          minHeight: 0,
+                        }}
+                      >
                         Verify DNS
                       </button>
                     )}
-                    <button className="btn-ghost btn-sm" onClick={() => removeDomain(d.domain)} style={{ padding: "4px 12px", borderRadius: 4, minHeight: 0 }}>
+                    <button
+                      className="btn-ghost btn-sm"
+                      onClick={() => removeDomain(d.domain)}
+                      style={{
+                        padding: "4px 12px",
+                        borderRadius: 4,
+                        minHeight: 0,
+                      }}
+                    >
                       Remove
                     </button>
                   </div>
                 </div>
                 {d.dnsRecords.map((rec, i) => (
-                  <div key={i} className="dns-record">
+                  <div className="dns-record" key={i}>
                     {rec.type} {rec.name} → {rec.value}
                   </div>
                 ))}
@@ -1604,64 +3152,157 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
         {/* Add domain form */}
         <div style={{ marginTop: 16 }}>
-          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Add New Domain</div>
+          <div
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 11,
+              color: "var(--txM)",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              marginBottom: 8,
+            }}
+          >
+            Add New Domain
+          </div>
           <form onSubmit={addDomain} style={{ display: "flex", gap: 10 }}>
             <input
-              className="input-field"
-              placeholder="e.g. docs.example.com"
               aria-label="Custom domain"
-              value={newDomain}
+              className="input-field"
               onChange={(e) => setNewDomain(e.target.value)}
+              placeholder="e.g. docs.example.com"
               style={{ flex: 1 }}
+              value={newDomain}
             />
-            <button className="btn-primary" type="submit" style={{ padding: "10px 24px", fontSize: 13 }}>Add</button>
+            <button
+              className="btn-primary"
+              style={{ padding: "10px 24px", fontSize: 13 }}
+              type="submit"
+            >
+              Add
+            </button>
           </form>
           {domainError && (
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--red)", marginTop: 8 }}>{domainError}</p>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--red)",
+                marginTop: 8,
+              }}
+            >
+              {domainError}
+            </p>
           )}
         </div>
       </div>
 
       {/* Password Protection */}
       <div style={{ marginBottom: 40 }}>
-        <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--tx)", marginBottom: 16 }}>Password Protection</h3>
+        <h3
+          style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 24,
+            color: "var(--tx)",
+            marginBottom: 16,
+          }}
+        >
+          Password Protection
+        </h3>
         <div className="card" style={{ padding: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 16,
+            }}
+          >
             <div>
-              <p style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 14, color: "var(--tx)", marginBottom: 4 }}>Require password to access site</p>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)" }}>Visitors must enter a password before viewing your documentation.</p>
+              <p
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "var(--tx)",
+                  marginBottom: 4,
+                }}
+              >
+                Require password to access site
+              </p>
+              <p
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  color: "var(--txM)",
+                }}
+              >
+                Visitors must enter a password before viewing your
+                documentation.
+              </p>
             </div>
             <button
-              onClick={() => { if (passwordEnabled) { removePassword(); } else { setPasswordEnabled(true); } }}
-              style={{
-                width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
-                background: passwordEnabled ? "var(--coral)" : "var(--bd)",
-                position: "relative", transition: "background .2s", flexShrink: 0,
-              }}
               disabled={passwordSaving}
+              onClick={() => {
+                if (passwordEnabled) {
+                  removePassword();
+                } else {
+                  setPasswordEnabled(true);
+                }
+              }}
+              style={{
+                width: 44,
+                height: 24,
+                borderRadius: 12,
+                border: "none",
+                cursor: "pointer",
+                background: passwordEnabled ? "var(--coral)" : "var(--bd)",
+                position: "relative",
+                transition: "background .2s",
+                flexShrink: 0,
+              }}
             >
-              <span style={{
-                position: "absolute", top: 2, left: passwordEnabled ? 22 : 2,
-                width: 20, height: 20, borderRadius: "50%", background: "#fff",
-                transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              }} />
+              <span
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  left: passwordEnabled ? 22 : 2,
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  transition: "left .2s",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }}
+              />
             </button>
           </div>
           {passwordEnabled && (
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <input
-                className="input-field"
-                type="password"
-                placeholder="Enter site password"
-                value={passwordValue}
-                onChange={(e) => setPasswordValue(e.target.value)}
-                style={{ flex: 1 }}
                 aria-label="Site password"
+                className="input-field"
+                onChange={(e) => setPasswordValue(e.target.value)}
+                placeholder="Enter site password"
+                style={{ flex: 1 }}
+                type="password"
+                value={passwordValue}
               />
-              <button className="btn-primary" onClick={savePassword} disabled={passwordSaving || !passwordValue.trim()} style={{ padding: "10px 20px", fontSize: 13 }}>
+              <button
+                className="btn-primary"
+                disabled={passwordSaving || !passwordValue.trim()}
+                onClick={savePassword}
+                style={{ padding: "10px 20px", fontSize: 13 }}
+              >
                 {passwordSaving ? "Saving..." : "Save"}
               </button>
-              <button className="btn-ghost btn-sm" onClick={removePassword} disabled={passwordSaving} style={{ padding: "10px 16px", fontSize: 13, borderRadius: 6 }}>
+              <button
+                className="btn-ghost btn-sm"
+                disabled={passwordSaving}
+                onClick={removePassword}
+                style={{ padding: "10px 16px", fontSize: 13, borderRadius: 6 }}
+              >
                 Remove
               </button>
             </div>
@@ -1671,28 +3312,95 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
       {/* GitHub Integration */}
       <div style={{ marginBottom: 40 }}>
-        <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--tx)", marginBottom: 16 }}>GitHub Integration</h3>
+        <h3
+          style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 24,
+            color: "var(--tx)",
+            marginBottom: 16,
+          }}
+        >
+          GitHub Integration
+        </h3>
         <div className="card" style={{ padding: 24 }}>
           {githubConnected ? (
             <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "var(--green)",
+                      display: "inline-block",
+                    }}
+                  />
                   <div>
-                    <p style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 14, color: "var(--tx)" }}>{githubRepo}</p>
-                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--txM)", marginTop: 2 }}>
-                      Branch: <span style={{ fontFamily: '"Fira Code", monospace', fontSize: 12 }}>{githubBranch}</span>
+                    <p
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: "var(--tx)",
+                      }}
+                    >
+                      {githubRepo}
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 12,
+                        color: "var(--txM)",
+                        marginTop: 2,
+                      }}
+                    >
+                      Branch:{" "}
+                      <span
+                        style={{
+                          fontFamily: '"Fira Code", monospace',
+                          fontSize: 12,
+                        }}
+                      >
+                        {githubBranch}
+                      </span>
                     </p>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{
-                    fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 600,
-                    textTransform: "uppercase", letterSpacing: "0.5px",
-                    padding: "3px 10px", borderRadius: 4,
-                    background: "rgba(21,128,61,0.1)", color: "var(--green)",
-                  }}>Connected</span>
-                  <button className="btn-ghost btn-sm btn-danger" onClick={disconnectGithub} style={{ padding: "6px 14px", fontSize: 12, borderRadius: 4, minHeight: 0 }}>
+                  <span
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      padding: "3px 10px",
+                      borderRadius: 4,
+                      background: "rgba(21,128,61,0.1)",
+                      color: "var(--green)",
+                    }}
+                  >
+                    Connected
+                  </span>
+                  <button
+                    className="btn-ghost btn-sm btn-danger"
+                    onClick={disconnectGithub}
+                    style={{
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      borderRadius: 4,
+                      minHeight: 0,
+                    }}
+                  >
                     Disconnect
                   </button>
                 </div>
@@ -1701,33 +3409,67 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
           ) : githubInstallId ? (
             /* Step 2: Installation detected — enter repo details */
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
-                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--green)", fontWeight: 600 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 16,
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "var(--green)",
+                    display: "inline-block",
+                  }}
+                />
+                <p
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 13,
+                    color: "var(--green)",
+                    fontWeight: 600,
+                  }}
+                >
                   GitHub App installed (ID: {githubInstallId})
                 </p>
               </div>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", marginBottom: 12 }}>
+              <p
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  color: "var(--txM)",
+                  marginBottom: 12,
+                }}
+              >
                 Enter the repository you want to connect for auto-deploy.
               </p>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input
-                  className="input-field"
-                  placeholder="owner/repository"
-                  value={githubRepoInput}
-                  onChange={(e) => setGithubRepoInput(e.target.value)}
-                  style={{ flex: 1 }}
                   aria-label="GitHub repository"
+                  className="input-field"
+                  onChange={(e) => setGithubRepoInput(e.target.value)}
+                  placeholder="owner/repository"
+                  style={{ flex: 1 }}
+                  value={githubRepoInput}
                 />
                 <input
-                  className="input-field"
-                  placeholder="main"
-                  value={githubBranch}
-                  onChange={(e) => setGithubBranch(e.target.value)}
-                  style={{ width: 120 }}
                   aria-label="Branch name"
+                  className="input-field"
+                  onChange={(e) => setGithubBranch(e.target.value)}
+                  placeholder="main"
+                  style={{ width: 120 }}
+                  value={githubBranch}
                 />
-                <button className="btn-primary" onClick={connectGithub} disabled={!githubRepoInput.trim()} style={{ padding: "10px 24px", fontSize: 13 }}>
+                <button
+                  className="btn-primary"
+                  disabled={!githubRepoInput.trim()}
+                  onClick={connectGithub}
+                  style={{ padding: "10px 24px", fontSize: 13 }}
+                >
                   Connect
                 </button>
               </div>
@@ -1735,18 +3477,39 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
           ) : (
             /* Step 1: No installation — show install button */
             <div>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", marginBottom: 16 }}>
-                Install the Tome Deploy GitHub App to enable automatic deployments on push and PR previews.
+              <p
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 13,
+                  color: "var(--txM)",
+                  marginBottom: 16,
+                }}
+              >
+                Install the Tome Deploy GitHub App to enable automatic
+                deployments on push and PR previews.
               </p>
               <a
-                href={`https://github.com/apps/tome-deploy/installations/new?state=${slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="btn-primary"
-                style={{ display: "inline-block", padding: "10px 24px", fontSize: 13, textDecoration: "none", borderRadius: 6 }}
+                href={`https://github.com/apps/tome-deploy/installations/new?state=${slug}`}
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block",
+                  padding: "10px 24px",
+                  fontSize: 13,
+                  textDecoration: "none",
+                  borderRadius: 6,
+                }}
+                target="_blank"
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                  <svg
+                    fill="currentColor"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    width="16"
+                  >
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                  </svg>
                   Install Tome Deploy on GitHub
                 </span>
               </a>
@@ -1758,18 +3521,40 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
       {/* SSO Configuration (Team plan only) */}
       {user.plan === "team" && (
         <div style={{ marginBottom: 40 }}>
-          <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--tx)", marginBottom: 16 }}>Single Sign-On (SSO)</h3>
+          <h3
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontWeight: 400,
+              fontStyle: "italic",
+              fontSize: 24,
+              color: "var(--tx)",
+              marginBottom: 16,
+            }}
+          >
+            Single Sign-On (SSO)
+          </h3>
           <div className="card" style={{ padding: 24 }}>
             {/* Provider radio */}
             <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
               {(["saml", "oidc"] as const).map((type) => (
-                <label key={type} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: ssoType === type ? "var(--coral)" : "var(--tx2)" }}>
+                <label
+                  key={type}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 14,
+                    color: ssoType === type ? "var(--coral)" : "var(--tx2)",
+                  }}
+                >
                   <input
-                    type="radio"
-                    name="sso-type"
                     checked={ssoType === type}
+                    name="sso-type"
                     onChange={() => setSsoType(type)}
                     style={{ accentColor: "var(--coral)" }}
+                    type="radio"
                   />
                   {type === "saml" ? "SAML 2.0" : "OIDC"}
                 </label>
@@ -1778,68 +3563,275 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
             {/* SAML fields */}
             {ssoType === "saml" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
                 <div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>IdP SSO URL</div>
-                  <input className="input-field" placeholder="https://idp.example.com/sso" value={ssoFields.idpSsoUrl} onChange={(e) => setSsoFields({ ...ssoFields, idpSsoUrl: e.target.value })} aria-label="IdP SSO URL" />
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: 4,
+                    }}
+                  >
+                    IdP SSO URL
+                  </div>
+                  <input
+                    aria-label="IdP SSO URL"
+                    className="input-field"
+                    onChange={(e) =>
+                      setSsoFields({ ...ssoFields, idpSsoUrl: e.target.value })
+                    }
+                    placeholder="https://idp.example.com/sso"
+                    value={ssoFields.idpSsoUrl}
+                  />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>IdP Certificate</div>
-                  <textarea className="input-field" placeholder="Paste X.509 certificate here" value={ssoFields.idpCert} onChange={(e) => setSsoFields({ ...ssoFields, idpCert: e.target.value })} rows={3} style={{ resize: "vertical", fontFamily: '"Fira Code", monospace', fontSize: 12 }} aria-label="IdP certificate" />
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: 4,
+                    }}
+                  >
+                    IdP Certificate
+                  </div>
+                  <textarea
+                    aria-label="IdP certificate"
+                    className="input-field"
+                    onChange={(e) =>
+                      setSsoFields({ ...ssoFields, idpCert: e.target.value })
+                    }
+                    placeholder="Paste X.509 certificate here"
+                    rows={3}
+                    style={{
+                      resize: "vertical",
+                      fontFamily: '"Fira Code", monospace',
+                      fontSize: 12,
+                    }}
+                    value={ssoFields.idpCert}
+                  />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Entity ID</div>
-                  <input className="input-field" placeholder="urn:example:sp" value={ssoFields.entityId} onChange={(e) => setSsoFields({ ...ssoFields, entityId: e.target.value })} aria-label="Entity ID" />
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Entity ID
+                  </div>
+                  <input
+                    aria-label="Entity ID"
+                    className="input-field"
+                    onChange={(e) =>
+                      setSsoFields({ ...ssoFields, entityId: e.target.value })
+                    }
+                    placeholder="urn:example:sp"
+                    value={ssoFields.entityId}
+                  />
                 </div>
               </div>
             )}
 
             {/* OIDC fields */}
             {ssoType === "oidc" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
                 <div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Issuer URL</div>
-                  <input className="input-field" placeholder="https://accounts.google.com" value={ssoFields.issuer} onChange={(e) => setSsoFields({ ...ssoFields, issuer: e.target.value })} aria-label="OIDC issuer URL" />
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Issuer URL
+                  </div>
+                  <input
+                    aria-label="OIDC issuer URL"
+                    className="input-field"
+                    onChange={(e) =>
+                      setSsoFields({ ...ssoFields, issuer: e.target.value })
+                    }
+                    placeholder="https://accounts.google.com"
+                    value={ssoFields.issuer}
+                  />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Client ID</div>
-                  <input className="input-field" placeholder="your-client-id" value={ssoFields.clientId} onChange={(e) => setSsoFields({ ...ssoFields, clientId: e.target.value })} aria-label="Client ID" />
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Client ID
+                  </div>
+                  <input
+                    aria-label="Client ID"
+                    className="input-field"
+                    onChange={(e) =>
+                      setSsoFields({ ...ssoFields, clientId: e.target.value })
+                    }
+                    placeholder="your-client-id"
+                    value={ssoFields.clientId}
+                  />
                 </div>
                 <div>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Client Secret</div>
-                  <input className="input-field" type="password" placeholder="your-client-secret" value={ssoFields.clientSecret} onChange={(e) => setSsoFields({ ...ssoFields, clientSecret: e.target.value })} aria-label="Client secret" />
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 11,
+                      color: "var(--txM)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Client Secret
+                  </div>
+                  <input
+                    aria-label="Client secret"
+                    className="input-field"
+                    onChange={(e) =>
+                      setSsoFields({
+                        ...ssoFields,
+                        clientSecret: e.target.value,
+                      })
+                    }
+                    placeholder="your-client-secret"
+                    type="password"
+                    value={ssoFields.clientSecret}
+                  />
                 </div>
               </div>
             )}
 
             {/* Allowed domains (shared) */}
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Allowed Email Domains</div>
-              <input className="input-field" placeholder="example.com, corp.io" value={ssoFields.allowedDomains} onChange={(e) => setSsoFields({ ...ssoFields, allowedDomains: e.target.value })} aria-label="Allowed email domains" />
+              <div
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 11,
+                  color: "var(--txM)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: 4,
+                }}
+              >
+                Allowed Email Domains
+              </div>
+              <input
+                aria-label="Allowed email domains"
+                className="input-field"
+                onChange={(e) =>
+                  setSsoFields({ ...ssoFields, allowedDomains: e.target.value })
+                }
+                placeholder="example.com, corp.io"
+                value={ssoFields.allowedDomains}
+              />
             </div>
 
             {/* Save button */}
-            <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 12 }}>
-              <button className="btn-primary" onClick={saveSso} disabled={ssoSaving} style={{ padding: "10px 24px", fontSize: 13 }}>
+            <div
+              style={{
+                marginTop: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <button
+                className="btn-primary"
+                disabled={ssoSaving}
+                onClick={saveSso}
+                style={{ padding: "10px 24px", fontSize: 13 }}
+              >
                 {ssoSaving ? "Saving..." : "Save SSO Configuration"}
               </button>
               {ssoConfig && (
-                <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--green)" }}>
+                <span
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 12,
+                    color: "var(--green)",
+                  }}
+                >
                   SSO is active
                 </span>
               )}
             </div>
 
             {/* SP Metadata URL */}
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--bd)" }}>
-              <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>SP Metadata URL</div>
+            <div
+              style={{
+                marginTop: 20,
+                paddingTop: 16,
+                borderTop: "1px solid var(--bd)",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 11,
+                  color: "var(--txM)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: 8,
+                }}
+              >
+                SP Metadata URL
+              </div>
               <div className="token-box">
-                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span
+                  style={{
+                    flex: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {`${API_URL}/api/sso/metadata/${slug}`}
                 </span>
-                <button className="nav-link" onClick={() => navigator.clipboard.writeText(`${API_URL}/api/sso/metadata/${slug}`)} style={{ fontSize: 12, padding: "4px 8px" }} aria-label="Copy SP metadata URL">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                <button
+                  aria-label="Copy SP metadata URL"
+                  className="nav-link"
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      `${API_URL}/api/sso/metadata/${slug}`
+                    )
+                  }
+                  style={{ fontSize: 12, padding: "4px 8px" }}
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="none"
+                    height="14"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                    width="14"
+                  >
+                    <rect height="13" rx="2" width="13" x="9" y="9" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                   </svg>
                 </button>
               </div>
@@ -1851,32 +3843,78 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
       {/* Role Management (only if SSO configured) */}
       {ssoConfig && (
         <div style={{ marginBottom: 40 }}>
-          <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--tx)", marginBottom: 16 }}>Team Members</h3>
+          <h3
+            style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontWeight: 400,
+              fontStyle: "italic",
+              fontSize: 24,
+              color: "var(--tx)",
+              marginBottom: 16,
+            }}
+          >
+            Team Members
+          </h3>
           <div className="card" style={{ padding: 24 }}>
             {/* Members table */}
             {roles.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div className="table-header" style={{ gridTemplateColumns: "1fr 120px 80px" }}>
-                  <span>Email</span><span>Role</span><span>Action</span>
+                <div
+                  className="table-header"
+                  style={{ gridTemplateColumns: "1fr 120px 80px" }}
+                >
+                  <span>Email</span>
+                  <span>Role</span>
+                  <span>Action</span>
                 </div>
                 {roles.map((r) => (
-                  <div key={r.email} className="table-row" style={{ gridTemplateColumns: "1fr 120px 80px" }}>
-                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--tx2)" }}>{r.email}</span>
-                    <span style={{
-                      fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 600,
-                      textTransform: "uppercase", letterSpacing: "0.3px",
-                      padding: "3px 10px", borderRadius: 4,
-                      background: r.role === "admin" || r.role === "owner" ? "var(--coralD)" : "var(--cdBg)",
-                      color: r.role === "admin" || r.role === "owner" ? "var(--coral)" : "var(--txM)",
-                      display: "inline-block",
-                    }}>
+                  <div
+                    className="table-row"
+                    key={r.email}
+                    style={{ gridTemplateColumns: "1fr 120px 80px" }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 13,
+                        color: "var(--tx2)",
+                      }}
+                    >
+                      {r.email}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.3px",
+                        padding: "3px 10px",
+                        borderRadius: 4,
+                        background:
+                          r.role === "admin" || r.role === "owner"
+                            ? "var(--coralD)"
+                            : "var(--cdBg)",
+                        color:
+                          r.role === "admin" || r.role === "owner"
+                            ? "var(--coral)"
+                            : "var(--txM)",
+                        display: "inline-block",
+                      }}
+                    >
                       {r.role}
                     </span>
                     <span>
                       <button
                         className="btn-ghost btn-sm"
-                        style={{ color: "var(--red)", fontSize: 11, padding: "4px 12px", minHeight: 0, borderRadius: 4 }}
                         onClick={() => removeRole(r.email)}
+                        style={{
+                          color: "var(--red)",
+                          fontSize: 11,
+                          padding: "4px 12px",
+                          minHeight: 0,
+                          borderRadius: 4,
+                        }}
                       >
                         Remove
                       </button>
@@ -1888,29 +3926,45 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
             {/* Add member form */}
             <div>
-              <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Add Member</div>
+              <div
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 11,
+                  color: "var(--txM)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: 8,
+                }}
+              >
+                Add Member
+              </div>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input
-                  className="input-field"
-                  placeholder="email@example.com"
-                  value={newRoleEmail}
-                  onChange={(e) => setNewRoleEmail(e.target.value)}
-                  style={{ flex: 1 }}
                   aria-label="Member email"
+                  className="input-field"
+                  onChange={(e) => setNewRoleEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  style={{ flex: 1 }}
+                  value={newRoleEmail}
                 />
                 <select
+                  aria-label="Member role"
                   className="input-field"
-                  value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
                   style={{ width: 120 }}
-                  aria-label="Member role"
+                  value={newRole}
                 >
                   <option value="viewer">Viewer</option>
                   <option value="editor">Editor</option>
                   <option value="admin">Admin</option>
                   <option value="owner">Owner</option>
                 </select>
-                <button className="btn-primary" onClick={addRole} disabled={!newRoleEmail.trim()} style={{ padding: "10px 20px", fontSize: 13 }}>
+                <button
+                  className="btn-primary"
+                  disabled={!newRoleEmail.trim()}
+                  onClick={addRole}
+                  style={{ padding: "10px 20px", fontSize: 13 }}
+                >
                   Add
                 </button>
               </div>
@@ -1921,16 +3975,60 @@ function ProjectDetailPage({ slug, token, user }: { slug: string; token: string;
 
       {/* Danger Zone */}
       <div style={{ paddingTop: 24, borderTop: "1px solid var(--bd)" }}>
-        <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 24, color: "var(--red)", marginBottom: 16 }}>Danger Zone</h3>
-        <div className="card dash-danger-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderColor: "rgba(239,68,68,0.3)", padding: 20 }}>
+        <h3
+          style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 24,
+            color: "var(--red)",
+            marginBottom: 16,
+          }}
+        >
+          Danger Zone
+        </h3>
+        <div
+          className="card dash-danger-card"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderColor: "rgba(239,68,68,0.3)",
+            padding: 20,
+          }}
+        >
           <div>
-            <p style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 14, color: "var(--tx)", marginBottom: 4 }}>Delete this project</p>
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)" }}>Permanently removes all deployments, files, and custom domains.</p>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 600,
+                fontSize: 14,
+                color: "var(--tx)",
+                marginBottom: 4,
+              }}
+            >
+              Delete this project
+            </p>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--txM)",
+              }}
+            >
+              Permanently removes all deployments, files, and custom domains.
+            </p>
           </div>
           <button
             className="btn-ghost btn-sm"
-            style={{ color: "var(--red)", borderColor: "rgba(239,68,68,0.4)", whiteSpace: "nowrap", minHeight: 0, borderRadius: 4 }}
             onClick={deleteProject}
+            style={{
+              color: "var(--red)",
+              borderColor: "rgba(239,68,68,0.4)",
+              whiteSpace: "nowrap",
+              minHeight: 0,
+              borderRadius: 4,
+            }}
           >
             Delete Project
           </button>
@@ -1972,10 +4070,16 @@ function BillingPage({ token, user }: { token: string; user: User }) {
         body: { planId, successUrl, cancelUrl },
         token,
       });
-      if (!data.url) throw new Error("No checkout URL returned");
+      if (!data.url) {
+        throw new Error("No checkout URL returned");
+      }
       window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to start checkout. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to start checkout. Please try again."
+      );
       setLoading(false);
     }
   };
@@ -1990,10 +4094,16 @@ function BillingPage({ token, user }: { token: string; user: User }) {
         body: { returnUrl: window.location.href },
         token,
       });
-      if (!data.url) throw new Error("No portal URL returned");
+      if (!data.url) {
+        throw new Error("No portal URL returned");
+      }
       window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to open billing portal. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to open billing portal. Please try again."
+      );
       setLoading(false);
     }
   };
@@ -2001,164 +4111,430 @@ function BillingPage({ token, user }: { token: string; user: User }) {
   // Find the next tier up from current plan
   const planKeys = Object.keys(PLANS);
   const currentIdx = planKeys.indexOf(user.plan);
-  const nextPlanKey = currentIdx >= 0 && currentIdx < planKeys.length - 1 ? planKeys[currentIdx + 1] : null;
+  const nextPlanKey =
+    currentIdx >= 0 && currentIdx < planKeys.length - 1
+      ? planKeys[currentIdx + 1]
+      : null;
   const nextPlan = nextPlanKey ? PLANS[nextPlanKey] : null;
 
   return (
     <div className="rv">
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 32, color: "var(--tx)", marginBottom: 8 }}>
+        <h2
+          style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 32,
+            color: "var(--tx)",
+            marginBottom: 8,
+          }}
+        >
           Billing & Subscription
         </h2>
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)" }}>
+        <p
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 14,
+            color: "var(--txM)",
+          }}
+        >
           Manage your subscription tier and billing from one central hub.
         </p>
       </div>
 
       {/* Alerts */}
       {success && (
-        <div style={{ padding: "14px 18px", marginBottom: 20, background: "rgba(34,197,94,.08)", border: "1px solid rgba(34,197,94,.3)", borderRadius: 8, fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--green)" }}>
+        <div
+          style={{
+            padding: "14px 18px",
+            marginBottom: 20,
+            background: "rgba(34,197,94,.08)",
+            border: "1px solid rgba(34,197,94,.3)",
+            borderRadius: 8,
+            fontFamily: "Inter, sans-serif",
+            fontSize: 13,
+            color: "var(--green)",
+          }}
+        >
           {success}
         </div>
       )}
       {error && (
-        <div style={{ padding: "14px 18px", marginBottom: 20, background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.3)", borderRadius: 8, fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--red)" }}>
+        <div
+          style={{
+            padding: "14px 18px",
+            marginBottom: 20,
+            background: "rgba(239,68,68,.08)",
+            border: "1px solid rgba(239,68,68,.3)",
+            borderRadius: 8,
+            fontFamily: "Inter, sans-serif",
+            fontSize: 13,
+            color: "var(--red)",
+          }}
+        >
           {error}
         </div>
       )}
 
       {/* Two-column layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20, alignItems: "start" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.4fr 1fr",
+          gap: 20,
+          alignItems: "start",
+        }}
+      >
         {/* Left: Current Plan */}
-        <LiquidRing block radius={12} bg="var(--sf)">
-        <div style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-            <div>
-              <span style={{
-                fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600,
-                textTransform: "uppercase", letterSpacing: "0.5px",
-                padding: "4px 10px", borderRadius: 4,
-                background: "rgba(21,128,61,0.1)", color: "var(--green)",
-              }}>
-                Active
-              </span>
-              <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 28, fontWeight: 500, color: "var(--tx)", marginTop: 12 }}>
-                {plan.name}
+        <LiquidRing bg="var(--sf)" block radius={12}>
+          <div
+            style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: 20,
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    background: "rgba(21,128,61,0.1)",
+                    color: "var(--green)",
+                  }}
+                >
+                  Active
+                </span>
+                <div
+                  style={{
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: 28,
+                    fontWeight: 500,
+                    color: "var(--tx)",
+                    marginTop: 12,
+                  }}
+                >
+                  {plan.name}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{ display: "flex", alignItems: "baseline", gap: 2 }}
+                >
+                  <span
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 32,
+                      fontWeight: 400,
+                      color: "var(--coral)",
+                    }}
+                  >
+                    {plan.price === "Free"
+                      ? "Free"
+                      : plan.price.replace("/mo", "")}
+                  </span>
+                  {plan.price !== "Free" && (
+                    <span
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 13,
+                        color: "var(--txM)",
+                      }}
+                    >
+                      /mo
+                    </span>
+                  )}
+                </div>
+                {plan.price !== "Free" && (
+                  <div
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 12,
+                      color: "var(--txM)",
+                      marginTop: 6,
+                    }}
+                  >
+                    Billed monthly
+                  </div>
+                )}
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-                <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 32, fontWeight: 400, color: "var(--coral)" }}>{plan.price === "Free" ? "Free" : plan.price.replace("/mo", "")}</span>
-                {plan.price !== "Free" && <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)" }}>/mo</span>}
-              </div>
-              {plan.price !== "Free" && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--txM)", marginTop: 6 }}>Billed monthly</div>}
-            </div>
-          </div>
 
-          {/* Features */}
-          <div style={{ marginTop: 24 }}>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--txM)", marginBottom: 12 }}>
-              Included Features
-            </div>
-            {plan.features.map((f) => (
-              <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--tx2)" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-                {f}
+            {/* Features */}
+            <div style={{ marginTop: 24 }}>
+              <div
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "var(--txM)",
+                  marginBottom: 12,
+                }}
+              >
+                Included Features
               </div>
-            ))}
-          </div>
-
-          {/* Manage billing button for paid plans */}
-          {user.plan !== "community" && (
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--bd)" }}>
-              <button className="btn-ghost" onClick={handlePortal} disabled={loading} style={{ fontSize: 13, padding: "10px 20px", borderRadius: 6 }}>
-                {loading ? "Redirecting..." : "Manage Billing →"}
-              </button>
+              {plan.features.map((f) => (
+                <div
+                  key={f}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 0",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 14,
+                    color: "var(--tx2)",
+                  }}
+                >
+                  <svg
+                    fill="none"
+                    height="16"
+                    stroke="var(--coral)"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    width="16"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                  {f}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+
+            {/* Manage billing button for paid plans */}
+            {user.plan !== "community" && (
+              <div
+                style={{
+                  marginTop: 24,
+                  paddingTop: 20,
+                  borderTop: "1px solid var(--bd)",
+                }}
+              >
+                <button
+                  className="btn-ghost"
+                  disabled={loading}
+                  onClick={handlePortal}
+                  style={{
+                    fontSize: 13,
+                    padding: "10px 20px",
+                    borderRadius: 6,
+                  }}
+                >
+                  {loading ? "Redirecting..." : "Manage Billing →"}
+                </button>
+              </div>
+            )}
+          </div>
         </LiquidRing>
 
         {/* Right column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Upgrade card (if not on highest tier) */}
           {nextPlan && (
-            <LiquidRing block radius={12} bg="var(--coral)" onAccent>
-            <div className="card-accent" style={{ padding: 28, background: "var(--coral)", color: "#fff", borderRadius: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 22, fontWeight: 500 }}>
-                  {nextPlan.name}
-                </span>
-              </div>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, opacity: 0.85, lineHeight: 1.5, marginBottom: 20 }}>
-                Unlock more with {nextPlan.name}: {nextPlan.features.slice(0, 2).join(", ")}, and more.
-              </p>
-              <button
-                onClick={() => handleCheckout(nextPlanKey!)}
-                disabled={loading}
-                className="btn-ghost btn-on-accent"
+            <LiquidRing bg="var(--coral)" block onAccent radius={12}>
+              <div
+                className="card-accent"
                 style={{
-                  width: "100%", padding: "12px 24px", color: "#fff",
-                  borderColor: "rgba(255,255,255,0.4)", borderRadius: 6, fontSize: 14,
+                  padding: 28,
+                  background: "var(--coral)",
+                  color: "#fff",
+                  borderRadius: 12,
                 }}
               >
-                {loading ? "Redirecting..." : `Upgrade to ${nextPlan.name} · ${nextPlan.price}`}
-              </button>
-            </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  <svg
+                    fill="none"
+                    height="18"
+                    stroke="#fff"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                    width="18"
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 22,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {nextPlan.name}
+                  </span>
+                </div>
+                <p
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 13,
+                    opacity: 0.85,
+                    lineHeight: 1.5,
+                    marginBottom: 20,
+                  }}
+                >
+                  Unlock more with {nextPlan.name}:{" "}
+                  {nextPlan.features.slice(0, 2).join(", ")}, and more.
+                </p>
+                <button
+                  className="btn-ghost btn-on-accent"
+                  disabled={loading}
+                  onClick={() => handleCheckout(nextPlanKey!)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 24px",
+                    color: "#fff",
+                    borderColor: "rgba(255,255,255,0.4)",
+                    borderRadius: 6,
+                    fontSize: 14,
+                  }}
+                >
+                  {loading
+                    ? "Redirecting..."
+                    : `Upgrade to ${nextPlan.name} · ${nextPlan.price}`}
+                </button>
+              </div>
             </LiquidRing>
           )}
 
           {/* All plans comparison */}
-          <LiquidRing block radius={12} bg="var(--sf)">
-          <div style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--txM)", marginBottom: 16 }}>
-              All Plans
-            </div>
-            {Object.entries(PLANS).map(([key, p]) => (
-              <div key={key} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "12px 0", borderBottom: "1px solid var(--bd)",
-              }}>
-                <div>
-                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 500, color: key === user.plan ? "var(--coral)" : "var(--tx)" }}>
-                    {p.name}
-                  </span>
-                  {key === user.plan && (
-                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 10, color: "var(--coral)", marginLeft: 8 }}>Current</span>
-                  )}
-                </div>
-                <span style={{ fontFamily: '"Fira Code", monospace', fontSize: 13, color: "var(--txM)" }}>
-                  {p.price}
-                </span>
+          <LiquidRing bg="var(--sf)" block radius={12}>
+            <div
+              style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}
+            >
+              <div
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "var(--txM)",
+                  marginBottom: 16,
+                }}
+              >
+                All Plans
               </div>
-            ))}
-          </div>
+              {Object.entries(PLANS).map(([key, p]) => (
+                <div
+                  key={key}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 0",
+                    borderBottom: "1px solid var(--bd)",
+                  }}
+                >
+                  <div>
+                    <span
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: key === user.plan ? "var(--coral)" : "var(--tx)",
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                    {key === user.plan && (
+                      <span
+                        style={{
+                          fontFamily: "Inter, sans-serif",
+                          fontSize: 10,
+                          color: "var(--coral)",
+                          marginLeft: 8,
+                        }}
+                      >
+                        Current
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: '"Fira Code", monospace',
+                      fontSize: 13,
+                      color: "var(--txM)",
+                    }}
+                  >
+                    {p.price}
+                  </span>
+                </div>
+              ))}
+            </div>
           </LiquidRing>
 
           {/* Billing support */}
-          <LiquidRing block radius={12} bg="var(--sf)">
-          <div style={{ padding: 20, display: "flex", alignItems: "center", gap: 14, background: "var(--sf)", borderRadius: 12 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 8, background: "var(--coralD)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" strokeWidth="1.5">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
+          <LiquidRing bg="var(--sf)" block radius={12}>
+            <div
+              style={{
+                padding: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                background: "var(--sf)",
+                borderRadius: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: "var(--coralD)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg
+                  fill="none"
+                  height="18"
+                  stroke="var(--coral)"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: "var(--tx)",
+                  }}
+                >
+                  Billing Support
+                </div>
+                <a className="action-link" href="mailto:support@tome.center">
+                  Contact support →
+                </a>
+              </div>
             </div>
-            <div>
-              <div style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 500, color: "var(--tx)" }}>Billing Support</div>
-              <a href="mailto:support@tome.center" className="action-link">
-                Contact support →
-              </a>
-            </div>
-          </div>
           </LiquidRing>
         </div>
       </div>
@@ -2168,7 +4544,15 @@ function BillingPage({ token, user }: { token: string; user: User }) {
 
 // ── Settings Page ──────────────────────────────────────────
 
-function SettingsPage({ user, token, onLogout }: { user: User; token: string; onLogout: () => void }) {
+function SettingsPage({
+  user,
+  token,
+  onLogout,
+}: {
+  user: User;
+  token: string;
+  onLogout: () => void;
+}) {
   const [showToken, setShowToken] = useState(false);
   const [, setCopied] = useState(false);
   const plan = PLANS[user.plan] ?? PLANS.community;
@@ -2181,149 +4565,378 @@ function SettingsPage({ user, token, onLogout }: { user: User; token: string; on
   };
 
   const labelStyle: React.CSSProperties = {
-    fontFamily: "Inter, sans-serif", fontSize: 11, color: "var(--txM)",
-    textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4,
+    fontFamily: "Inter, sans-serif",
+    fontSize: 11,
+    color: "var(--txM)",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    marginBottom: 4,
   };
 
   const valueStyle: React.CSSProperties = {
-    fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--tx)", fontWeight: 500,
+    fontFamily: "Inter, sans-serif",
+    fontSize: 14,
+    color: "var(--tx)",
+    fontWeight: 500,
   };
 
   return (
     <div className="rv">
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontFamily: '"Cormorant Garamond", serif', fontWeight: 400, fontStyle: "italic", fontSize: 32, color: "var(--tx)", marginBottom: 8 }}>
+        <h2
+          style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 32,
+            color: "var(--tx)",
+            marginBottom: 8,
+          }}
+        >
           Account Settings
         </h2>
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)" }}>
+        <p
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontSize: 14,
+            color: "var(--txM)",
+          }}
+        >
           Manage your profile and developer credentials.
         </p>
       </div>
 
       {/* Two-column: Profile + API Token */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.2fr 1fr",
+          gap: 20,
+          marginBottom: 20,
+        }}
+      >
         {/* Profile Card */}
-        <LiquidRing block radius={12} bg="var(--sf)">
-        <div style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-            {user.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" style={{ width: 64, height: 64, borderRadius: 12, border: "2px solid var(--bd)" }} />
-            ) : (
-              <div style={{
-                width: 64, height: 64, borderRadius: 12, background: "var(--coralD)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: '"Cormorant Garamond", serif', fontSize: 28, fontWeight: 400, color: "var(--coral)",
-                border: "2px solid var(--bd)",
-              }}>
-                {(user.name || user.email).charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 22, fontWeight: 500, color: "var(--tx)" }}>
-                  {user.name || user.email}
-                </span>
-                <span style={{
-                  fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, textTransform: "uppercase",
-                  letterSpacing: "0.5px", padding: "4px 10px", borderRadius: 4,
-                  background: "var(--coralD)", color: "var(--coral)", border: "1px solid var(--coral)",
-                }}>
-                  {plan.name}
-                </span>
-              </div>
-              {user.name && (
-                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", marginTop: 4 }}>{user.email}</p>
+        <LiquidRing bg="var(--sf)" block radius={12}>
+          <div
+            style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
+              {user.avatarUrl ? (
+                <img
+                  alt=""
+                  src={user.avatarUrl}
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 12,
+                    border: "2px solid var(--bd)",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 12,
+                    background: "var(--coralD)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: 28,
+                    fontWeight: 400,
+                    color: "var(--coral)",
+                    border: "2px solid var(--bd)",
+                  }}
+                >
+                  {(user.name || user.email).charAt(0).toUpperCase()}
+                </div>
               )}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span
+                    style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: 22,
+                      fontWeight: 500,
+                      color: "var(--tx)",
+                    }}
+                  >
+                    {user.name || user.email}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      padding: "4px 10px",
+                      borderRadius: 4,
+                      background: "var(--coralD)",
+                      color: "var(--coral)",
+                      border: "1px solid var(--coral)",
+                    }}
+                  >
+                    {plan.name}
+                  </span>
+                </div>
+                {user.name && (
+                  <p
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 13,
+                      color: "var(--txM)",
+                      marginTop: 4,
+                    }}
+                  >
+                    {user.email}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Info grid */}
-          <div className="dash-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-            <div>
-              <div style={labelStyle}>Email Address</div>
-              <div style={valueStyle}>{user.email}</div>
-            </div>
-            <div>
-              <div style={labelStyle}>Plan</div>
-              <div style={valueStyle}>{plan.name} · {plan.price}</div>
-            </div>
-            <div>
-              <div style={labelStyle}>Member Since</div>
-              <div style={valueStyle}>{new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>
+            {/* Info grid */}
+            <div
+              className="dash-settings-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 20,
+                marginBottom: 24,
+              }}
+            >
+              <div>
+                <div style={labelStyle}>Email Address</div>
+                <div style={valueStyle}>{user.email}</div>
+              </div>
+              <div>
+                <div style={labelStyle}>Plan</div>
+                <div style={valueStyle}>
+                  {plan.name} · {plan.price}
+                </div>
+              </div>
+              <div>
+                <div style={labelStyle}>Member Since</div>
+                <div style={valueStyle}>
+                  {new Date(user.createdAt).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         </LiquidRing>
 
         {/* API Credentials Card */}
-        <LiquidRing block radius={12} bg="var(--sf)">
-        <div style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-            </svg>
-            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--coral)" }}>
-              API Credentials
-            </span>
-          </div>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", marginBottom: 16, lineHeight: 1.5 }}>
-            Use this token to authenticate your requests to the Tome API.
-          </p>
-
-          <div className="token-box" style={{ marginBottom: 8 }}>
-            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {showToken ? token : "•".repeat(32)}
-            </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button className="nav-link" onClick={() => setShowToken(!showToken)} style={{ fontSize: 12, padding: "4px 8px" }}>
-                {showToken ? "Hide" : "Show"}
-              </button>
-              <button className="nav-link" onClick={copyToken} style={{ fontSize: 12, padding: "4px 8px" }} aria-label="Copy API token">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                  <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
+        <LiquidRing bg="var(--sf)" block radius={12}>
+          <div
+            style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 12,
+              }}
+            >
+              <svg
+                fill="none"
+                height="18"
+                stroke="var(--coral)"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                width="18"
+              >
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+              </svg>
+              <span
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "var(--coral)",
+                }}
+              >
+                API Credentials
+              </span>
             </div>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--txM)",
+                marginBottom: 16,
+                lineHeight: 1.5,
+              }}
+            >
+              Use this token to authenticate your requests to the Tome API.
+            </p>
+
+            <div className="token-box" style={{ marginBottom: 8 }}>
+              <span
+                style={{
+                  flex: 1,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {showToken ? token : "•".repeat(32)}
+              </span>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button
+                  className="nav-link"
+                  onClick={() => setShowToken(!showToken)}
+                  style={{ fontSize: 12, padding: "4px 8px" }}
+                >
+                  {showToken ? "Hide" : "Show"}
+                </button>
+                <button
+                  aria-label="Copy API token"
+                  className="nav-link"
+                  onClick={copyToken}
+                  style={{ fontSize: 12, padding: "4px 8px" }}
+                >
+                  <svg
+                    aria-hidden="true"
+                    fill="none"
+                    height="14"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                    width="14"
+                  >
+                    <rect height="13" rx="2" width="13" x="9" y="9" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 12,
+                color: "var(--txM)",
+                lineHeight: 1.5,
+              }}
+            >
+              For security, never share your tokens in client-side code.
+            </p>
           </div>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--txM)", lineHeight: 1.5 }}>
-            For security, never share your tokens in client-side code.
-          </p>
-        </div>
         </LiquidRing>
       </div>
 
       {/* Bottom row: Plan + Danger Zone */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         {/* Active Plan */}
-        <LiquidRing block radius={12} bg="var(--coral)" onAccent>
-        <div className="card-accent" style={{ padding: 28, background: "var(--coral)", color: "#fff", borderRadius: 12 }}>
-          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", color: "rgba(255,255,255,0.9)", marginBottom: 8 }}>Active Plan</div>
-          <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: 28, fontWeight: 400, marginBottom: 4 }}>
-            {plan.name}
+        <LiquidRing bg="var(--coral)" block onAccent radius={12}>
+          <div
+            className="card-accent"
+            style={{
+              padding: 28,
+              background: "var(--coral)",
+              color: "#fff",
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 11,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                color: "rgba(255,255,255,0.9)",
+                marginBottom: 8,
+              }}
+            >
+              Active Plan
+            </div>
+            <div
+              style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: 28,
+                fontWeight: 400,
+                marginBottom: 4,
+              }}
+            >
+              {plan.name}
+            </div>
+            <div
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                opacity: 0.8,
+              }}
+            >
+              {plan.price}
+            </div>
+            <a
+              className="action-link-white"
+              href={`${BASE}/billing`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/billing");
+              }}
+            >
+              Manage plan →
+            </a>
           </div>
-          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 14, opacity: 0.8 }}>
-            {plan.price}
-          </div>
-          <a href={`${BASE}/billing`} onClick={(e) => { e.preventDefault(); navigate("/billing"); }} className="action-link-white">
-            Manage plan →
-          </a>
-        </div>
         </LiquidRing>
 
         {/* Danger Zone */}
-        <LiquidRing block radius={12} bg="var(--sf)">
-        <div style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}>
-          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--red)", marginBottom: 12 }}>
-            Danger Zone
+        <LiquidRing bg="var(--sf)" block radius={12}>
+          <div
+            style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}
+          >
+            <div
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 12,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                color: "var(--red)",
+                marginBottom: 12,
+              }}
+            >
+              Danger Zone
+            </div>
+            <p
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "var(--txM)",
+                marginBottom: 16,
+                lineHeight: 1.5,
+              }}
+            >
+              Sign out of your account. Your projects and data will remain
+              intact.
+            </p>
+            <button
+              className="btn-ghost btn-danger"
+              onClick={onLogout}
+              style={{ padding: "8px 20px", fontSize: 13, borderRadius: 6 }}
+            >
+              Sign Out
+            </button>
           </div>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "var(--txM)", marginBottom: 16, lineHeight: 1.5 }}>
-            Sign out of your account. Your projects and data will remain intact.
-          </p>
-          <button className="btn-ghost btn-danger" onClick={onLogout} style={{ padding: "8px 20px", fontSize: 13, borderRadius: 6 }}>
-            Sign Out
-          </button>
-        </div>
         </LiquidRing>
       </div>
     </div>
@@ -2334,7 +4947,9 @@ function SettingsPage({ user, token, onLogout }: { user: User; token: string; on
 
 export function App() {
   const [auth, setAuth] = useState<AuthState>({ status: "loading" });
-  const [isDark, setDark] = useState(() => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false);
+  const [isDark, setDark] = useState(
+    () => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false
+  );
   const [route, setRoute] = useState(window.location.pathname || `${BASE}/`);
 
   // Listen for popstate (back/forward + navigate() calls)
@@ -2389,8 +5004,25 @@ export function App() {
     return (
       <>
         <style>{CSS}</style>
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "var(--txM)", animation: "pulse 2s infinite" }}>Loading…</p>
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "var(--bg)",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 14,
+              color: "var(--txM)",
+              animation: "pulse 2s infinite",
+            }}
+          >
+            Loading…
+          </p>
         </div>
       </>
     );
@@ -2416,13 +5048,17 @@ export function App() {
       content = <EditorPage slug={params.slug} token={token} user={user} />;
       break;
     case "project":
-      content = <ProjectDetailPage slug={params.slug} token={token} user={user} />;
+      content = (
+        <ProjectDetailPage slug={params.slug} token={token} user={user} />
+      );
       break;
     case "billing":
       content = <BillingPage token={token} user={user} />;
       break;
     case "settings":
-      content = <SettingsPage user={user} token={token} onLogout={handleLogout} />;
+      content = (
+        <SettingsPage onLogout={handleLogout} token={token} user={user} />
+      );
       break;
     default:
       content = <ProjectsPage token={token} />;
@@ -2431,7 +5067,7 @@ export function App() {
   return (
     <>
       <style>{CSS}</style>
-      <Shell user={user} isDark={isDark} setDark={setDark}>
+      <Shell isDark={isDark} setDark={setDark} user={user}>
         {content}
       </Shell>
     </>

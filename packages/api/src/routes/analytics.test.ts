@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
-import { analytics } from "./analytics.js";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
+import { analytics } from "./analytics.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -110,7 +110,9 @@ describe("GET /summary", () => {
     expect(body.uniqueVisitors).toBe(42);
     expect(body.topPages).toEqual([{ url: "/docs/quickstart", views: 10 }]);
     expect(body.topReferrers).toEqual([{ url: "/docs/quickstart", views: 10 }]);
-    expect(body.topSearchQueries).toEqual([{ url: "/docs/quickstart", views: 10 }]);
+    expect(body.topSearchQueries).toEqual([
+      { url: "/docs/quickstart", views: 10 },
+    ]);
     expect(body.viewsByDay).toEqual([{ url: "/docs/quickstart", views: 10 }]);
   });
 

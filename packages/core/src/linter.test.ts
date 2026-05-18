@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  checkBannedWords,
+  checkEmptyLinks,
   checkHeadingIncrement,
   checkImageAltText,
   checkParagraphLength,
   checkSingleH1,
-  checkEmptyLinks,
-  checkBannedWords,
-  lintPages,
   formatLintResults,
+  lintPages,
 } from "./linter.js";
 import type { PageRoute } from "./routes.js";
 
@@ -271,13 +271,15 @@ describe("formatLintResults", () => {
       errors: 1,
       warnings: 0,
       infos: 0,
-      issues: [{
-        file: "test.md",
-        line: 5,
-        rule: "empty-link",
-        severity: "error" as const,
-        message: "Link has empty URL.",
-      }],
+      issues: [
+        {
+          file: "test.md",
+          line: 5,
+          rule: "empty-link",
+          severity: "error" as const,
+          message: "Link has empty URL.",
+        },
+      ],
       ok: false,
     };
     const output = formatLintResults(result);
@@ -315,14 +317,16 @@ describe("lintPages", () => {
   });
 
   it("skips __api-reference__ routes", () => {
-    const routes: PageRoute[] = [{
-      id: "api-reference",
-      filePath: "__api-reference__",
-      absolutePath: "/fake/path",
-      urlPath: "/api",
-      frontmatter: { title: "API", hidden: false },
-      isMdx: false,
-    }];
+    const routes: PageRoute[] = [
+      {
+        id: "api-reference",
+        filePath: "__api-reference__",
+        absolutePath: "/fake/path",
+        urlPath: "/api",
+        frontmatter: { title: "API", hidden: false },
+        isMdx: false,
+      },
+    ];
     const result = lintPages(routes);
     expect(result.ok).toBe(true);
     expect(result.totalIssues).toBe(0);

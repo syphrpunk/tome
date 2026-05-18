@@ -1,23 +1,140 @@
-export { loadConfig, defineConfig, TomeConfigSchema } from "./config.js";
 export type { TomeConfig, TomePlugin } from "./config.js";
+export { defineConfig, loadConfig, TomeConfigSchema } from "./config.js";
 
-export function definePlugin(plugin: import("./config.js").TomePlugin): import("./config.js").TomePlugin {
+export function definePlugin(
+  plugin: import("./config.js").TomePlugin
+): import("./config.js").TomePlugin {
   return plugin;
 }
 
-export { processMarkdown, processMarkdownFile, parseCodeMeta, enhanceCodeBlock, extractCodeFenceMetas } from "./markdown.js";
-export type { PageFrontmatter, ProcessedPage, CodeMeta } from "./markdown.js";
-
-export { discoverPages, buildNavigation, getPrevNext, flattenNavItems, normalizeBadge } from "./routes.js";
-export type { PageRoute, NavigationItem, NavigationGroup, I18nConfig, VersioningConfig, Badge, BadgeVariant } from "./routes.js";
-
-export { default as tomePlugin } from "./vite-plugin.js";
-export type { TomePluginOptions } from "./vite-plugin.js";
-
-export { createMcpServer, startMcpServer, loadManifest, searchPages, getPage, listPages } from "./mcp-server.js";
+export type {
+  AnalyticsEvent,
+  AnalyticsSummary,
+  PageViewEvent,
+  SearchEvent,
+} from "./analytics.js";
+export {
+  aggregateEvents,
+  generateAnalyticsScript,
+  generateSessionId,
+} from "./analytics.js";
+export type { BillingCustomer, Plan, Subscription } from "./billing.js";
+export {
+  calculateAnnualDiscount,
+  createCheckoutSession,
+  createPortalSession,
+  formatPrice,
+  getPlan,
+  getTrialDays,
+  PLANS,
+} from "./billing.js";
+export type {
+  ChangelogEntry,
+  ChangelogSection,
+  ChangelogSectionType,
+} from "./changelog.js";
+export { filterEntries, getSectionColor, parseChangelog } from "./changelog.js";
+export type {
+  ContentPage,
+  ContentSource,
+  GitHubSourceOptions,
+  NotionSourceOptions,
+} from "./content-source.js";
+export {
+  defineContentSource,
+  fetchRemoteContent,
+  githubSource,
+  notionBlocksToMarkdown,
+  notionSource,
+  richTextToMd,
+} from "./content-source.js";
+export type { DeployConfig, DeployResult } from "./deploy.js";
+export {
+  collectBuildFiles,
+  computeFileHashes,
+  deployToCloud,
+  readAuthToken,
+  saveAuthToken,
+} from "./deploy.js";
+export type { DnsRecord, DomainConfig, DomainStatus } from "./domains.js";
+export {
+  addDomain,
+  checkDomainDns,
+  generateDnsRecords,
+  listDomains,
+  removeDomain,
+  validateDomain,
+} from "./domains.js";
+export {
+  formatRelativeDate,
+  getGitDatesForFiles,
+  getGitLastUpdated,
+} from "./git-dates.js";
+export type { BrokenLink, LinkCheckResult } from "./link-checker.js";
+export {
+  checkLinks,
+  extractInternalLinks,
+  formatLinkCheckResults,
+} from "./link-checker.js";
+export type { LintIssue, LintResult, LintRuleConfig } from "./linter.js";
+export {
+  checkBannedWords,
+  checkEmptyLinks,
+  checkHeadingIncrement,
+  checkImageAltText,
+  checkParagraphLength,
+  checkSingleH1,
+  formatLintResults,
+  lintPages,
+} from "./linter.js";
+export type { CodeMeta, PageFrontmatter, ProcessedPage } from "./markdown.js";
+export {
+  enhanceCodeBlock,
+  extractCodeFenceMetas,
+  parseCodeMeta,
+  processMarkdown,
+  processMarkdownFile,
+} from "./markdown.js";
 export type { McpManifest, McpPage } from "./mcp-server.js";
-
-export { parseOpenApiSpec, generateCodeSamples } from "./openapi.js";
+export {
+  createMcpServer,
+  getPage,
+  listPages,
+  loadManifest,
+  searchPages,
+  startMcpServer,
+} from "./mcp-server.js";
+export type { MigrationResult as GitbookMigrationResult } from "./migrate-gitbook.js";
+export {
+  convertGitbookContent,
+  migrateFromGitbook,
+  parseGitbookConfig,
+  parseSummaryNavigation,
+} from "./migrate-gitbook.js";
+export type { MigrationResult as MintlifyMigrationResult } from "./migrate-mintlify.js";
+export {
+  convertMintConfig,
+  convertMintlifyContent,
+  convertMintNavigation,
+  migrateFromMintlify,
+  parseMintConfig,
+} from "./migrate-mintlify.js";
+export type { MigrationResult as VitepressMigrationResult } from "./migrate-vitepress.js";
+export {
+  convertFrontmatter,
+  convertSidebarToNavigation,
+  convertVitepressContent,
+  migrateFromVitepress,
+  parseVitepressConfig,
+} from "./migrate-vitepress.js";
+export type { OgImageConfig, OgImageResult } from "./og-image.js";
+export {
+  buildOgConfig,
+  buildOgTemplate,
+  generateOgImages,
+  generateOgMetaTags,
+  generateOgSvg,
+} from "./og-image.js";
 export type {
   ApiEndpoint,
   ApiManifest,
@@ -26,127 +143,72 @@ export type {
   ApiResponse,
   CodeSample,
 } from "./openapi.js";
-
-export { collectBuildFiles, computeFileHashes, deployToCloud, readAuthToken, saveAuthToken } from "./deploy.js";
-export type { DeployConfig, DeployResult } from "./deploy.js";
-
+export { generateCodeSamples, parseOpenApiSpec } from "./openapi.js";
+export type {
+  PreviewConfig,
+  PreviewDeployment,
+  PreviewResult,
+} from "./preview.js";
 export {
-  PLANS,
-  getPlan,
-  getTrialDays,
-  calculateAnnualDiscount,
-  formatPrice,
-  createCheckoutSession,
-  createPortalSession,
-} from "./billing.js";
-export type { Plan, Subscription, BillingCustomer } from "./billing.js";
-
-export {
-  generateDnsRecords,
-  validateDomain,
-  checkDomainDns,
-  addDomain,
-  removeDomain,
-  listDomains,
-} from "./domains.js";
-export type { DomainConfig, DomainStatus, DnsRecord } from "./domains.js";
-
-export {
-  slugifyBranch,
-  getPreviewUrl,
-  getExpiryDate,
+  deletePreview,
+  deployPreview,
   detectBranch,
   detectCommitSha,
   detectPrNumber,
   generatePreviewBanner,
-  deployPreview,
+  getExpiryDate,
+  getPreviewUrl,
   listPreviews,
-  deletePreview,
+  slugifyBranch,
 } from "./preview.js";
-export type { PreviewConfig, PreviewResult, PreviewDeployment } from "./preview.js";
-
-export { checkLinks, extractInternalLinks, formatLinkCheckResults } from "./link-checker.js";
-export type { BrokenLink, LinkCheckResult } from "./link-checker.js";
-
-export { getGitLastUpdated, getGitDatesForFiles, formatRelativeDate } from "./git-dates.js";
-
-export { parseChangelog, getSectionColor, filterEntries } from "./changelog.js";
-export type { ChangelogEntry, ChangelogSection, ChangelogSectionType } from "./changelog.js";
-
+export type {
+  Badge,
+  BadgeVariant,
+  I18nConfig,
+  NavigationGroup,
+  NavigationItem,
+  PageRoute,
+  VersioningConfig,
+} from "./routes.js";
 export {
-  lintPages,
-  formatLintResults,
-  checkHeadingIncrement,
-  checkImageAltText,
-  checkParagraphLength,
-  checkSingleH1,
-  checkEmptyLinks,
-  checkBannedWords,
-} from "./linter.js";
-export type { LintIssue, LintResult, LintRuleConfig } from "./linter.js";
-
+  buildNavigation,
+  discoverPages,
+  flattenNavItems,
+  getPrevNext,
+  normalizeBadge,
+} from "./routes.js";
+export type {
+  DocEntry,
+  DocMember,
+  DocParam,
+  TypeDocConfig,
+} from "./typedoc.js";
 export {
-  generateOgSvg,
-  buildOgTemplate,
-  buildOgConfig,
-  generateOgImages,
-  generateOgMetaTags,
-} from "./og-image.js";
-export type { OgImageConfig, OgImageResult } from "./og-image.js";
-
-export {
-  formatSlackPayload,
-  formatDiscordPayload,
-  formatHttpPayload,
-  formatEventTitle,
-  maskUrl,
-  signPayload,
-  sendWebhook,
-  dispatchWebhooks,
-  createDeployPayload,
-  createDeployFailedPayload,
-  createPreviewPayload,
-  createDomainVerifiedPayload,
-} from "./webhooks.js";
+  extractDocEntries,
+  extractDocEntriesFromSource,
+  generateMarkdown,
+  generateTypeDocs,
+} from "./typedoc.js";
+export type { TomePluginOptions } from "./vite-plugin.js";
+export { default as tomePlugin } from "./vite-plugin.js";
 export type {
   WebhookChannel,
-  WebhookEventType,
   WebhookConfig,
+  WebhookEventType,
   WebhookPayload,
   WebhookResult,
 } from "./webhooks.js";
-
-export { migrateFromGitbook, parseSummaryNavigation, convertGitbookContent, parseGitbookConfig } from "./migrate-gitbook.js";
-export type { MigrationResult as GitbookMigrationResult } from "./migrate-gitbook.js";
-
-export { migrateFromMintlify, parseMintConfig, convertMintNavigation, convertMintConfig, convertMintlifyContent } from "./migrate-mintlify.js";
-export type { MigrationResult as MintlifyMigrationResult } from "./migrate-mintlify.js";
-
-export { migrateFromVitepress, parseVitepressConfig, convertSidebarToNavigation, convertVitepressContent, convertFrontmatter } from "./migrate-vitepress.js";
-export type { MigrationResult as VitepressMigrationResult } from "./migrate-vitepress.js";
-
-export { extractDocEntries, extractDocEntriesFromSource, generateMarkdown, generateTypeDocs } from "./typedoc.js";
-export type { TypeDocConfig, DocEntry, DocMember, DocParam } from "./typedoc.js";
-
-export { generateAnalyticsScript, aggregateEvents, generateSessionId } from "./analytics.js";
-export type {
-  PageViewEvent,
-  SearchEvent,
-  AnalyticsEvent,
-  AnalyticsSummary,
-} from "./analytics.js";
-
 export {
-  defineContentSource,
-  githubSource,
-  notionSource,
-  notionBlocksToMarkdown,
-  richTextToMd,
-  fetchRemoteContent,
-} from "./content-source.js";
-export type {
-  ContentPage,
-  ContentSource,
-  GitHubSourceOptions,
-  NotionSourceOptions,
-} from "./content-source.js";
+  createDeployFailedPayload,
+  createDeployPayload,
+  createDomainVerifiedPayload,
+  createPreviewPayload,
+  dispatchWebhooks,
+  formatDiscordPayload,
+  formatEventTitle,
+  formatHttpPayload,
+  formatSlackPayload,
+  maskUrl,
+  sendWebhook,
+  signPayload,
+} from "./webhooks.js";

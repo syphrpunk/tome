@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { pathnameToPageId, pageIdToPath } from "./routing.js";
+import { describe, expect, it } from "vitest";
 import type { MinimalRoute } from "./routing.js";
+import { pageIdToPath, pathnameToPageId } from "./routing.js";
 
 // ── Shared fixtures ──────────────────────────────────────
 
@@ -28,15 +28,21 @@ describe("pathnameToPageId", () => {
   });
 
   it("resolves top-level page", () => {
-    expect(pathnameToPageId("/docs/quickstart", basePath, routes)).toBe("quickstart");
+    expect(pathnameToPageId("/docs/quickstart", basePath, routes)).toBe(
+      "quickstart"
+    );
   });
 
   it("resolves nested page", () => {
-    expect(pathnameToPageId("/docs/reference/config", basePath, routes)).toBe("reference/config");
+    expect(pathnameToPageId("/docs/reference/config", basePath, routes)).toBe(
+      "reference/config"
+    );
   });
 
   it("resolves deeply nested page", () => {
-    expect(pathnameToPageId("/docs/guides/migration", basePath, routes)).toBe("guides/migration");
+    expect(pathnameToPageId("/docs/guides/migration", basePath, routes)).toBe(
+      "guides/migration"
+    );
   });
 
   it("returns null for unknown page", () => {
@@ -44,19 +50,27 @@ describe("pathnameToPageId", () => {
   });
 
   it("strips /index.html suffix", () => {
-    expect(pathnameToPageId("/docs/quickstart/index.html", basePath, routes)).toBe("quickstart");
+    expect(
+      pathnameToPageId("/docs/quickstart/index.html", basePath, routes)
+    ).toBe("quickstart");
   });
 
   it("strips .html suffix", () => {
-    expect(pathnameToPageId("/docs/quickstart.html", basePath, routes)).toBe("quickstart");
+    expect(pathnameToPageId("/docs/quickstart.html", basePath, routes)).toBe(
+      "quickstart"
+    );
   });
 
   it("strips trailing slash", () => {
-    expect(pathnameToPageId("/docs/quickstart/", basePath, routes)).toBe("quickstart");
+    expect(pathnameToPageId("/docs/quickstart/", basePath, routes)).toBe(
+      "quickstart"
+    );
   });
 
   it("resolves versioned page", () => {
-    expect(pathnameToPageId("/docs/v1/quickstart", basePath, routes)).toBe("v1/quickstart");
+    expect(pathnameToPageId("/docs/v1/quickstart", basePath, routes)).toBe(
+      "v1/quickstart"
+    );
   });
 
   it("resolves versioned index", () => {
@@ -75,7 +89,9 @@ describe("pathnameToPageId", () => {
     });
 
     it("resolves nested page at root", () => {
-      expect(pathnameToPageId("/reference/config", "", routes)).toBe("reference/config");
+      expect(pathnameToPageId("/reference/config", "", routes)).toBe(
+        "reference/config"
+      );
     });
   });
 
@@ -96,19 +112,27 @@ describe("pageIdToPath", () => {
   });
 
   it("builds path for top-level page", () => {
-    expect(pageIdToPath("quickstart", basePath, routes)).toBe("/docs/quickstart");
+    expect(pageIdToPath("quickstart", basePath, routes)).toBe(
+      "/docs/quickstart"
+    );
   });
 
   it("builds path for nested page", () => {
-    expect(pageIdToPath("reference/config", basePath, routes)).toBe("/docs/reference/config");
+    expect(pageIdToPath("reference/config", basePath, routes)).toBe(
+      "/docs/reference/config"
+    );
   });
 
   it("builds path for versioned page", () => {
-    expect(pageIdToPath("v1/quickstart", basePath, routes)).toBe("/docs/v1/quickstart");
+    expect(pageIdToPath("v1/quickstart", basePath, routes)).toBe(
+      "/docs/v1/quickstart"
+    );
   });
 
   it("falls back to basePath + id for unknown route", () => {
-    expect(pageIdToPath("unknown-page", basePath, routes)).toBe("/docs/unknown-page");
+    expect(pageIdToPath("unknown-page", basePath, routes)).toBe(
+      "/docs/unknown-page"
+    );
   });
 
   describe("with empty basePath", () => {

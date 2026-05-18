@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 
 /**
  * Card component with title, icon, href, and optional description content.
@@ -61,7 +61,7 @@ export const CardGroupNode = Node.create({
         default: 2,
         parseHTML: (el) => {
           const v = el.getAttribute("data-card-cols");
-          return v ? parseInt(v, 10) : 2;
+          return v ? Number.parseInt(v, 10) : 2;
         },
         renderHTML: (attrs) => ({ "data-card-cols": String(attrs.cols) }),
       },

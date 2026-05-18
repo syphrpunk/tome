@@ -1,12 +1,22 @@
-import { describe, it, expect } from "vitest";
-import { THEME_PRESETS } from "./presets.js";
+import { describe, expect, it } from "vitest";
 import type { PresetName } from "./presets.js";
+import { THEME_PRESETS } from "./presets.js";
 
 const TOKEN_KEYS = [
-  "bg", "sf", "sfH", "bd",
-  "tx", "tx2", "txM",
-  "ac", "acD", "acT",
-  "cdBg", "cdTx", "sbBg", "hdBg",
+  "bg",
+  "sf",
+  "sfH",
+  "bd",
+  "tx",
+  "tx2",
+  "txM",
+  "ac",
+  "acD",
+  "acT",
+  "cdBg",
+  "cdTx",
+  "sbBg",
+  "hdBg",
 ] as const;
 
 const FONT_KEYS = ["heading", "body", "code"] as const;
@@ -30,7 +40,7 @@ describe("THEME_PRESETS", () => {
 
       for (const mode of ["dark", "light"] as const) {
         describe(`${mode} tokens`, () => {
-          it(`has all 14 token properties`, () => {
+          it("has all 14 token properties", () => {
             const tokens = THEME_PRESETS[name][mode];
             for (const key of TOKEN_KEYS) {
               expect(tokens).toHaveProperty(key);

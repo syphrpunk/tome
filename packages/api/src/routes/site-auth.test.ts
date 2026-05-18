@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
-import { siteAuth } from "./site-auth.js";
-import type { Env } from "../types.js";
+import { describe, expect, it, vi } from "vitest";
 import { hashPassword } from "../password.js";
+import type { Env } from "../types.js";
+import { siteAuth } from "./site-auth.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -10,9 +10,11 @@ function mockDb(passwordHash: string | null = null) {
   return {
     prepare: vi.fn().mockReturnValue({
       bind: vi.fn().mockReturnValue({
-        first: vi.fn().mockResolvedValue(
-          passwordHash ? { password_hash: passwordHash } : null
-        ),
+        first: vi
+          .fn()
+          .mockResolvedValue(
+            passwordHash ? { password_hash: passwordHash } : null
+          ),
       }),
     }),
   } as unknown as D1Database;
@@ -21,7 +23,10 @@ function mockDb(passwordHash: string | null = null) {
 function makeApp(db: D1Database) {
   const app = new Hono<{ Bindings: Env }>();
   app.use("*", async (c, next) => {
-    (c.env as any) = { TOME_DB: db, SSO_SESSION_SECRET: "test-secret-key-for-hmac-signing" };
+    (c.env as any) = {
+      TOME_DB: db,
+      SSO_SESSION_SECRET: "test-secret-key-for-hmac-signing",
+    };
     await next();
   });
   app.route("/api/sites", siteAuth);

@@ -1,6 +1,6 @@
-import ts from "typescript";
-import { writeFileSync, mkdirSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
+import ts from "typescript";
 
 // ── TYPES ───────────────────────────────────────────────
 
@@ -14,36 +14,48 @@ export interface TypeDocConfig {
 }
 
 export interface DocEntry {
-  name: string;
-  kind: "function" | "interface" | "type" | "class" | "enum" | "variable" | "constant";
   description?: string;
-  signature?: string;
+  exported: boolean;
+  kind:
+    | "function"
+    | "interface"
+    | "type"
+    | "class"
+    | "enum"
+    | "variable"
+    | "constant";
   members?: DocMember[];
+  name: string;
   parameters?: DocParam[];
   returnType?: string;
-  exported: boolean;
+  signature?: string;
 }
 
 export interface DocMember {
-  name: string;
-  type: string;
-  optional: boolean;
   description?: string;
+  name: string;
+  optional: boolean;
+  type: string;
 }
 
 export interface DocParam {
-  name: string;
-  type: string;
-  optional: boolean;
   description?: string;
+  name: string;
+  optional: boolean;
+  type: string;
 }
 
 // ── HELPERS ─────────────────────────────────────────────
 
-function getJsDocComment(node: ts.Node, sourceFile: ts.SourceFile): string | undefined {
+function getJsDocComment(
+  node: ts.Node,
+  sourceFile: ts.SourceFile
+): string | undefined {
   const fullText = sourceFile.getFullText();
   const ranges = ts.getLeadingCommentRanges(fullText, node.getFullStart());
-  if (!ranges) return undefined;
+  if (!ranges) {
+    return;
+  }
 
   for (const range of ranges) {
     const comment = fullText.slice(range.pos, range.end);
@@ -59,14 +71,19 @@ function getJsDocComment(node: ts.Node, sourceFile: ts.SourceFile): string | und
         .trim();
     }
   }
-  return undefined;
+  return;
 }
 
-function getJsDocParamDescriptions(node: ts.Node, sourceFile: ts.SourceFile): Map<string, string> {
+function getJsDocParamDescriptions(
+  node: ts.Node,
+  sourceFile: ts.SourceFile
+): Map<string, string> {
   const map = new Map<string, string>();
   const fullText = sourceFile.getFullText();
   const ranges = ts.getLeadingCommentRanges(fullText, node.getFullStart());
-  if (!ranges) return map;
+  if (!ranges) {
+    return map;
+  }
 
   for (const range of ranges) {
     const comment = fullText.slice(range.pos, range.end);
@@ -90,10 +107,15 @@ function getJsDocParamDescriptions(node: ts.Node, sourceFile: ts.SourceFile): Ma
   return map;
 }
 
-function getJsDocMemberDescription(node: ts.Node, sourceFile: ts.SourceFile): string | undefined {
+function getJsDocMemberDescription(
+  node: ts.Node,
+  sourceFile: ts.SourceFile
+): string | undefined {
   const fullText = sourceFile.getFullText();
   const ranges = ts.getLeadingCommentRanges(fullText, node.getFullStart());
-  if (!ranges) return undefined;
+  if (!ranges) {
+    return;
+  }
 
   for (const range of ranges) {
     const comment = fullText.slice(range.pos, range.end);
@@ -107,7 +129,7 @@ function getJsDocMemberDescription(node: ts.Node, sourceFile: ts.SourceFile): st
         .trim();
     }
   }
-  return undefined;
+  return;
 }
 
 function isExported(node: ts.Node): boolean {
@@ -122,7 +144,10 @@ function isExported(node: ts.Node): boolean {
 
 // ── EXTRACTION ──────────────────────────────────────────
 
-export function extractDocEntries(entryPoints: string[], tsconfigPath?: string): DocEntry[] {
+export function extractDocEntries(
+  entryPoints: string[],
+  tsconfigPath?: string
+): DocEntry[] {
   // Load compiler options from tsconfig if available
   let compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ESNext,
@@ -136,7 +161,11 @@ export function extractDocEntries(entryPoints: string[], tsconfigPath?: string):
   if (tsconfigPath) {
     const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
     if (!configFile.error) {
-      const parsed = ts.parseJsonConfigFileContent(configFile.config, ts.sys, resolve(tsconfigPath, ".."));
+      const parsed = ts.parseJsonConfigFileContent(
+        configFile.config,
+        ts.sys,
+        resolve(tsconfigPath, "..")
+      );
       compilerOptions = parsed.options;
     }
   }
@@ -148,12 +177,18 @@ export function extractDocEntries(entryPoints: string[], tsconfigPath?: string):
   for (const sourceFile of program.getSourceFiles()) {
     // Only process our entry point files
     const normalizedPath = resolve(sourceFile.fileName);
-    const isEntryPoint = entryPoints.some((ep) => resolve(ep) === normalizedPath);
-    if (!isEntryPoint) continue;
+    const isEntryPoint = entryPoints.some(
+      (ep) => resolve(ep) === normalizedPath
+    );
+    if (!isEntryPoint) {
+      continue;
+    }
 
     ts.forEachChild(sourceFile, (node) => {
       const entry = visitNode(node, sourceFile, checker);
-      if (entry) entries.push(entry);
+      if (entry) {
+        entries.push(entry);
+      }
     });
   }
 
@@ -164,8 +199,17 @@ export function extractDocEntries(entryPoints: string[], tsconfigPath?: string):
  * Extract doc entries from inline TypeScript source code.
  * Useful for testing without writing files to disk.
  */
-export function extractDocEntriesFromSource(source: string, fileName = "input.ts"): DocEntry[] {
-  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TS);
+export function extractDocEntriesFromSource(
+  source: string,
+  fileName = "input.ts"
+): DocEntry[] {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.ESNext,
+    true,
+    ts.ScriptKind.TS
+  );
 
   // Create a program with an in-memory host
   const host: ts.CompilerHost = {
@@ -180,26 +224,38 @@ export function extractDocEntriesFromSource(source: string, fileName = "input.ts
     readFile: (f) => (f === fileName ? source : undefined),
   };
 
-  const program = ts.createProgram([fileName], {
-    target: ts.ScriptTarget.ESNext,
-    module: ts.ModuleKind.ESNext,
-    strict: true,
-  }, host);
+  const program = ts.createProgram(
+    [fileName],
+    {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      strict: true,
+    },
+    host
+  );
 
   const checker = program.getTypeChecker();
   const entries: DocEntry[] = [];
   const sf = program.getSourceFile(fileName);
-  if (!sf) return entries;
+  if (!sf) {
+    return entries;
+  }
 
   ts.forEachChild(sf, (node) => {
     const entry = visitNode(node, sf, checker);
-    if (entry) entries.push(entry);
+    if (entry) {
+      entries.push(entry);
+    }
   });
 
   return entries;
 }
 
-function visitNode(node: ts.Node, sourceFile: ts.SourceFile, checker: ts.TypeChecker): DocEntry | null {
+function visitNode(
+  node: ts.Node,
+  sourceFile: ts.SourceFile,
+  checker: ts.TypeChecker
+): DocEntry | null {
   const exported = isExported(node);
 
   // Function declaration
@@ -213,7 +269,9 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile, checker: ts.TypeChe
       description: paramDescs.get(p.name.getText(sourceFile)),
     }));
     const returnType = node.type ? node.type.getText(sourceFile) : "void";
-    const paramStr = params.map((p) => `${p.name}${p.optional ? "?" : ""}: ${p.type}`).join(", ");
+    const paramStr = params
+      .map((p) => `${p.name}${p.optional ? "?" : ""}: ${p.type}`)
+      .join(", ");
     const signature = `${node.name.text}(${paramStr}): ${returnType}`;
 
     return {
@@ -242,7 +300,12 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile, checker: ts.TypeChe
         });
       }
       if (ts.isMethodSignature(member) && member.name) {
-        const params = member.parameters.map((p) => `${p.name.getText(sourceFile)}: ${p.type ? p.type.getText(sourceFile) : "unknown"}`).join(", ");
+        const params = member.parameters
+          .map(
+            (p) =>
+              `${p.name.getText(sourceFile)}: ${p.type ? p.type.getText(sourceFile) : "unknown"}`
+          )
+          .join(", ");
         const ret = member.type ? member.type.getText(sourceFile) : "void";
         members.push({
           name: member.name.getText(sourceFile),
@@ -307,7 +370,12 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile, checker: ts.TypeChe
         });
       }
       if (ts.isMethodDeclaration(member) && member.name) {
-        const params = member.parameters.map((p) => `${p.name.getText(sourceFile)}: ${p.type ? p.type.getText(sourceFile) : "unknown"}`).join(", ");
+        const params = member.parameters
+          .map(
+            (p) =>
+              `${p.name.getText(sourceFile)}: ${p.type ? p.type.getText(sourceFile) : "unknown"}`
+          )
+          .join(", ");
         const ret = member.type ? member.type.getText(sourceFile) : "void";
         members.push({
           name: member.name.getText(sourceFile),
@@ -353,7 +421,11 @@ function visitNode(node: ts.Node, sourceFile: ts.SourceFile, checker: ts.TypeChe
     if (decl && ts.isIdentifier(decl.name)) {
       const description = getJsDocComment(node, sourceFile);
       const isConst = (node.declarationList.flags & ts.NodeFlags.Const) !== 0;
-      const typeStr = decl.type ? decl.type.getText(sourceFile) : decl.initializer ? decl.initializer.getText(sourceFile) : "unknown";
+      const typeStr = decl.type
+        ? decl.type.getText(sourceFile)
+        : decl.initializer
+          ? decl.initializer.getText(sourceFile)
+          : "unknown";
 
       return {
         name: decl.name.text,
@@ -416,7 +488,9 @@ export function generateMarkdown(entry: DocEntry): string {
     lines.push("|------|------|----------|-------------|");
     for (const p of entry.parameters) {
       const desc = p.description || "";
-      lines.push(`| ${p.name} | \`${p.type}\` | ${p.optional ? "No" : "Yes"} | ${desc} |`);
+      lines.push(
+        `| ${p.name} | \`${p.type}\` | ${p.optional ? "No" : "Yes"} | ${desc} |`
+      );
     }
     lines.push("");
   }
@@ -441,7 +515,9 @@ export function generateMarkdown(entry: DocEntry): string {
     lines.push("|------|------|----------|-------------|");
     for (const m of entry.members) {
       const desc = m.description || "";
-      lines.push(`| ${m.name} | \`${m.type}\` | ${m.optional ? "No" : "Yes"} | ${desc} |`);
+      lines.push(
+        `| ${m.name} | \`${m.type}\` | ${m.optional ? "No" : "Yes"} | ${desc} |`
+      );
     }
     lines.push("");
   }
@@ -478,11 +554,21 @@ function generateIndexMarkdown(entries: DocEntry[]): string {
     constant: "Constants",
   };
 
-  const kindOrder = ["function", "class", "interface", "type", "enum", "constant", "variable"];
+  const kindOrder = [
+    "function",
+    "class",
+    "interface",
+    "type",
+    "enum",
+    "constant",
+    "variable",
+  ];
 
   for (const kind of kindOrder) {
     const group = groups[kind];
-    if (!group || group.length === 0) continue;
+    if (!group || group.length === 0) {
+      continue;
+    }
 
     lines.push(`## ${kindLabels[kind] || kind}`);
     lines.push("");
@@ -506,7 +592,9 @@ export function generateTypeDocs(config: TypeDocConfig): void {
   const tsconfigPath = config.tsconfig || undefined;
 
   if (config.entryPoints.length === 0) {
-    throw new Error("No entry points provided. Pass TypeScript file paths to document.");
+    throw new Error(
+      "No entry points provided. Pass TypeScript file paths to document."
+    );
   }
 
   // Resolve entry points to absolute paths
@@ -518,7 +606,9 @@ export function generateTypeDocs(config: TypeDocConfig): void {
   const exported = entries.filter((e) => e.exported);
 
   if (exported.length === 0) {
-    console.log("  No exported declarations found in the provided entry points.");
+    console.log(
+      "  No exported declarations found in the provided entry points."
+    );
     return;
   }
 

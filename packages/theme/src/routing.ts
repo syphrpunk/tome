@@ -15,7 +15,7 @@ export interface MinimalRoute {
 export function pathnameToPageId(
   pathname: string,
   basePath: string,
-  routes: MinimalRoute[],
+  routes: MinimalRoute[]
 ): string | null {
   let relative = pathname;
   // Handle basePath stripping — treat "/" basePath as empty to avoid stripping all leading slashes
@@ -31,11 +31,15 @@ export function pathnameToPageId(
       .replace(/\/$/, "") || "index";
   // Match by ID first (most common: urlPath matches ID)
   const routeById = routes.find((r) => r.id === id);
-  if (routeById) return id;
+  if (routeById) {
+    return id;
+  }
   // Match by urlPath (for synthetic routes where ID differs from URL, e.g. api-reference at /events-api)
   const urlPath = "/" + id;
   const urlPathWithSlash = urlPath + "/";
-  const routeByUrl = routes.find((r) => r.urlPath === urlPath || r.urlPath === urlPathWithSlash);
+  const routeByUrl = routes.find(
+    (r) => r.urlPath === urlPath || r.urlPath === urlPathWithSlash
+  );
   return routeByUrl ? routeByUrl.id : null;
 }
 
@@ -45,9 +49,11 @@ export function pathnameToPageId(
 export function pageIdToPath(
   id: string,
   basePath: string,
-  routes: MinimalRoute[],
+  routes: MinimalRoute[]
 ): string {
   const route = routes.find((r) => r.id === id);
-  if (route) return basePath + route.urlPath;
+  if (route) {
+    return basePath + route.urlPath;
+  }
   return basePath + "/" + id;
 }

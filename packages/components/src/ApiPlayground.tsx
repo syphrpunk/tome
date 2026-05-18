@@ -1,31 +1,38 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import type { ApiEndpoint, ApiParameter } from "./api.js";
 
 // ── TYPES ───────────────────────────────────────────────
 
 export interface ApiPlaygroundProps {
-  endpoint: ApiEndpoint;
-  baseUrl: string;
   auth?: {
     type: "bearer" | "apiKey";
     header?: string;
   };
+  baseUrl: string;
+  endpoint: ApiEndpoint;
 }
 
 interface PlaygroundResponse {
+  body: string;
+  headers: Record<string, string>;
   status: number;
   statusText: string;
-  headers: Record<string, string>;
-  body: string;
   time: number;
 }
 
 // ── HELPERS ─────────────────────────────────────────────
 
 function statusColor(code: number): string {
-  if (code >= 200 && code < 300) return "#22c55e";
-  if (code >= 400 && code < 500) return "#f59e0b";
-  if (code >= 500) return "#ef4444";
+  if (code >= 200 && code < 300) {
+    return "#22c55e";
+  }
+  if (code >= 400 && code < 500) {
+    return "#f59e0b";
+  }
+  if (code >= 500) {
+    return "#ef4444";
+  }
   return "#6b7280";
 }
 
@@ -33,7 +40,7 @@ function buildUrl(
   baseUrl: string,
   path: string,
   pathParams: Record<string, string>,
-  queryParams: Record<string, string>,
+  queryParams: Record<string, string>
 ): string {
   let resolved = path;
   for (const [key, value] of Object.entries(pathParams)) {
@@ -41,7 +48,9 @@ function buildUrl(
   }
   const url = new URL(resolved, baseUrl);
   for (const [key, value] of Object.entries(queryParams)) {
-    if (value) url.searchParams.set(key, value);
+    if (value) {
+      url.searchParams.set(key, value);
+    }
   }
   return url.toString();
 }
@@ -75,19 +84,38 @@ function ParamInput({
 }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 3, color: "var(--tx)" }}>
+      <label
+        style={{
+          display: "block",
+          fontSize: 12,
+          fontWeight: 600,
+          marginBottom: 3,
+          color: "var(--tx)",
+        }}
+      >
         {param.name}
-        {param.required && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}
-        <span style={{ fontWeight: 400, color: "var(--txM)", marginLeft: 6, fontSize: 11 }}>
+        {param.required && (
+          <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>
+        )}
+        <span
+          style={{
+            fontWeight: 400,
+            color: "var(--txM)",
+            marginLeft: 6,
+            fontSize: 11,
+          }}
+        >
           {param.in} &middot; {param.type}
         </span>
       </label>
       <input
         data-testid={`param-input-${param.name}`}
-        style={inputStyle}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          onChange(e.target.value)
+        }
         placeholder={param.description || param.name}
+        style={inputStyle}
         value={value}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
       />
     </div>
   );
@@ -99,7 +127,9 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
   const [open, setOpen] = useState(false);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [bodyText, setBodyText] = useState(
-    endpoint.requestBody?.schema ? JSON.stringify(endpoint.requestBody.schema, null, 2) : "",
+    endpoint.requestBody?.schema
+      ? JSON.stringify(endpoint.requestBody.schema, null, 2)
+      : ""
   );
   const [authToken, setAuthToken] = useState("");
   const [loading, setLoading] = useState(false);
@@ -121,21 +151,30 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
     setError(null);
 
     const pathMap: Record<string, string> = {};
-    for (const p of pathParams) pathMap[p.name] = paramValues[p.name] || "";
+    for (const p of pathParams) {
+      pathMap[p.name] = paramValues[p.name] || "";
+    }
 
     const queryMap: Record<string, string> = {};
     for (const p of queryParams) {
-      if (paramValues[p.name]) queryMap[p.name] = paramValues[p.name];
+      if (paramValues[p.name]) {
+        queryMap[p.name] = paramValues[p.name];
+      }
     }
 
     const headers: Record<string, string> = {};
     for (const p of headerParams) {
-      if (paramValues[p.name]) headers[p.name] = paramValues[p.name];
+      if (paramValues[p.name]) {
+        headers[p.name] = paramValues[p.name];
+      }
     }
-    if (hasBody) headers["Content-Type"] = "application/json";
+    if (hasBody) {
+      headers["Content-Type"] = "application/json";
+    }
     if (auth && authToken) {
       const headerName = auth.header || defaultAuthHeader(auth.type);
-      headers[headerName] = auth.type === "bearer" ? `Bearer ${authToken}` : authToken;
+      headers[headerName] =
+        auth.type === "bearer" ? `Bearer ${authToken}` : authToken;
     }
 
     try {
@@ -149,7 +188,9 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
       const elapsed = Date.now() - start;
 
       const resHeaders: Record<string, string> = {};
-      res.headers.forEach((v, k) => { resHeaders[k] = v; });
+      res.headers.forEach((v, k) => {
+        resHeaders[k] = v;
+      });
 
       let body: string;
       const ct = res.headers.get("content-type") || "";
@@ -160,7 +201,13 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
         body = await res.text();
       }
 
-      setResponse({ status: res.status, statusText: res.statusText, headers: resHeaders, body, time: elapsed });
+      setResponse({
+        status: res.status,
+        statusText: res.statusText,
+        headers: resHeaders,
+        body,
+        time: elapsed,
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Network error");
     } finally {
@@ -206,16 +253,30 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
           {/* Auth input */}
           {auth && (
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 3, color: "var(--tx)" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  marginBottom: 3,
+                  color: "var(--tx)",
+                }}
+              >
                 {auth.type === "bearer" ? "Bearer Token" : "API Key"}
               </label>
               <input
                 data-testid="auth-input"
-                type="password"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setAuthToken(e.target.value)
+                }
+                placeholder={
+                  auth.type === "bearer"
+                    ? "Enter bearer token"
+                    : "Enter API key"
+                }
                 style={inputStyle}
-                placeholder={auth.type === "bearer" ? "Enter bearer token" : "Enter API key"}
+                type="password"
                 value={authToken}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAuthToken(e.target.value)}
               />
             </div>
           )}
@@ -223,33 +284,75 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
           {/* Parameter inputs */}
           {pathParams.length > 0 && (
             <div style={{ marginBottom: 4 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--txM)", marginBottom: 6, letterSpacing: "0.05em" }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  color: "var(--txM)",
+                  marginBottom: 6,
+                  letterSpacing: "0.05em",
+                }}
+              >
                 Path Parameters
               </div>
               {pathParams.map((p) => (
-                <ParamInput key={p.name} param={p} value={paramValues[p.name] || ""} onChange={(v) => setParam(p.name, v)} />
+                <ParamInput
+                  key={p.name}
+                  onChange={(v) => setParam(p.name, v)}
+                  param={p}
+                  value={paramValues[p.name] || ""}
+                />
               ))}
             </div>
           )}
 
           {queryParams.length > 0 && (
             <div style={{ marginBottom: 4 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--txM)", marginBottom: 6, letterSpacing: "0.05em" }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  color: "var(--txM)",
+                  marginBottom: 6,
+                  letterSpacing: "0.05em",
+                }}
+              >
                 Query Parameters
               </div>
               {queryParams.map((p) => (
-                <ParamInput key={p.name} param={p} value={paramValues[p.name] || ""} onChange={(v) => setParam(p.name, v)} />
+                <ParamInput
+                  key={p.name}
+                  onChange={(v) => setParam(p.name, v)}
+                  param={p}
+                  value={paramValues[p.name] || ""}
+                />
               ))}
             </div>
           )}
 
           {headerParams.length > 0 && (
             <div style={{ marginBottom: 4 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--txM)", marginBottom: 6, letterSpacing: "0.05em" }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  color: "var(--txM)",
+                  marginBottom: 6,
+                  letterSpacing: "0.05em",
+                }}
+              >
                 Header Parameters
               </div>
               {headerParams.map((p) => (
-                <ParamInput key={p.name} param={p} value={paramValues[p.name] || ""} onChange={(v) => setParam(p.name, v)} />
+                <ParamInput
+                  key={p.name}
+                  onChange={(v) => setParam(p.name, v)}
+                  param={p}
+                  value={paramValues[p.name] || ""}
+                />
               ))}
             </div>
           )}
@@ -257,11 +360,22 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
           {/* Request body */}
           {hasBody && (
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 3, color: "var(--tx)" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  marginBottom: 3,
+                  color: "var(--tx)",
+                }}
+              >
                 Request Body
               </label>
               <textarea
                 data-testid="request-body"
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setBodyText(e.target.value)
+                }
                 style={{
                   ...inputStyle,
                   minHeight: 100,
@@ -269,7 +383,6 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
                   lineHeight: 1.5,
                 }}
                 value={bodyText}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBodyText(e.target.value)}
               />
             </div>
           )}
@@ -277,8 +390,8 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
           {/* Send button */}
           <button
             data-testid="send-request"
-            onClick={sendRequest}
             disabled={loading}
+            onClick={sendRequest}
             style={{
               padding: "8px 20px",
               borderRadius: 4,
@@ -317,7 +430,14 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
           {response && (
             <div data-testid="playground-response" style={{ marginTop: 12 }}>
               {/* Status line */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  marginBottom: 8,
+                }}
+              >
                 <span
                   data-testid="response-status"
                   style={{
@@ -355,7 +475,12 @@ export function ApiPlayground({ endpoint, baseUrl, auth }: ApiPlaygroundProps) {
                   marginBottom: 4,
                 }}
               >
-                <span style={{ transform: headersOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.15s" }}>
+                <span
+                  style={{
+                    transform: headersOpen ? "rotate(90deg)" : "rotate(0)",
+                    transition: "transform 0.15s",
+                  }}
+                >
                   {"\u25B6"}
                 </span>
                 Response Headers

@@ -5,8 +5,8 @@
  */
 
 import { createMiddleware } from "hono/factory";
-import type { Env } from "../types.js";
 import { validateSessionToken } from "../password.js";
+import type { Env } from "../types.js";
 
 type SitePasswordEnv = {
   Bindings: Env;
@@ -18,7 +18,7 @@ type SitePasswordEnv = {
  */
 async function isPasswordProtected(
   slug: string,
-  db: D1Database,
+  db: D1Database
 ): Promise<boolean> {
   const row = await db
     .prepare("SELECT password_required FROM projects WHERE slug = ? LIMIT 1")
@@ -30,8 +30,13 @@ async function isPasswordProtected(
 /**
  * Extract a named cookie from the Cookie header.
  */
-function getCookie(cookieHeader: string | undefined, name: string): string | null {
-  if (!cookieHeader) return null;
+function getCookie(
+  cookieHeader: string | undefined,
+  name: string
+): string | null {
+  if (!cookieHeader) {
+    return null;
+  }
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
   return match ? match[1] : null;
 }

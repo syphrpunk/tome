@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { parseChangelog, getSectionColor, filterEntries } from "./changelog.js";
+import { describe, expect, it } from "vitest";
+import { filterEntries, getSectionColor, parseChangelog } from "./changelog.js";
 
 // ── parseChangelog ──────────────────────────────────────
 
@@ -79,7 +79,9 @@ describe("parseChangelog", () => {
 [1.0.0]: https://github.com/org/repo/compare/v0.9.0...v1.0.0
 `;
     const entries = parseChangelog(source);
-    expect(entries[0].url).toBe("https://github.com/org/repo/compare/v0.9.0...v1.0.0");
+    expect(entries[0].url).toBe(
+      "https://github.com/org/repo/compare/v0.9.0...v1.0.0"
+    );
   });
 
   it("handles version without brackets", () => {
@@ -122,7 +124,12 @@ describe("parseChangelog", () => {
     const entries = parseChangelog(source);
     expect(entries[0].sections).toHaveLength(6);
     expect(entries[0].sections.map((s) => s.type)).toEqual([
-      "Added", "Changed", "Deprecated", "Removed", "Fixed", "Security",
+      "Added",
+      "Changed",
+      "Deprecated",
+      "Removed",
+      "Fixed",
+      "Security",
     ]);
   });
 

@@ -3,16 +3,18 @@
  * Renders a Notion-like editing experience with Tome theme integration.
  */
 
-import React, { useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
-import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useEffect } from "react";
 import { Markdown } from "tiptap-markdown";
 import { EditorToolbar } from "./toolbar.js";
 
 export interface TomeEditorProps {
+  /** CSS class for the editor container */
+  className?: string;
   /** Initial markdown content */
   content?: string;
   /** Called when content changes (debounced) */
@@ -21,8 +23,6 @@ export interface TomeEditorProps {
   placeholder?: string;
   /** Whether the editor is read-only */
   readOnly?: boolean;
-  /** CSS class for the editor container */
-  className?: string;
 }
 
 export function TomeEditor({
@@ -39,7 +39,10 @@ export function TomeEditor({
         codeBlock: false, // We'll use a custom code block
       }),
       Placeholder.configure({ placeholder }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: "tome-editor-link" } }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { class: "tome-editor-link" },
+      }),
       Image.configure({ inline: false, allowBase64: true }),
       Markdown.configure({
         html: true,
@@ -74,12 +77,20 @@ export function TomeEditor({
     }
   }, [editor, readOnly]);
 
-  if (!editor) return null;
+  if (!editor) {
+    return null;
+  }
 
   return (
-    <div className={`tome-editor ${className || ""}`} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div
+      className={`tome-editor ${className || ""}`}
+      style={{ display: "flex", flexDirection: "column", height: "100%" }}
+    >
       {!readOnly && <EditorToolbar editor={editor} />}
-      <div className="tome-editor-content" style={{ flex: 1, overflow: "auto" }}>
+      <div
+        className="tome-editor-content"
+        style={{ flex: 1, overflow: "auto" }}
+      >
         <EditorContent editor={editor} />
       </div>
     </div>
@@ -89,8 +100,12 @@ export function TomeEditor({
 /**
  * Get the current markdown content from the editor instance.
  */
-export function getEditorMarkdown(editor: ReturnType<typeof useEditor>): string {
-  if (!editor) return "";
+export function getEditorMarkdown(
+  editor: ReturnType<typeof useEditor>
+): string {
+  if (!editor) {
+    return "";
+  }
   return editor.storage.markdown?.getMarkdown() ?? "";
 }
 

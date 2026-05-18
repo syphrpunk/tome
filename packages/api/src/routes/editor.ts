@@ -19,10 +19,15 @@ import { syncToGitHub } from "./editor-github.js";
 
 const editor = new Hono<{ Bindings: Env; Variables: { user: User } }>();
 
-async function getProjectBySlug(db: D1Database, slug: string, userId: string): Promise<{ id: string } | null> {
-  return db.prepare(
-    "SELECT id FROM projects WHERE slug = ? AND user_id = ?",
-  ).bind(slug, userId).first<{ id: string }>();
+async function getProjectBySlug(
+  db: D1Database,
+  slug: string,
+  userId: string
+): Promise<{ id: string } | null> {
+  return db
+    .prepare("SELECT id FROM projects WHERE slug = ? AND user_id = ?")
+    .bind(slug, userId)
+    .first<{ id: string }>();
 }
 
 // ── GET /pages — list pages for a project ───────────────
@@ -42,8 +47,10 @@ editor.get("/pages", async (c) => {
 
   const { results } = await c.env.TOME_DB.prepare(
     `SELECT id, path, title, status, created_at, updated_at
-     FROM editor_pages WHERE project_id = ? ORDER BY path ASC`,
-  ).bind(project.id).all();
+     FROM editor_pages WHERE project_id = ? ORDER BY path ASC`
+  )
+    .bind(project.id)
+    .all();
 
   return c.json(results ?? []);
 });
@@ -57,8 +64,10 @@ editor.get("/pages/:id", async (c) => {
   const page = await c.env.TOME_DB.prepare(
     `SELECT ep.* FROM editor_pages ep
      JOIN projects p ON ep.project_id = p.id
-     WHERE ep.id = ? AND p.user_id = ?`,
-  ).bind(pageId, user.id).first();
+     WHERE ep.id = ? AND p.user_id = ?`
+  )
+    .bind(pageId, user.id)
+    .first();
 
   if (!page) {
     return c.json({ error: "Page not found" }, 404);
@@ -79,22 +88,28 @@ editor.post("/pages", async (c) => {
     frontmatter?: Record<string, unknown>;
   }>();
 
-  if (!body.projectSlug || !body.path) {
+  if (!(body.projectSlug && body.path)) {
     return c.json({ error: "Missing projectSlug or path" }, 400);
   }
 
   // Normalize path: strip leading/trailing slashes, lowercase
   const path = body.path.replace(/^\/+|\/+$/g, "").toLowerCase();
 
-  const project = await getProjectBySlug(c.env.TOME_DB, body.projectSlug, user.id);
+  const project = await getProjectBySlug(
+    c.env.TOME_DB,
+    body.projectSlug,
+    user.id
+  );
   if (!project) {
     return c.json({ error: "Project not found" }, 404);
   }
 
   // Check for duplicate path
   const existing = await c.env.TOME_DB.prepare(
-    "SELECT id FROM editor_pages WHERE project_id = ? AND path = ?",
-  ).bind(project.id, path).first();
+    "SELECT id FROM editor_pages WHERE project_id = ? AND path = ?"
+  )
+    .bind(project.id, path)
+    .first();
 
   if (existing) {
     return c.json({ error: "Page already exists at this path" }, 409);
@@ -103,16 +118,18 @@ editor.post("/pages", async (c) => {
   const pageId = crypto.randomUUID();
   await c.env.TOME_DB.prepare(
     `INSERT INTO editor_pages (id, project_id, path, title, content, frontmatter, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).bind(
-    pageId,
-    project.id,
-    path,
-    body.title || "Untitled",
-    body.content || "",
-    JSON.stringify(body.frontmatter || {}),
-    user.id,
-  ).run();
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  )
+    .bind(
+      pageId,
+      project.id,
+      path,
+      body.title || "Untitled",
+      body.content || "",
+      JSON.stringify(body.frontmatter || {}),
+      user.id
+    )
+    .run();
 
   return c.json({ id: pageId, path, status: "draft" }, 201);
 });
@@ -132,8 +149,10 @@ editor.put("/pages/:id", async (c) => {
   const page = await c.env.TOME_DB.prepare(
     `SELECT ep.id, ep.project_id FROM editor_pages ep
      JOIN projects p ON ep.project_id = p.id
-     WHERE ep.id = ? AND p.user_id = ?`,
-  ).bind(pageId, user.id).first<{ id: string; project_id: string }>();
+     WHERE ep.id = ? AND p.user_id = ?`
+  )
+    .bind(pageId, user.id)
+    .first<{ id: string; project_id: string }>();
 
   if (!page) {
     return c.json({ error: "Page not found" }, 404);
@@ -164,15 +183,19 @@ editor.put("/pages/:id", async (c) => {
   binds.push(pageId);
 
   await c.env.TOME_DB.prepare(
-    `UPDATE editor_pages SET ${updates.join(", ")} WHERE id = ?`,
-  ).bind(...binds).run();
+    `UPDATE editor_pages SET ${updates.join(", ")} WHERE id = ?`
+  )
+    .bind(...binds)
+    .run();
 
   // Save version snapshot
   if (body.content !== undefined) {
     await c.env.TOME_DB.prepare(
       `INSERT INTO editor_versions (id, page_id, content, created_by)
-       VALUES (?, ?, ?, ?)`,
-    ).bind(crypto.randomUUID(), pageId, body.content, user.id).run();
+       VALUES (?, ?, ?, ?)`
+    )
+      .bind(crypto.randomUUID(), pageId, body.content, user.id)
+      .run();
   }
 
   return c.json({ ok: true, updatedAt: new Date().toISOString() });
@@ -201,11 +224,19 @@ editor.post("/pages/:id/publish", async (c) => {
   const page = await c.env.TOME_DB.prepare(
     `SELECT ep.*, p.slug as project_slug, p.id as proj_id FROM editor_pages ep
      JOIN projects p ON ep.project_id = p.id
-     WHERE ep.id = ? AND p.user_id = ?`,
-  ).bind(pageId, user.id).first<{
-    id: string; project_id: string; path: string; title: string;
-    content: string; frontmatter: string; project_slug: string; proj_id: string;
-  }>();
+     WHERE ep.id = ? AND p.user_id = ?`
+  )
+    .bind(pageId, user.id)
+    .first<{
+      id: string;
+      project_id: string;
+      path: string;
+      title: string;
+      content: string;
+      frontmatter: string;
+      project_slug: string;
+      proj_id: string;
+    }>();
 
   if (!page) {
     return c.json({ error: "Page not found" }, 404);
@@ -222,14 +253,18 @@ editor.post("/pages/:id/publish", async (c) => {
 
   // Check if project has a connected GitHub repo
   const ghInfo = await c.env.TOME_DB.prepare(
-    "SELECT github_repo, github_installation_id, github_branch FROM projects WHERE id = ?",
-  ).bind(page.project_id).first<{
-    github_repo: string | null;
-    github_installation_id: number | null;
-    github_branch: string | null;
-  }>();
+    "SELECT github_repo, github_installation_id, github_branch FROM projects WHERE id = ?"
+  )
+    .bind(page.project_id)
+    .first<{
+      github_repo: string | null;
+      github_installation_id: number | null;
+      github_branch: string | null;
+    }>();
 
-  const isGitConnected = !!(ghInfo?.github_repo && ghInfo.github_installation_id);
+  const isGitConnected = !!(
+    ghInfo?.github_repo && ghInfo.github_installation_id
+  );
 
   let commitSha: string | undefined;
 
@@ -248,7 +283,13 @@ editor.post("/pages/:id/publish", async (c) => {
     });
 
     if (!result) {
-      return c.json({ error: "Failed to commit to GitHub. Check your repository connection." }, 500);
+      return c.json(
+        {
+          error:
+            "Failed to commit to GitHub. Check your repository connection.",
+        },
+        500
+      );
     }
 
     commitSha = result.sha;
@@ -266,8 +307,10 @@ editor.post("/pages/:id/publish", async (c) => {
 
   // Update page status in D1
   await c.env.TOME_DB.prepare(
-    "UPDATE editor_pages SET status = 'published', updated_at = datetime('now') WHERE id = ?",
-  ).bind(pageId).run();
+    "UPDATE editor_pages SET status = 'published', updated_at = datetime('now') WHERE id = ?"
+  )
+    .bind(pageId)
+    .run();
 
   return c.json({
     ok: true,
@@ -288,8 +331,10 @@ editor.get("/pages/:id/versions", async (c) => {
   const page = await c.env.TOME_DB.prepare(
     `SELECT ep.id FROM editor_pages ep
      JOIN projects p ON ep.project_id = p.id
-     WHERE ep.id = ? AND p.user_id = ?`,
-  ).bind(pageId, user.id).first();
+     WHERE ep.id = ? AND p.user_id = ?`
+  )
+    .bind(pageId, user.id)
+    .first();
 
   if (!page) {
     return c.json({ error: "Page not found" }, 404);
@@ -297,8 +342,10 @@ editor.get("/pages/:id/versions", async (c) => {
 
   const { results } = await c.env.TOME_DB.prepare(
     `SELECT id, created_by, created_at FROM editor_versions
-     WHERE page_id = ? ORDER BY created_at DESC LIMIT 50`,
-  ).bind(pageId).all();
+     WHERE page_id = ? ORDER BY created_at DESC LIMIT 50`
+  )
+    .bind(pageId)
+    .all();
 
   return c.json(results ?? []);
 });
@@ -312,8 +359,10 @@ editor.delete("/pages/:id", async (c) => {
   const page = await c.env.TOME_DB.prepare(
     `SELECT ep.id, ep.path, p.slug as project_slug FROM editor_pages ep
      JOIN projects p ON ep.project_id = p.id
-     WHERE ep.id = ? AND p.user_id = ?`,
-  ).bind(pageId, user.id).first<{ id: string; path: string; project_slug: string }>();
+     WHERE ep.id = ? AND p.user_id = ?`
+  )
+    .bind(pageId, user.id)
+    .first<{ id: string; path: string; project_slug: string }>();
 
   if (!page) {
     return c.json({ error: "Page not found" }, 404);
@@ -324,14 +373,14 @@ editor.delete("/pages/:id", async (c) => {
   await c.env.TOME_BUCKET.delete(r2Key).catch(() => {});
 
   // Delete versions first (FK constraint)
-  await c.env.TOME_DB.prepare(
-    "DELETE FROM editor_versions WHERE page_id = ?",
-  ).bind(pageId).run();
+  await c.env.TOME_DB.prepare("DELETE FROM editor_versions WHERE page_id = ?")
+    .bind(pageId)
+    .run();
 
   // Delete page
-  await c.env.TOME_DB.prepare(
-    "DELETE FROM editor_pages WHERE id = ?",
-  ).bind(pageId).run();
+  await c.env.TOME_DB.prepare("DELETE FROM editor_pages WHERE id = ?")
+    .bind(pageId)
+    .run();
 
   return c.json({ ok: true });
 });

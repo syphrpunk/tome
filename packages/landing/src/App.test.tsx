@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import { App } from "./App.js";
 
 // ── Hero Section ─────────────────────────────────────────
@@ -42,7 +42,9 @@ describe("Features", () => {
 
   it("renders the section heading", () => {
     render(<App />);
-    expect(screen.getByText("Crafted for the Technical Mind")).toBeInTheDocument();
+    expect(
+      screen.getByText("Crafted for the Technical Mind")
+    ).toBeInTheDocument();
   });
 });
 

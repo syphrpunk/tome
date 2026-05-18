@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 export interface CodeSample {
-  language: string;
-  label: string;
   code: string;
+  label: string;
+  language: string;
 }
 
 export interface CodeSamplesProps {
@@ -13,7 +13,9 @@ export interface CodeSamplesProps {
 export function CodeSamples({ samples }: CodeSamplesProps) {
   const [active, setActive] = useState(0);
 
-  if (samples.length === 0) return null;
+  if (samples.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -45,9 +47,7 @@ export function CodeSamples({ samples }: CodeSamplesProps) {
               color: i === active ? "var(--tx)" : "var(--tx2)",
               border: "none",
               borderBottom:
-                i === active
-                  ? "2px solid var(--ac)"
-                  : "2px solid transparent",
+                i === active ? "2px solid var(--ac)" : "2px solid transparent",
               cursor: "pointer",
               fontFamily: "var(--font-body)",
               whiteSpace: "nowrap",

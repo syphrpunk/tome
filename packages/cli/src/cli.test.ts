@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import {
-  mkdtempSync,
-  rmSync,
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-} from "fs";
-import { join, dirname } from "path";
-import { tmpdir } from "os";
 import { execSync, spawn } from "child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { tmpdir } from "os";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const CLI_PATH = join(__dir, "cli.ts");
@@ -53,7 +53,7 @@ describe("CLI init command", () => {
     runInit("test-docs");
     const config = readFileSync(
       join(tmpDir, "test-docs", "tome.config.js"),
-      "utf-8",
+      "utf-8"
     );
     expect(config).toContain('name: "test-docs"');
     expect(config).toContain("navigation");
@@ -64,7 +64,7 @@ describe("CLI init command", () => {
   it("writes package.json with project name and dependencies", () => {
     runInit("test-docs");
     const pkg = JSON.parse(
-      readFileSync(join(tmpDir, "test-docs", "package.json"), "utf-8"),
+      readFileSync(join(tmpDir, "test-docs", "package.json"), "utf-8")
     );
     expect(pkg.name).toBe("test-docs");
     expect(pkg.scripts.dev).toBe("tome dev");
@@ -79,7 +79,7 @@ describe("CLI init command", () => {
     runInit("test-docs");
     const index = readFileSync(
       join(tmpDir, "test-docs", "pages", "index.md"),
-      "utf-8",
+      "utf-8"
     );
     expect(index).toContain("# test-docs");
     expect(index).toContain("title:");
@@ -89,7 +89,7 @@ describe("CLI init command", () => {
     runInit("test-docs");
     const gs = readFileSync(
       join(tmpDir, "test-docs", "pages", "tutorials", "getting-started.md"),
-      "utf-8",
+      "utf-8"
     );
     expect(gs).toContain("title: Getting Started");
   });
@@ -98,7 +98,7 @@ describe("CLI init command", () => {
     runInit("test-docs");
     const comp = readFileSync(
       join(tmpDir, "test-docs", "pages", "guides", "components.mdx"),
-      "utf-8",
+      "utf-8"
     );
     expect(comp).toContain("title: Using Components");
     expect(comp).toContain("Callout");
@@ -108,10 +108,7 @@ describe("CLI init command", () => {
 
   it("writes index.html with tome-root div", () => {
     runInit("test-docs");
-    const html = readFileSync(
-      join(tmpDir, "test-docs", "index.html"),
-      "utf-8",
-    );
+    const html = readFileSync(join(tmpDir, "test-docs", "index.html"), "utf-8");
     expect(html).toContain("tome-root");
     expect(html).toContain("entry.tsx");
   });
@@ -120,7 +117,7 @@ describe("CLI init command", () => {
     runInit("test-docs");
     const entry = readFileSync(
       join(tmpDir, "test-docs", ".tome", "entry.tsx"),
-      "utf-8",
+      "utf-8"
     );
     expect(entry).toContain("@tomehq/theme/entry");
   });
@@ -129,10 +126,7 @@ describe("CLI init command", () => {
 
   it("writes .gitignore", () => {
     runInit("test-docs");
-    const gi = readFileSync(
-      join(tmpDir, "test-docs", ".gitignore"),
-      "utf-8",
-    );
+    const gi = readFileSync(join(tmpDir, "test-docs", ".gitignore"), "utf-8");
     expect(gi).toContain("node_modules/");
     expect(gi).toContain("out/");
   });
@@ -143,7 +137,7 @@ describe("CLI init command", () => {
     runInit();
     expect(existsSync(join(tmpDir, "my-docs"))).toBe(true);
     const pkg = JSON.parse(
-      readFileSync(join(tmpDir, "my-docs", "package.json"), "utf-8"),
+      readFileSync(join(tmpDir, "my-docs", "package.json"), "utf-8")
     );
     expect(pkg.name).toBe("my-docs");
   });
@@ -202,13 +196,17 @@ describe("CLI algolia:init command", () => {
 
   it("uses default URL when no tome.config.js exists", () => {
     runAlgoliaInit();
-    const config = JSON.parse(readFileSync(join(tmpDir, ".docsearch.json"), "utf-8"));
+    const config = JSON.parse(
+      readFileSync(join(tmpDir, ".docsearch.json"), "utf-8")
+    );
     expect(config.start_urls[0]).toBe("https://YOUR_DOCS_URL");
   });
 
   it("respects --url flag", () => {
     runAlgoliaInit("--url https://docs.example.com");
-    const config = JSON.parse(readFileSync(join(tmpDir, ".docsearch.json"), "utf-8"));
+    const config = JSON.parse(
+      readFileSync(join(tmpDir, ".docsearch.json"), "utf-8")
+    );
     expect(config.start_urls[0]).toBe("https://docs.example.com");
     expect(config.sitemap_urls[0]).toBe("https://docs.example.com/sitemap.xml");
   });
@@ -217,16 +215,20 @@ describe("CLI algolia:init command", () => {
     const { writeFileSync: wfs } = require("fs");
     wfs(
       join(tmpDir, "tome.config.js"),
-      `export default { name: "Acme Docs" };\n`,
+      `export default { name: "Acme Docs" };\n`
     );
     runAlgoliaInit();
-    const config = JSON.parse(readFileSync(join(tmpDir, ".docsearch.json"), "utf-8"));
+    const config = JSON.parse(
+      readFileSync(join(tmpDir, ".docsearch.json"), "utf-8")
+    );
     expect(config.index_name).toBe("acme-docs");
   });
 
   it("includes tome-content selectors for text", () => {
     runAlgoliaInit();
-    const config = JSON.parse(readFileSync(join(tmpDir, ".docsearch.json"), "utf-8"));
+    const config = JSON.parse(
+      readFileSync(join(tmpDir, ".docsearch.json"), "utf-8")
+    );
     expect(config.selectors.text).toContain("tome-content");
   });
 
@@ -322,11 +324,22 @@ describe("CLI mcp command", () => {
     // Create a minimal manifest
     const outDir = join(tmpDir, "out");
     mkdirSync(outDir, { recursive: true });
-    writeFileSync(join(outDir, "mcp.json"), JSON.stringify({
-      name: "Test Docs",
-      version: "1.0.0",
-      pages: [{ url: "/hello", title: "Hello", description: "Test page", headings: [], tags: [] }],
-    }));
+    writeFileSync(
+      join(outDir, "mcp.json"),
+      JSON.stringify({
+        name: "Test Docs",
+        version: "1.0.0",
+        pages: [
+          {
+            url: "/hello",
+            title: "Hello",
+            description: "Test page",
+            headings: [],
+            tags: [],
+          },
+        ],
+      })
+    );
 
     const proc = spawn(TSX, [CLI_PATH, "mcp", "--outDir", "out"], {
       cwd: tmpDir,
@@ -336,13 +349,21 @@ describe("CLI mcp command", () => {
 
     const stdout = await new Promise<string>((resolve) => {
       let output = "";
-      proc.stdout.on("data", (d: Buffer) => { output += d.toString(); });
+      proc.stdout.on("data", (d: Buffer) => {
+        output += d.toString();
+      });
 
       // Send initialize message (newline-delimited JSON per MCP SDK)
       setTimeout(() => {
         const msg = JSON.stringify({
-          jsonrpc: "2.0", id: 1, method: "initialize",
-          params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "test", version: "1.0" } },
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            clientInfo: { name: "test", version: "1.0" },
+          },
         });
         proc.stdin.write(msg + "\n");
       }, 2000);
@@ -357,5 +378,5 @@ describe("CLI mcp command", () => {
     expect(response.result.serverInfo.name).toBe("Test Docs");
     expect(response.result.capabilities).toHaveProperty("tools");
     expect(response.result.capabilities).toHaveProperty("resources");
-  }, 10000);
+  }, 10_000);
 });

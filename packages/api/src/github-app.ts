@@ -16,7 +16,7 @@ import { base64url } from "./utils.js";
  */
 export async function generateAppJwt(
   appId: string,
-  privateKeyPem: string,
+  privateKeyPem: string
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
@@ -35,7 +35,7 @@ export async function generateAppJwt(
   const signature = await crypto.subtle.sign(
     { name: "RSASSA-PKCS1-v1_5" },
     key,
-    new TextEncoder().encode(signingInput),
+    new TextEncoder().encode(signingInput)
   );
 
   const signatureB64 = base64url(signature);
@@ -48,7 +48,7 @@ export async function generateAppJwt(
 export async function getInstallationToken(
   installationId: number,
   appId: string,
-  privateKeyPem: string,
+  privateKeyPem: string
 ): Promise<string> {
   const jwt = await generateAppJwt(appId, privateKeyPem);
 
@@ -62,7 +62,7 @@ export async function getInstallationToken(
         "User-Agent": "Tome-Deploy-Bot",
         "X-GitHub-Api-Version": "2022-11-28",
       },
-    },
+    }
   );
 
   if (!res.ok) {
@@ -70,7 +70,7 @@ export async function getInstallationToken(
     throw new Error(`Failed to get installation token (${res.status}): ${err}`);
   }
 
-  const data = await res.json() as { token: string };
+  const data = (await res.json()) as { token: string };
   return data.token;
 }
 
@@ -83,8 +83,8 @@ export async function dispatchWorkflow(
   owner: string,
   repo: string,
   ref: string,
-  workflowFile: string = "tome-deploy.yml",
-  inputs: Record<string, string> = {},
+  workflowFile = "tome-deploy.yml",
+  inputs: Record<string, string> = {}
 ): Promise<boolean> {
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/dispatches`,
@@ -98,7 +98,7 @@ export async function dispatchWorkflow(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ ref, inputs }),
-    },
+    }
   );
 
   // 204 = success (no content)
@@ -113,7 +113,7 @@ export async function postPrComment(
   owner: string,
   repo: string,
   prNumber: number,
-  body: string,
+  body: string
 ): Promise<boolean> {
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/issues/${prNumber}/comments`,
@@ -127,7 +127,7 @@ export async function postPrComment(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ body }),
-    },
+    }
   );
 
   return res.ok;
@@ -139,9 +139,11 @@ export async function postPrComment(
 export async function verifyWebhookSignature(
   payload: string,
   signature: string,
-  secret: string,
+  secret: string
 ): Promise<boolean> {
-  if (!signature.startsWith("sha256=")) return false;
+  if (!signature.startsWith("sha256=")) {
+    return false;
+  }
   const sigHex = signature.slice(7);
 
   const key = await crypto.subtle.importKey(
@@ -149,16 +151,22 @@ export async function verifyWebhookSignature(
     new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
 
-  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const mac = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(payload)
+  );
   const macHex = Array.from(new Uint8Array(mac))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
   // Constant-time comparison
-  if (macHex.length !== sigHex.length) return false;
+  if (macHex.length !== sigHex.length) {
+    return false;
+  }
   let mismatch = 0;
   for (let i = 0; i < macHex.length; i++) {
     mismatch |= macHex.charCodeAt(i) ^ sigHex.charCodeAt(i);
@@ -170,14 +178,22 @@ export async function verifyWebhookSignature(
  * Parse a GitHub repository URL into owner and repo.
  * Supports: https://github.com/owner/repo, https://github.com/owner/repo.git, owner/repo
  */
-export function parseRepoUrl(url: string): { owner: string; repo: string } | null {
+export function parseRepoUrl(
+  url: string
+): { owner: string; repo: string } | null {
   // Direct owner/repo format
   const directMatch = url.match(/^([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)$/);
-  if (directMatch) return { owner: directMatch[1], repo: directMatch[2] };
+  if (directMatch) {
+    return { owner: directMatch[1], repo: directMatch[2] };
+  }
 
   // GitHub URL format
-  const urlMatch = url.match(/github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+?)(?:\.git)?$/);
-  if (urlMatch) return { owner: urlMatch[1], repo: urlMatch[2] };
+  const urlMatch = url.match(
+    /github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+?)(?:\.git)?$/
+  );
+  if (urlMatch) {
+    return { owner: urlMatch[1], repo: urlMatch[2] };
+  }
 
   return null;
 }
@@ -200,6 +216,6 @@ async function importPrivateKey(pem: string): Promise<CryptoKey> {
     binaryDer,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
 }

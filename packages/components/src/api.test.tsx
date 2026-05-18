@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeAll, describe, expect, it } from "vitest";
+import type { ApiEndpoint, ApiManifest, ApiRequestBody } from "./api.js";
 import {
-  MethodBadge,
+  ApiReference,
+  CodeExamples,
   EndpointCard,
+  MethodBadge,
   ParameterTable,
   RequestBodyBlock,
   ResponseBlock,
-  CodeExamples,
-  ApiReference,
 } from "./api.js";
-import type { ApiEndpoint, ApiManifest, ApiRequestBody } from "./api.js";
 
 // ── Shared fixture ───────────────────────────────────────
 
@@ -21,12 +21,28 @@ const sampleEndpoint: ApiEndpoint = {
   description: "Retrieve a user by ID",
   tags: ["Users"],
   parameters: [
-    { name: "id", in: "path", description: "User ID", required: true, type: "string" },
-    { name: "fields", in: "query", description: "Fields to include", required: false, type: "string" },
+    {
+      name: "id",
+      in: "path",
+      description: "User ID",
+      required: true,
+      type: "string",
+    },
+    {
+      name: "fields",
+      in: "query",
+      description: "Fields to include",
+      required: false,
+      type: "string",
+    },
   ],
   requestBody: undefined,
   responses: [
-    { statusCode: "200", description: "Successful response", schema: { id: "123", name: "Alice" } },
+    {
+      statusCode: "200",
+      description: "Successful response",
+      schema: { id: "123", name: "Alice" },
+    },
     { statusCode: "404", description: "User not found" },
   ],
   deprecated: false,
@@ -155,11 +171,15 @@ describe("ResponseBlock", () => {
   });
 
   it("renders schema JSON when present and omits it when absent", () => {
-    const { container } = render(<ResponseBlock responses={sampleEndpoint.responses} />);
+    const { container } = render(
+      <ResponseBlock responses={sampleEndpoint.responses} />
+    );
     const pres = container.querySelectorAll("pre");
     // Only the 200 response has a schema
     expect(pres).toHaveLength(1);
-    expect(pres[0].textContent).toBe(JSON.stringify({ id: "123", name: "Alice" }, null, 2));
+    expect(pres[0].textContent).toBe(
+      JSON.stringify({ id: "123", name: "Alice" }, null, 2)
+    );
   });
 
   it("applies correct color per status code range", () => {
@@ -170,7 +190,7 @@ describe("ResponseBlock", () => {
           { statusCode: "422", description: "Unprocessable" },
           { statusCode: "503", description: "Unavailable" },
         ]}
-      />,
+      />
     );
     const badges = screen.getAllByTestId("status-badge");
 
@@ -195,7 +215,7 @@ describe("CodeExamples", () => {
 
   it("shows cURL code by default with correct method and URL", () => {
     const { container } = render(
-      <CodeExamples endpoint={sampleEndpoint} baseUrl="https://api.test.com" />,
+      <CodeExamples baseUrl="https://api.test.com" endpoint={sampleEndpoint} />
     );
     const pre = container.querySelector("pre");
     expect(pre!.textContent).toContain("curl -X GET");
@@ -282,7 +302,9 @@ describe("EndpointCard", () => {
   it("shows deprecated badge when endpoint is deprecated", () => {
     render(<EndpointCard endpoint={{ ...sampleEndpoint, deprecated: true }} />);
     expect(screen.getByTestId("deprecated-badge")).toBeInTheDocument();
-    expect(screen.getByTestId("deprecated-badge").textContent).toBe("Deprecated");
+    expect(screen.getByTestId("deprecated-badge").textContent).toBe(
+      "Deprecated"
+    );
   });
 
   it("does not show deprecated badge when not deprecated", () => {
@@ -296,7 +318,7 @@ describe("EndpointCard", () => {
   });
 
   it("renders expanded initially when defaultExpanded is true", () => {
-    render(<EndpointCard endpoint={sampleEndpoint} defaultExpanded />);
+    render(<EndpointCard defaultExpanded endpoint={sampleEndpoint} />);
     expect(screen.getByText("Parameters")).toBeInTheDocument();
     expect(screen.getByText("Responses")).toBeInTheDocument();
   });
@@ -309,7 +331,9 @@ describe("ApiReference", () => {
     title: "Pet Store API",
     version: "2.0.0",
     description: "A sample pet store API",
-    servers: [{ url: "https://petstore.example.com", description: "Production" }],
+    servers: [
+      { url: "https://petstore.example.com", description: "Production" },
+    ],
     endpoints: [
       sampleEndpoint,
       {
@@ -343,7 +367,9 @@ describe("ApiReference", () => {
 
   it("renders the server URL", () => {
     render(<ApiReference manifest={manifest} />);
-    expect(screen.getByText("https://petstore.example.com")).toBeInTheDocument();
+    expect(
+      screen.getByText("https://petstore.example.com")
+    ).toBeInTheDocument();
   });
 
   it("groups endpoints by tag into separate sections", () => {
@@ -377,9 +403,9 @@ describe("ApiReference", () => {
     render(
       <ApiReference
         manifest={manifest}
-        showPlayground={true}
         playgroundAuth={{ type: "bearer" }}
-      />,
+        showPlayground={true}
+      />
     );
     // Expand the first endpoint card — the first button in each tag section is the endpoint header
     const sections = screen.getAllByTestId("tag-section");
@@ -397,10 +423,10 @@ describe("EndpointCard playground props", () => {
   it("shows playground when showPlayground is true and expanded", () => {
     render(
       <EndpointCard
+        defaultExpanded
         endpoint={sampleEndpoint}
         showPlayground={true}
-        defaultExpanded
-      />,
+      />
     );
     expect(screen.getByTestId("api-playground")).toBeInTheDocument();
     expect(screen.getByText("Try it out")).toBeInTheDocument();
@@ -409,18 +435,16 @@ describe("EndpointCard playground props", () => {
   it("hides playground when showPlayground is false", () => {
     render(
       <EndpointCard
+        defaultExpanded
         endpoint={sampleEndpoint}
         showPlayground={false}
-        defaultExpanded
-      />,
+      />
     );
     expect(screen.queryByTestId("api-playground")).not.toBeInTheDocument();
   });
 
   it("hides playground when showPlayground is undefined", () => {
-    render(
-      <EndpointCard endpoint={sampleEndpoint} defaultExpanded />,
-    );
+    render(<EndpointCard defaultExpanded endpoint={sampleEndpoint} />);
     expect(screen.queryByTestId("api-playground")).not.toBeInTheDocument();
   });
 

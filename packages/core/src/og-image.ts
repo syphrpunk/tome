@@ -5,50 +5,103 @@
 
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import type { PageRoute } from "./routes.js";
 import type { TomeConfig } from "./config.js";
+import type { PageRoute } from "./routes.js";
 
 // ── TYPES ────────────────────────────────────────────────
 
 export interface OgImageConfig {
-  /** Site name to display */
-  siteName: string;
   /** Theme accent color */
   accentColor: string;
   /** Background color */
   backgroundColor: string;
-  /** Text color */
-  textColor: string;
-  /** Secondary text color */
-  secondaryTextColor: string;
   /** Base URL for OG image references */
   baseUrl?: string;
+  /** Secondary text color */
+  secondaryTextColor: string;
   /** Show "Powered by Tome" branding (default: true) */
   showBranding?: boolean;
+  /** Site name to display */
+  siteName: string;
+  /** Text color */
+  textColor: string;
 }
 
 export interface OgImageResult {
   /** Total images generated */
   generated: number;
-  /** Total images skipped (custom ogImage set) */
-  skipped: number;
   /** Output directory */
   outputDir: string;
+  /** Total images skipped (custom ogImage set) */
+  skipped: number;
 }
 
 // ── THEME COLORS ────────────────────────────────────────
 
-const PRESET_COLORS: Record<string, { accent: string; bg: string; text: string; secondary: string }> = {
-  amber: { accent: "#e8a845", bg: "#1a1a1a", text: "#ffffff", secondary: "#a0a0a0" },
-  editorial: { accent: "#ff6b4a", bg: "#080c1f", text: "#e8e6f0", secondary: "#9490ae" },
-  cipher: { accent: "#6666ff", bg: "#050508", text: "#d4ff00", secondary: "#6a7080" },
-  mint: { accent: "#0ea371", bg: "#0d1117", text: "#e6edf3", secondary: "#6e7681" },
-  ocean: { accent: "#0ea5e9", bg: "#0a1628", text: "#e0e8f0", secondary: "#6b8098" },
-  rose: { accent: "#f43f5e", bg: "#0f0a10", text: "#f0e4f0", secondary: "#8a7890" },
-  forest: { accent: "#22c55e", bg: "#091209", text: "#e0f0e0", secondary: "#6a8a6a" },
-  slate: { accent: "#94a3b8", bg: "#0f1115", text: "#e2e4e8", secondary: "#6e7278" },
-  sunset: { accent: "#f97316", bg: "#120c06", text: "#f0e4d4", secondary: "#907850" },
-  carbon: { accent: "#e4e4e4", bg: "#080808", text: "#d4d4d4", secondary: "#666666" },
+const PRESET_COLORS: Record<
+  string,
+  { accent: string; bg: string; text: string; secondary: string }
+> = {
+  amber: {
+    accent: "#e8a845",
+    bg: "#1a1a1a",
+    text: "#ffffff",
+    secondary: "#a0a0a0",
+  },
+  editorial: {
+    accent: "#ff6b4a",
+    bg: "#080c1f",
+    text: "#e8e6f0",
+    secondary: "#9490ae",
+  },
+  cipher: {
+    accent: "#6666ff",
+    bg: "#050508",
+    text: "#d4ff00",
+    secondary: "#6a7080",
+  },
+  mint: {
+    accent: "#0ea371",
+    bg: "#0d1117",
+    text: "#e6edf3",
+    secondary: "#6e7681",
+  },
+  ocean: {
+    accent: "#0ea5e9",
+    bg: "#0a1628",
+    text: "#e0e8f0",
+    secondary: "#6b8098",
+  },
+  rose: {
+    accent: "#f43f5e",
+    bg: "#0f0a10",
+    text: "#f0e4f0",
+    secondary: "#8a7890",
+  },
+  forest: {
+    accent: "#22c55e",
+    bg: "#091209",
+    text: "#e0f0e0",
+    secondary: "#6a8a6a",
+  },
+  slate: {
+    accent: "#94a3b8",
+    bg: "#0f1115",
+    text: "#e2e4e8",
+    secondary: "#6e7278",
+  },
+  sunset: {
+    accent: "#f97316",
+    bg: "#120c06",
+    text: "#f0e4d4",
+    secondary: "#907850",
+  },
+  carbon: {
+    accent: "#e4e4e4",
+    bg: "#080808",
+    text: "#d4d4d4",
+    secondary: "#666666",
+  },
 };
 
 // ── SVG TEMPLATE ────────────────────────────────────────
@@ -60,9 +113,16 @@ const PRESET_COLORS: Record<string, { accent: string; bg: string; text: string; 
 export function generateOgSvg(
   title: string,
   description: string | undefined,
-  config: OgImageConfig,
+  config: OgImageConfig
 ): string {
-  const { siteName, accentColor, backgroundColor, textColor, secondaryTextColor, showBranding } = config;
+  const {
+    siteName,
+    accentColor,
+    backgroundColor,
+    textColor,
+    secondaryTextColor,
+    showBranding,
+  } = config;
 
   // Truncate title if too long
   const displayTitle = title.length > 60 ? title.slice(0, 57) + "..." : title;
@@ -75,11 +135,16 @@ export function generateOgSvg(
 
   // Escape XML entities
   const esc = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
 
-  const brandingLine = showBranding !== false
-    ? `<rect x="80" y="540" width="60" height="4" rx="2" fill="${esc(accentColor)}" />\n  <text x="160" y="548" font-family="sans-serif" font-size="20" font-weight="400" fill="${esc(secondaryTextColor)}">Powered by Tome</text>`
-    : "";
+  const brandingLine =
+    showBranding === false
+      ? ""
+      : `<rect x="80" y="540" width="60" height="4" rx="2" fill="${esc(accentColor)}" />\n  <text x="160" y="548" font-family="sans-serif" font-size="20" font-weight="400" fill="${esc(secondaryTextColor)}">Powered by Tome</text>`;
 
   return `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
   <rect width="1200" height="630" fill="${esc(backgroundColor)}" />
@@ -100,9 +165,16 @@ export function generateOgSvg(
 export function buildOgTemplate(
   title: string,
   description: string | undefined,
-  config: OgImageConfig,
+  config: OgImageConfig
 ): Record<string, unknown> {
-  const { siteName, accentColor, backgroundColor, textColor, secondaryTextColor, showBranding } = config;
+  const {
+    siteName,
+    accentColor,
+    backgroundColor,
+    textColor,
+    secondaryTextColor,
+    showBranding,
+  } = config;
 
   const displayTitle = title.length > 70 ? title.slice(0, 67) + "..." : title;
   const displayDesc = description
@@ -190,29 +262,32 @@ export function buildOgTemplate(
               alignItems: "center",
               gap: "16px",
             },
-            children: showBranding !== false ? [
-              {
-                type: "div",
-                props: {
-                  style: {
-                    width: "60px",
-                    height: "4px",
-                    backgroundColor: accentColor,
-                    borderRadius: "2px",
-                  },
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: "20px",
-                    color: secondaryTextColor,
-                  },
-                  children: "Powered by Tome",
-                },
-              },
-            ] : [],
+            children:
+              showBranding === false
+                ? []
+                : [
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          width: "60px",
+                          height: "4px",
+                          backgroundColor: accentColor,
+                          borderRadius: "2px",
+                        },
+                      },
+                    },
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          fontSize: "20px",
+                          color: secondaryTextColor,
+                        },
+                        children: "Powered by Tome",
+                      },
+                    },
+                  ],
           },
         },
       ],
@@ -249,7 +324,7 @@ export function buildOgConfig(config: TomeConfig): OgImageConfig {
 export async function generateOgImages(
   routes: PageRoute[],
   config: TomeConfig,
-  outDir: string,
+  outDir: string
 ): Promise<OgImageResult> {
   const ogDir = join(outDir, "og");
   mkdirSync(ogDir, { recursive: true });
@@ -261,7 +336,12 @@ export async function generateOgImages(
   // Try to load satori and resvg for PNG generation (optional deps)
   // Use variable-based imports to prevent bundlers from statically resolving them
   let satori: ((element: any, options: any) => Promise<string>) | null = null;
-  let Resvg: (new (svg: string, options?: any) => { render: () => { asPng: () => Uint8Array } }) | null = null;
+  let Resvg:
+    | (new (
+        svg: string,
+        options?: any
+      ) => { render: () => { asPng: () => Uint8Array } })
+    | null = null;
 
   try {
     const satoriPkg = "satori";
@@ -276,7 +356,9 @@ export async function generateOgImages(
   }
 
   for (const route of routes) {
-    if (route.filePath === "__api-reference__") continue;
+    if (route.filePath === "__api-reference__") {
+      continue;
+    }
 
     // Skip if page has custom ogImage
     const fm = route.frontmatter as Record<string, unknown>;
@@ -334,7 +416,7 @@ export async function generateOgImages(
 export function generateOgMetaTags(
   route: PageRoute,
   config: TomeConfig,
-  format: "png" | "svg" = "png",
+  format: "png" | "svg" = "png"
 ): string {
   const fm = route.frontmatter as Record<string, unknown>;
   const baseUrl = (config.baseUrl || "").replace(/\/$/, "");
@@ -368,8 +450,12 @@ export function generateOgMetaTags(
   ];
 
   if (description) {
-    tags.push(`<meta property="og:description" content="${escapeHtml(description)}" />`);
-    tags.push(`<meta name="twitter:description" content="${escapeHtml(description)}" />`);
+    tags.push(
+      `<meta property="og:description" content="${escapeHtml(description)}" />`
+    );
+    tags.push(
+      `<meta name="twitter:description" content="${escapeHtml(description)}" />`
+    );
   }
 
   return tags.join("\n    ");

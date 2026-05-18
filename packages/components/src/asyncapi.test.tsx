@@ -1,25 +1,33 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
-import {
-  ProtocolBadge,
-  DirectionBadge,
-  AsyncParameterTable,
-  MessageBlock,
-  ChannelCard,
-  AsyncApiReference,
-} from "./asyncapi.js";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeAll, describe, expect, it } from "vitest";
 import type {
   AsyncApiChannel,
   AsyncApiManifest,
   AsyncApiMessage,
   AsyncApiParameter,
 } from "./asyncapi.js";
+import {
+  AsyncApiReference,
+  AsyncParameterTable,
+  ChannelCard,
+  DirectionBadge,
+  MessageBlock,
+  ProtocolBadge,
+} from "./asyncapi.js";
 
 // ── Shared fixtures ─────────────────────────────────────
 
 const sampleParameters: AsyncApiParameter[] = [
-  { name: "userId", description: "The user identifier", schema: { type: "string" } },
-  { name: "eventType", description: "Type of event", schema: { type: "string" } },
+  {
+    name: "userId",
+    description: "The user identifier",
+    schema: { type: "string" },
+  },
+  {
+    name: "eventType",
+    description: "Type of event",
+    schema: { type: "string" },
+  },
 ];
 
 const sampleMessage: AsyncApiMessage = {
@@ -30,7 +38,14 @@ const sampleMessage: AsyncApiMessage = {
   contentType: "application/json",
   payload: { userId: "string", email: "string", createdAt: "string" },
   examples: [
-    { name: "Basic example", payload: { userId: "123", email: "alice@example.com", createdAt: "2024-01-01" } },
+    {
+      name: "Basic example",
+      payload: {
+        userId: "123",
+        email: "alice@example.com",
+        createdAt: "2024-01-01",
+      },
+    },
   ],
 };
 
@@ -111,11 +126,15 @@ describe("DirectionBadge", () => {
 
   it("applies blue for publish and green for subscribe", () => {
     const { unmount } = render(<DirectionBadge direction="publish" />);
-    expect(screen.getByTestId("direction-badge").style.background).toBe("rgb(59, 130, 246)");
+    expect(screen.getByTestId("direction-badge").style.background).toBe(
+      "rgb(59, 130, 246)"
+    );
     unmount();
 
     render(<DirectionBadge direction="subscribe" />);
-    expect(screen.getByTestId("direction-badge").style.background).toBe("rgb(34, 197, 94)");
+    expect(screen.getByTestId("direction-badge").style.background).toBe(
+      "rgb(34, 197, 94)"
+    );
   });
 });
 
@@ -158,7 +177,9 @@ describe("MessageBlock", () => {
   it("renders summary and description", () => {
     render(<MessageBlock message={sampleMessage} />);
     expect(screen.getByText("A new user has registered")).toBeInTheDocument();
-    expect(screen.getByText("Fired whenever a user completes the signup flow")).toBeInTheDocument();
+    expect(
+      screen.getByText("Fired whenever a user completes the signup flow")
+    ).toBeInTheDocument();
   });
 
   it("renders content type badge", () => {
@@ -171,7 +192,9 @@ describe("MessageBlock", () => {
     const pres = container.querySelectorAll("pre");
     // At least one pre should contain the payload JSON
     const payloadJson = JSON.stringify(sampleMessage.payload, null, 2);
-    const hasPayload = Array.from(pres).some((pre) => pre.textContent === payloadJson);
+    const hasPayload = Array.from(pres).some(
+      (pre) => pre.textContent === payloadJson
+    );
     expect(hasPayload).toBe(true);
   });
 
@@ -182,7 +205,9 @@ describe("MessageBlock", () => {
   });
 
   it("does not render examples section when absent", () => {
-    render(<MessageBlock message={{ name: "Simple", payload: { foo: "bar" } }} />);
+    render(
+      <MessageBlock message={{ name: "Simple", payload: { foo: "bar" } }} />
+    );
     expect(screen.queryByText("Examples")).not.toBeInTheDocument();
   });
 });
@@ -191,7 +216,12 @@ describe("MessageBlock", () => {
 
 describe("ChannelCard", () => {
   const servers = [
-    { name: "production", url: "mqtt://broker.example.com", protocol: "mqtt", description: "Production broker" },
+    {
+      name: "production",
+      url: "mqtt://broker.example.com",
+      protocol: "mqtt",
+      description: "Production broker",
+    },
   ];
 
   it("shows the channel name and protocol badge in the header", () => {
@@ -222,24 +252,36 @@ describe("ChannelCard", () => {
     expect(screen.getByText("Publish")).toBeInTheDocument();
     expect(screen.getByText("Subscribe")).toBeInTheDocument();
     expect(screen.getByText("Code Examples")).toBeInTheDocument();
-    expect(screen.getByText("Channel for user signup events")).toBeInTheDocument();
+    expect(
+      screen.getByText("Channel for user signup events")
+    ).toBeInTheDocument();
   });
 
   it("renders expanded initially when defaultExpanded is true", () => {
-    render(<ChannelCard channel={sampleChannel} servers={servers} defaultExpanded />);
+    render(
+      <ChannelCard channel={sampleChannel} defaultExpanded servers={servers} />
+    );
     expect(screen.getByText("Parameters")).toBeInTheDocument();
     expect(screen.getByText("Publish")).toBeInTheDocument();
     expect(screen.getByText("Subscribe")).toBeInTheDocument();
   });
 
   it("shows publish and subscribe operation descriptions when expanded", () => {
-    render(<ChannelCard channel={sampleChannel} servers={servers} defaultExpanded />);
-    expect(screen.getByText("Send a user signup event to the channel")).toBeInTheDocument();
-    expect(screen.getByText("Listen for user signup events")).toBeInTheDocument();
+    render(
+      <ChannelCard channel={sampleChannel} defaultExpanded servers={servers} />
+    );
+    expect(
+      screen.getByText("Send a user signup event to the channel")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Listen for user signup events")
+    ).toBeInTheDocument();
   });
 
   it("has id attribute for anchor navigation", () => {
-    const { container } = render(<ChannelCard channel={sampleChannel} servers={servers} />);
+    const { container } = render(
+      <ChannelCard channel={sampleChannel} servers={servers} />
+    );
     const card = container.firstChild as HTMLElement;
     expect(card.id).toBe("user-signedup");
   });
@@ -258,8 +300,18 @@ describe("AsyncApiReference", () => {
     version: "1.0.0",
     description: "Event-driven API for IoT devices",
     servers: [
-      { name: "production", url: "mqtt://broker.iot.example.com", protocol: "mqtt", description: "Production MQTT broker" },
-      { name: "staging", url: "ws://staging.iot.example.com", protocol: "ws", description: "Staging WebSocket" },
+      {
+        name: "production",
+        url: "mqtt://broker.iot.example.com",
+        protocol: "mqtt",
+        description: "Production MQTT broker",
+      },
+      {
+        name: "staging",
+        url: "ws://staging.iot.example.com",
+        protocol: "ws",
+        description: "Staging WebSocket",
+      },
     ],
     channels: [
       sampleChannel,
@@ -291,7 +343,9 @@ describe("AsyncApiReference", () => {
     render(<AsyncApiReference manifest={manifest} />);
     expect(screen.getByText("IoT Event API")).toBeInTheDocument();
     expect(screen.getByText("v1.0.0")).toBeInTheDocument();
-    expect(screen.getByText("Event-driven API for IoT devices")).toBeInTheDocument();
+    expect(
+      screen.getByText("Event-driven API for IoT devices")
+    ).toBeInTheDocument();
   });
 
   it("renders the servers section with protocol badges", () => {
@@ -329,7 +383,9 @@ describe("AsyncApiReference", () => {
   it("renders tag descriptions", () => {
     render(<AsyncApiReference manifest={manifest} />);
     expect(screen.getByText("User-related events")).toBeInTheDocument();
-    expect(screen.getByText("Device telemetry and control")).toBeInTheDocument();
+    expect(
+      screen.getByText("Device telemetry and control")
+    ).toBeInTheDocument();
   });
 
   it("TOC links use onClick handler (not bare href navigation)", () => {

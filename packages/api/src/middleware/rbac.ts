@@ -37,16 +37,22 @@ export async function checkPageAccess(
   db: D1Database,
   projectId: string,
   email: string,
-  requiredRole?: string,
+  requiredRole?: string
 ): Promise<boolean> {
   const row = await db
-    .prepare("SELECT role FROM project_roles WHERE project_id = ? AND email = ?")
+    .prepare(
+      "SELECT role FROM project_roles WHERE project_id = ? AND email = ?"
+    )
     .bind(projectId, email)
     .first<{ role: string }>();
 
-  if (!row) return false;
+  if (!row) {
+    return false;
+  }
 
-  if (!requiredRole) return true;
+  if (!requiredRole) {
+    return true;
+  }
 
   return hasRole(row.role, requiredRole);
 }

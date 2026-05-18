@@ -1,7 +1,7 @@
-import { defineConfig } from "vitest/config";
 import { resolve } from "path";
+import { defineConfig } from "vitest/config";
 
-const root = (pkg: string) => resolve(__dirname, `packages/${pkg}`);
+const root = (pkg: string) => resolve(import.meta.dirname, `packages/${pkg}`);
 
 export default defineConfig({
   test: {
@@ -13,7 +13,7 @@ export default defineConfig({
           root: root("cli"),
           environment: "node",
           include: ["src/**/*.test.ts"],
-          testTimeout: 15000, // CLI tests spawn subprocesses (npx tsx), need extra time
+          testTimeout: 15_000, // CLI tests spawn subprocesses (npx tsx), need extra time
         },
       },
       {

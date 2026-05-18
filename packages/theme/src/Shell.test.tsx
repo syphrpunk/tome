@@ -1,6 +1,14 @@
-import React from "react";
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, within, act } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import type React from "react";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { Shell } from "./Shell.js";
 
 // ── jsdom matchMedia mock ─────────────────────────────────
@@ -39,17 +47,19 @@ const allPages = [
   { id: "quickstart", title: "Quick Start" },
 ];
 
-function renderShell(overrides: Partial<React.ComponentProps<typeof Shell>> = {}) {
+function renderShell(
+  overrides: Partial<React.ComponentProps<typeof Shell>> = {}
+) {
   return render(
     <Shell
+      allPages={allPages}
       config={baseConfig}
-      navigation={navigation}
       currentPageId="intro"
+      headings={[]}
+      navigation={navigation}
+      onNavigate={vi.fn()}
       pageHtml="<p>Hello world</p>"
       pageTitle="Introduction"
-      headings={[]}
-      onNavigate={vi.fn()}
-      allPages={allPages}
       {...overrides}
     />
   );
@@ -65,7 +75,9 @@ describe("Shell rendering", () => {
 
   it("renders the page title", () => {
     renderShell();
-    expect(screen.getByRole("heading", { name: "Introduction" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Introduction" })
+    ).toBeInTheDocument();
   });
 
   it("renders pageHtml content", () => {
@@ -94,7 +106,9 @@ describe("Shell rendering", () => {
   it("does not render description when omitted", () => {
     renderShell({ pageDescription: undefined });
     // No second paragraph about intro
-    expect(screen.queryByText("This is the intro page")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("This is the intro page")
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -110,7 +124,11 @@ describe("Shell MDX rendering", () => {
   it("passes mdxComponents to the pageComponent", () => {
     const Custom = () => <span>custom component</span>;
     let receivedComponents: Record<string, unknown> | undefined;
-    const PageComp = ({ components }: { components?: Record<string, React.ComponentType> }) => {
+    const PageComp = ({
+      components,
+    }: {
+      components?: Record<string, React.ComponentType>;
+    }) => {
       receivedComponents = components;
       return <div>Page</div>;
     };
@@ -127,7 +145,9 @@ describe("Shell navigation", () => {
     const { container } = renderShell({ onNavigate });
     // Click the nav sidebar button (first instance of "Quick Start")
     const navButtons = container.querySelectorAll("aside nav button");
-    const qsBtn = Array.from(navButtons).find((b) => b.textContent === "Quick Start");
+    const qsBtn = Array.from(navButtons).find(
+      (b) => b.textContent === "Quick Start"
+    );
     expect(qsBtn).toBeTruthy();
     fireEvent.click(qsBtn!);
     expect(onNavigate).toHaveBeenCalledWith("quickstart");
@@ -151,7 +171,9 @@ describe("Shell navigation", () => {
 describe("Shell sidebar toggle", () => {
   it("toggles sidebar visibility on menu button click", () => {
     const { container } = renderShell();
-    const menuBtn = container.querySelector("header button") as HTMLButtonElement;
+    const menuBtn = container.querySelector(
+      "header button"
+    ) as HTMLButtonElement;
     const sidebar = container.querySelector("aside") as HTMLElement;
     const initialWidth = sidebar.style.width;
     fireEvent.click(menuBtn);
@@ -199,7 +221,11 @@ describe("Shell theme mode", () => {
 describe("Shell table of contents", () => {
   beforeEach(() => {
     // jsdom window.innerWidth defaults to 0 so 'wide' will be false — we need to set it
-    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1400 });
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1400,
+    });
     fireEvent(window, new Event("resize"));
   });
 
@@ -296,7 +322,11 @@ describe("Shell table of contents", () => {
   });
 
   it("hides TOC on narrow viewports", () => {
-    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 800 });
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 800,
+    });
     fireEvent(window, new Event("resize"));
 
     renderShell({ headings: sampleHeadings });
@@ -304,7 +334,11 @@ describe("Shell table of contents", () => {
   });
 
   it("shows TOC on wide viewports", () => {
-    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1400 });
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1400,
+    });
     fireEvent(window, new Event("resize"));
 
     renderShell({ headings: sampleHeadings });
@@ -318,7 +352,10 @@ describe("Shell accent override", () => {
   it("renders without errors when a custom accent is provided", () => {
     expect(() =>
       renderShell({
-        config: { ...baseConfig, theme: { preset: "amber", mode: "light", accent: "#ff6b4a" } },
+        config: {
+          ...baseConfig,
+          theme: { preset: "amber", mode: "light", accent: "#ff6b4a" },
+        },
       })
     ).not.toThrow();
   });
@@ -353,23 +390,31 @@ describe("Shell Algolia search", () => {
   it("renders Algolia search modal when provider is 'algolia'", async () => {
     renderShell({ config: algoliaConfig });
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
 
     // @docsearch/react is not installed in test env, so AlgoliaSearchModal
     // renders its loading/fallback state — key assertion: NOT the local search input
-    expect(screen.queryByPlaceholderText("Search documentation...")).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Search documentation...")
+    ).not.toBeInTheDocument();
   });
 
   it("renders local search modal when provider is 'local' (default)", () => {
     renderShell({ config: { ...baseConfig, search: { provider: "local" } } });
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    expect(screen.getByPlaceholderText("Search documentation...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search documentation...")
+    ).toBeInTheDocument();
   });
 
   it("renders local search modal when search config is missing", () => {
     renderShell({ config: baseConfig });
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    expect(screen.getByPlaceholderText("Search documentation...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search documentation...")
+    ).toBeInTheDocument();
   });
 
   it("falls back to local search when algolia config is incomplete", () => {
@@ -381,7 +426,9 @@ describe("Shell Algolia search", () => {
     renderShell({ config: incompleteConfig });
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     // Should fall back to local SearchModal since apiKey and indexName are missing
-    expect(screen.getByPlaceholderText("Search documentation...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search documentation...")
+    ).toBeInTheDocument();
   });
 });
 
@@ -396,10 +443,18 @@ describe("Shell search", () => {
   });
 
   const searchPages = [
-    { id: "intro", title: "Introduction", description: "Getting started guide" },
+    {
+      id: "intro",
+      title: "Introduction",
+      description: "Getting started guide",
+    },
     { id: "quickstart", title: "Quick Start", description: "Fast setup" },
     { id: "api", title: "API Reference", description: "Complete API docs" },
-    { id: "config", title: "Configuration", description: "Configure your site" },
+    {
+      id: "config",
+      title: "Configuration",
+      description: "Configure your site",
+    },
   ];
 
   // Helper to get the search modal overlay (position: fixed with z-index 1000)
@@ -410,21 +465,29 @@ describe("Shell search", () => {
   it("opens search modal on Cmd+K", () => {
     renderShell({ allPages: searchPages });
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    expect(screen.getByPlaceholderText("Search documentation...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search documentation...")
+    ).toBeInTheDocument();
   });
 
   it("closes search modal on Escape", () => {
     renderShell({ allPages: searchPages });
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    expect(screen.getByPlaceholderText("Search documentation...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search documentation...")
+    ).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByPlaceholderText("Search documentation...")).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Search documentation...")
+    ).not.toBeInTheDocument();
   });
 
   it("opens search modal on Ctrl+K", () => {
     renderShell({ allPages: searchPages });
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-    expect(screen.getByPlaceholderText("Search documentation...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search documentation...")
+    ).toBeInTheDocument();
   });
 
   it("shows matching results after typing and debounce", async () => {
@@ -432,7 +495,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "Quick" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     const modal = getSearchModal(container);
     expect(within(modal).getByText("Quick Start")).toBeInTheDocument();
   });
@@ -442,7 +507,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "quick" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     const modal = getSearchModal(container);
     expect(within(modal).getByText("Quick Start")).toBeInTheDocument();
   });
@@ -452,7 +519,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "Complete API" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     const modal = getSearchModal(container);
     expect(within(modal).getByText("API Reference")).toBeInTheDocument();
   });
@@ -462,7 +531,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     expect(screen.queryByText("No results found")).not.toBeInTheDocument();
   });
 
@@ -471,7 +542,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "zzzznonexistent" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     expect(screen.getByText("No results found")).toBeInTheDocument();
   });
 
@@ -480,7 +553,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "a" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     fireEvent.keyDown(input, { key: "ArrowDown" });
     fireEvent.keyDown(input, { key: "ArrowDown" });
   });
@@ -491,7 +566,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "API Ref" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onNavigate).toHaveBeenCalledWith("api");
   });
@@ -502,7 +579,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "API" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     const modal = getSearchModal(container);
     fireEvent.click(within(modal).getByText("API Reference"));
     expect(onNavigate).toHaveBeenCalledWith("api");
@@ -513,7 +592,9 @@ describe("Shell search", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText("Search documentation...");
     fireEvent.change(input, { target: { value: "Configure" } });
-    await act(async () => { await vi.advanceTimersByTimeAsync(150); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
     const modal = getSearchModal(container);
     expect(within(modal).getByText("Configuration")).toBeInTheDocument();
   });
@@ -604,7 +685,9 @@ describe("Shell language switcher", () => {
 
   it("shows locale display name in the switcher button", () => {
     renderShell({ i18n: i18nInfo, currentLocale: "en" });
-    expect(screen.getByTestId("language-switcher").textContent).toContain("English");
+    expect(screen.getByTestId("language-switcher").textContent).toContain(
+      "English"
+    );
   });
 
   it("shows locale code when localeNames is not provided", () => {
@@ -630,7 +713,12 @@ describe("Shell language switcher", () => {
 
   it("calls onNavigate with locale-prefixed id when switching to non-default locale", () => {
     const onNavigate = vi.fn();
-    renderShell({ i18n: i18nInfo, currentLocale: "en", currentPageId: "quickstart", onNavigate });
+    renderShell({
+      i18n: i18nInfo,
+      currentLocale: "en",
+      currentPageId: "quickstart",
+      onNavigate,
+    });
     fireEvent.click(screen.getByTestId("language-switcher"));
     const dropdown = screen.getByTestId("language-dropdown");
     fireEvent.click(within(dropdown).getByText("Español"));
@@ -639,7 +727,12 @@ describe("Shell language switcher", () => {
 
   it("calls onNavigate with base id when switching to default locale", () => {
     const onNavigate = vi.fn();
-    renderShell({ i18n: i18nInfo, currentLocale: "es", currentPageId: "es/quickstart", onNavigate });
+    renderShell({
+      i18n: i18nInfo,
+      currentLocale: "es",
+      currentPageId: "es/quickstart",
+      onNavigate,
+    });
     fireEvent.click(screen.getByTestId("language-switcher"));
     const dropdown = screen.getByTestId("language-dropdown");
     fireEvent.click(within(dropdown).getByText("English"));
@@ -648,7 +741,9 @@ describe("Shell language switcher", () => {
 
   it("defaults to defaultLocale when currentLocale is not provided", () => {
     renderShell({ i18n: i18nInfo });
-    expect(screen.getByTestId("language-switcher").textContent).toContain("English");
+    expect(screen.getByTestId("language-switcher").textContent).toContain(
+      "English"
+    );
   });
 });
 
@@ -656,7 +751,9 @@ describe("Shell language switcher", () => {
 
 describe("Shell edit link", () => {
   it("renders edit link when editUrl is provided", () => {
-    renderShell({ editUrl: "https://github.com/org/repo/edit/main/docs/intro.md" });
+    renderShell({
+      editUrl: "https://github.com/org/repo/edit/main/docs/intro.md",
+    });
     const link = screen.getByTestId("edit-page-link");
     expect(link).toBeInTheDocument();
     expect(link.querySelector("a")?.getAttribute("href")).toBe(
@@ -665,14 +762,18 @@ describe("Shell edit link", () => {
   });
 
   it("edit link opens in new tab", () => {
-    renderShell({ editUrl: "https://github.com/org/repo/edit/main/docs/intro.md" });
+    renderShell({
+      editUrl: "https://github.com/org/repo/edit/main/docs/intro.md",
+    });
     const anchor = screen.getByTestId("edit-page-link").querySelector("a");
     expect(anchor?.getAttribute("target")).toBe("_blank");
     expect(anchor?.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
   it("shows 'Edit this page on GitHub' text", () => {
-    renderShell({ editUrl: "https://github.com/org/repo/edit/main/docs/intro.md" });
+    renderShell({
+      editUrl: "https://github.com/org/repo/edit/main/docs/intro.md",
+    });
     expect(screen.getByText("Edit this page on GitHub")).toBeInTheDocument();
   });
 
@@ -718,7 +819,7 @@ describe("Shell last updated", () => {
 
   it("shows relative date text for recent date", () => {
     // Use a date from "1 day ago" to test relative formatting
-    const yesterday = new Date(Date.now() - 86400000).toISOString();
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString();
     renderShell({ lastUpdated: yesterday });
     const el = screen.getByTestId("last-updated");
     expect(el.textContent).toContain("Last updated 1 day ago");
@@ -740,9 +841,7 @@ describe("Shell changelog rendering", () => {
     {
       version: "1.0.0",
       date: "2025-01-15",
-      sections: [
-        { type: "Added", items: ["Initial release"] },
-      ],
+      sections: [{ type: "Added", items: ["Initial release"] }],
     },
   ];
 
@@ -818,13 +917,18 @@ describe("Shell banner", () => {
   });
 
   it("renders banner text when banner config is provided", () => {
-    renderShell({ config: { ...baseConfig, banner: { text: "New version available!" } } });
+    renderShell({
+      config: { ...baseConfig, banner: { text: "New version available!" } },
+    });
     expect(screen.getByText("New version available!")).toBeInTheDocument();
   });
 
   it("renders banner as a link when link is provided", () => {
     renderShell({
-      config: { ...baseConfig, banner: { text: "Click here", link: "https://example.com" } },
+      config: {
+        ...baseConfig,
+        banner: { text: "Click here", link: "https://example.com" },
+      },
     });
     const link = screen.getByText("Click here");
     expect(link.tagName).toBe("A");
@@ -833,7 +937,9 @@ describe("Shell banner", () => {
 
   it("does not render banner when banner config is not provided", () => {
     renderShell();
-    expect(screen.queryByText("New version available!")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("New version available!")
+    ).not.toBeInTheDocument();
   });
 
   it("dismisses banner when X button is clicked", () => {
@@ -875,7 +981,9 @@ describe("Shell feedback widget", () => {
     renderShell();
     const feedbackEl = screen.getByText("Was this helpful?");
     // The feedback widget must be a descendant of the overflow:auto scroll container
-    const scrollContainer = feedbackEl.closest('[style*="overflow: auto"]') || feedbackEl.closest('[style*="overflow:auto"]');
+    const scrollContainer =
+      feedbackEl.closest('[style*="overflow: auto"]') ||
+      feedbackEl.closest('[style*="overflow:auto"]');
     expect(scrollContainer).not.toBeNull();
     // The root container must use overflow:clip (not hidden) to avoid clip containment issues
     const root = feedbackEl.closest(".tome-grain");
@@ -933,7 +1041,9 @@ describe("Shell breadcrumbs", () => {
     });
     const breadcrumbs = screen.getByTestId("breadcrumbs");
     expect(breadcrumbs).toBeInTheDocument();
-    expect(within(breadcrumbs).getByText("Getting Started")).toBeInTheDocument();
+    expect(
+      within(breadcrumbs).getByText("Getting Started")
+    ).toBeInTheDocument();
     expect(within(breadcrumbs).getByText("Quick Start")).toBeInTheDocument();
   });
 
@@ -1066,13 +1176,17 @@ describe("Shell RTL support", () => {
 
   it("reverses main layout flex direction for RTL", () => {
     const { container } = renderShell({ dir: "rtl" });
-    const flexRow = container.querySelector('[style*="flex-direction: row-reverse"]');
+    const flexRow = container.querySelector(
+      '[style*="flex-direction: row-reverse"]'
+    );
     expect(flexRow).not.toBeNull();
   });
 
   it("uses normal row direction for LTR", () => {
     const { container } = renderShell({ dir: "ltr" });
-    const flexRowReverse = container.querySelector('[style*="flex-direction: row-reverse"]');
+    const flexRowReverse = container.querySelector(
+      '[style*="flex-direction: row-reverse"]'
+    );
     expect(flexRowReverse).toBeNull();
   });
 
@@ -1084,9 +1198,7 @@ describe("Shell RTL support", () => {
   });
 
   it("renders without errors in RTL mode", () => {
-    expect(() =>
-      renderShell({ dir: "rtl" })
-    ).not.toThrow();
+    expect(() => renderShell({ dir: "rtl" })).not.toThrow();
   });
 });
 
@@ -1110,13 +1222,27 @@ describe("Shell API reference rendering", () => {
     ],
   };
 
-  function MockApiRef({ manifest, baseUrl, showPlayground, playgroundAuth }: { manifest: any; baseUrl?: string; showPlayground?: boolean; playgroundAuth?: { type: string; header?: string } }) {
+  function MockApiRef({
+    manifest,
+    baseUrl,
+    showPlayground,
+    playgroundAuth,
+  }: {
+    manifest: any;
+    baseUrl?: string;
+    showPlayground?: boolean;
+    playgroundAuth?: { type: string; header?: string };
+  }) {
     return (
       <div data-testid="api-reference">
         <span data-testid="api-title">{manifest.title}</span>
         {baseUrl && <span data-testid="api-base-url">{baseUrl}</span>}
-        {showPlayground && <span data-testid="api-playground">playground-enabled</span>}
-        {playgroundAuth && <span data-testid="api-auth">{playgroundAuth.type}</span>}
+        {showPlayground && (
+          <span data-testid="api-playground">playground-enabled</span>
+        )}
+        {playgroundAuth && (
+          <span data-testid="api-auth">{playgroundAuth.type}</span>
+        )}
       </div>
     );
   }
@@ -1138,7 +1264,9 @@ describe("Shell API reference rendering", () => {
       apiBaseUrl: "https://api.example.com",
       pageHtml: undefined,
     });
-    expect(screen.getByTestId("api-base-url")).toHaveTextContent("https://api.example.com");
+    expect(screen.getByTestId("api-base-url")).toHaveTextContent(
+      "https://api.example.com"
+    );
   });
 
   it("does not render API reference when only apiManifest is provided (no component)", () => {
@@ -1199,7 +1327,9 @@ describe("Shell API reference rendering", () => {
       apiPlayground: true,
       pageHtml: undefined,
     });
-    expect(screen.getByTestId("api-playground")).toHaveTextContent("playground-enabled");
+    expect(screen.getByTestId("api-playground")).toHaveTextContent(
+      "playground-enabled"
+    );
   });
 
   it("passes playgroundAuth prop to ApiReferenceComponent", () => {
@@ -1341,7 +1471,11 @@ describe("Shell nested navigation groups", () => {
         {
           section: "Languages",
           pages: [
-            { id: "sdk/javascript", title: "JavaScript", urlPath: "/sdk/javascript" },
+            {
+              id: "sdk/javascript",
+              title: "JavaScript",
+              urlPath: "/sdk/javascript",
+            },
             { id: "sdk/python", title: "Python", urlPath: "/sdk/python" },
           ],
         },
@@ -1391,7 +1525,9 @@ describe("Shell nested navigation groups", () => {
     });
     // Click the sidebar nav button for JavaScript (inside the sidebar nav element)
     const sidebarNav = screen.getByRole("navigation", { name: "" });
-    const jsButton = within(sidebarNav).getAllByText("JavaScript")[0].closest("button");
+    const jsButton = within(sidebarNav)
+      .getAllByText("JavaScript")[0]
+      .closest("button");
     fireEvent.click(jsButton!);
     expect(onNavigate).toHaveBeenCalledWith("sdk/javascript");
   });
@@ -1421,14 +1557,16 @@ describe("Shell nested navigation groups", () => {
     expect(screen.getAllByText("JavaScript").length).toBeGreaterThan(0);
     // Click the "Languages" section toggle to collapse
     const langButtons = screen.getAllByText("Languages");
-    const toggleButton = langButtons.find(el => el.closest("button"))?.closest("button");
+    const toggleButton = langButtons
+      .find((el) => el.closest("button"))
+      ?.closest("button");
     expect(toggleButton).toBeTruthy();
     fireEvent.click(toggleButton!);
     // After collapsing, nested pages should not appear in sidebar
     // (they may still appear in prev/next cards, so check the sidebar specifically)
-    const sidebarButtons = screen.queryAllByText("JavaScript").filter(
-      el => el.closest("nav") !== null
-    );
+    const sidebarButtons = screen
+      .queryAllByText("JavaScript")
+      .filter((el) => el.closest("nav") !== null);
     expect(sidebarButtons).toHaveLength(0);
   });
 });

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
-import { editor } from "./editor.js";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
+import { editor } from "./editor.js";
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -68,7 +68,12 @@ describe("editor routes", () => {
     const db = mockDb({
       project: { id: "p1" },
       pages: [
-        { id: "pg1", path: "getting-started", title: "Getting Started", status: "published" },
+        {
+          id: "pg1",
+          path: "getting-started",
+          title: "Getting Started",
+          status: "published",
+        },
         { id: "pg2", path: "quickstart", title: "Quickstart", status: "draft" },
       ],
     });
@@ -85,7 +90,11 @@ describe("editor routes", () => {
     const res = await app.request("/api/editor/pages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectSlug: "my-docs", path: "new-page", title: "New Page" }),
+      body: JSON.stringify({
+        projectSlug: "my-docs",
+        path: "new-page",
+        title: "New Page",
+      }),
     });
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -132,15 +141,22 @@ describe("editor routes", () => {
     const bucket = mockBucket();
     const db = mockDb({
       page: {
-        id: "pg1", project_id: "p1", path: "quickstart",
-        title: "Quickstart", content: "# Quickstart\nGet started.",
-        frontmatter: "{}", project_slug: "my-docs", proj_id: "p1",
+        id: "pg1",
+        project_id: "p1",
+        path: "quickstart",
+        title: "Quickstart",
+        content: "# Quickstart\nGet started.",
+        frontmatter: "{}",
+        project_slug: "my-docs",
+        proj_id: "p1",
       },
     });
     const app = makeApp(db, bucket);
-    const res = await app.request("/api/editor/pages/pg1/publish", { method: "POST" });
+    const res = await app.request("/api/editor/pages/pg1/publish", {
+      method: "POST",
+    });
     expect(res.status).toBe(200);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(body.status).toBe("published");
     expect(body.method).toBe("direct");
     expect(bucket.put).toHaveBeenCalled();
@@ -155,19 +171,26 @@ describe("editor routes", () => {
           first: vi.fn().mockImplementation(async () => {
             if (sql.includes("editor_pages") && sql.includes("project_slug")) {
               return {
-                id: "pg1", project_id: "p1", path: "quickstart",
-                title: "Quickstart", content: "# Quickstart",
-                frontmatter: "{}", project_slug: "my-docs", proj_id: "p1",
+                id: "pg1",
+                project_id: "p1",
+                path: "quickstart",
+                title: "Quickstart",
+                content: "# Quickstart",
+                frontmatter: "{}",
+                project_slug: "my-docs",
+                proj_id: "p1",
               };
             }
             if (sql.includes("github_repo")) {
               return {
                 github_repo: "tomehq/docs",
-                github_installation_id: 12345,
+                github_installation_id: 12_345,
                 github_branch: "main",
               };
             }
-            if (sql.includes("projects")) return { id: "p1" };
+            if (sql.includes("projects")) {
+              return { id: "p1" };
+            }
             return null;
           }),
           run: vi.fn().mockResolvedValue({ success: true }),
@@ -182,10 +205,14 @@ describe("editor routes", () => {
   });
 
   it("DELETE /pages/:id removes page and versions", async () => {
-    const db = mockDb({ page: { id: "pg1", path: "old-page", project_slug: "my-docs" } });
+    const db = mockDb({
+      page: { id: "pg1", path: "old-page", project_slug: "my-docs" },
+    });
     const bucket = mockBucket();
     const app = makeApp(db, bucket);
-    const res = await app.request("/api/editor/pages/pg1", { method: "DELETE" });
+    const res = await app.request("/api/editor/pages/pg1", {
+      method: "DELETE",
+    });
     expect(res.status).toBe(200);
     expect(bucket.delete).toHaveBeenCalled();
   });

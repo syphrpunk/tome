@@ -1,12 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  PLANS,
-  getPlan,
-  getTrialDays,
   calculateAnnualDiscount,
-  formatPrice,
   createCheckoutSession,
   createPortalSession,
+  formatPrice,
+  getPlan,
+  getTrialDays,
+  PLANS,
 } from "./billing.js";
 
 describe("PLANS", () => {
@@ -57,7 +57,7 @@ describe("PLANS", () => {
       deployments: -1,
       customDomains: -1,
       teamMembers: -1,
-      storage: 10000,
+      storage: 10_000,
     });
   });
 });
@@ -108,7 +108,7 @@ describe("formatPrice", () => {
     expect(formatPrice(1999)).toBe("$19.99");
     expect(formatPrice(4999)).toBe("$49.99");
     expect(formatPrice(0)).toBe("$0.00");
-    expect(formatPrice(19000)).toBe("$190.00");
+    expect(formatPrice(19_000)).toBe("$190.00");
     expect(formatPrice(99)).toBe("$0.99");
     expect(formatPrice(1050)).toBe("$10.50");
   });
@@ -134,7 +134,7 @@ describe("createCheckoutSession", () => {
         email: "user@example.com",
         successUrl: "https://example.com/success",
         cancelUrl: "https://example.com/cancel",
-      }),
+      })
     ).rejects.toThrow("Unknown plan: nonexistent");
   });
 
@@ -159,9 +159,6 @@ describe("createPortalSession", () => {
       returnUrl: "https://example.com/settings",
     });
 
-    expect(result.url).toBe(
-      "https://billing.stripe.com/mock-portal/cus_123",
-    );
+    expect(result.url).toBe("https://billing.stripe.com/mock-portal/cus_123");
   });
 });
-

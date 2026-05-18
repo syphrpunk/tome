@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { ChangelogTimeline } from "./Changelog.js";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import type { ChangelogEntry } from "./Changelog.js";
+import { ChangelogTimeline } from "./Changelog.js";
 
 // ── Fixtures ─────────────────────────────────────────────
 
@@ -18,16 +18,12 @@ const sampleEntries: ChangelogEntry[] = [
   {
     version: "1.1.0",
     date: "2025-11-15",
-    sections: [
-      { type: "Changed", items: ["Updated theme colors"] },
-    ],
+    sections: [{ type: "Changed", items: ["Updated theme colors"] }],
   },
   {
     version: "1.0.0",
     date: "2025-11-01",
-    sections: [
-      { type: "Added", items: ["Initial release"] },
-    ],
+    sections: [{ type: "Added", items: ["Initial release"] }],
   },
 ];
 
@@ -65,7 +61,10 @@ describe("ChangelogTimeline", () => {
     render(<ChangelogTimeline entries={sampleEntries} />);
     const link = screen.getByText("1.2.0").closest("a");
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute("href", "https://github.com/example/releases/v1.2.0");
+    expect(link).toHaveAttribute(
+      "href",
+      "https://github.com/example/releases/v1.2.0"
+    );
     expect(link).toHaveAttribute("target", "_blank");
   });
 
@@ -94,8 +93,12 @@ describe("ChangelogTimeline", () => {
   it("limits visible entries with initialLimit", () => {
     render(<ChangelogTimeline entries={sampleEntries} initialLimit={1} />);
     expect(screen.getByTestId("changelog-entry-1.2.0")).toBeInTheDocument();
-    expect(screen.queryByTestId("changelog-entry-1.1.0")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("changelog-entry-1.0.0")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("changelog-entry-1.1.0")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("changelog-entry-1.0.0")
+    ).not.toBeInTheDocument();
   });
 
   it("shows 'Show more' button when entries are limited", () => {
@@ -121,7 +124,10 @@ describe("ChangelogTimeline", () => {
 
   it("handles entry without date", () => {
     const entries: ChangelogEntry[] = [
-      { version: "Unreleased", sections: [{ type: "Added", items: ["WIP feature"] }] },
+      {
+        version: "Unreleased",
+        sections: [{ type: "Added", items: ["WIP feature"] }],
+      },
     ];
     render(<ChangelogTimeline entries={entries} />);
     expect(screen.getByText("Unreleased")).toBeInTheDocument();
@@ -130,7 +136,10 @@ describe("ChangelogTimeline", () => {
 
   it("handles unknown section type with fallback color", () => {
     const entries: ChangelogEntry[] = [
-      { version: "1.0.0", sections: [{ type: "Custom", items: ["Custom change"] }] },
+      {
+        version: "1.0.0",
+        sections: [{ type: "Custom", items: ["Custom change"] }],
+      },
     ];
     render(<ChangelogTimeline entries={entries} />);
     expect(screen.getByText("Custom")).toBeInTheDocument();

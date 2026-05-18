@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { TomeConfigSchema, defineConfig } from "./config.js";
+import { describe, expect, it } from "vitest";
+import { defineConfig, TomeConfigSchema } from "./config.js";
 
 describe("TomeConfigSchema", () => {
   it("applies defaults when given an empty object", () => {
@@ -23,18 +23,33 @@ describe("TomeConfigSchema", () => {
   });
 
   it("accepts all 10 theme presets", () => {
-    for (const preset of ["amber", "editorial", "cipher", "mint", "ocean", "rose", "forest", "slate", "sunset", "carbon"]) {
+    for (const preset of [
+      "amber",
+      "editorial",
+      "cipher",
+      "mint",
+      "ocean",
+      "rose",
+      "forest",
+      "slate",
+      "sunset",
+      "carbon",
+    ]) {
       const result = TomeConfigSchema.parse({ theme: { preset } });
       expect(result.theme.preset).toBe(preset);
     }
   });
 
   it("rejects an invalid theme preset", () => {
-    expect(() => TomeConfigSchema.parse({ theme: { preset: "neon" } })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({ theme: { preset: "neon" } })
+    ).toThrow();
   });
 
   it("rejects a malformed accent hex", () => {
-    expect(() => TomeConfigSchema.parse({ theme: { accent: "not-a-hex" } })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({ theme: { accent: "not-a-hex" } })
+    ).toThrow();
   });
 
   it("accepts a valid accent hex", () => {
@@ -43,12 +58,16 @@ describe("TomeConfigSchema", () => {
   });
 
   it("rejects invalid theme mode", () => {
-    expect(() => TomeConfigSchema.parse({ theme: { mode: "rainbow" } })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({ theme: { mode: "rainbow" } })
+    ).toThrow();
   });
 
   it("handles navigation groups correctly", () => {
     const result = TomeConfigSchema.parse({
-      navigation: [{ group: "Getting Started", pages: ["index", "quickstart"] }],
+      navigation: [
+        { group: "Getting Started", pages: ["index", "quickstart"] },
+      ],
     });
     expect(result.navigation).toHaveLength(1);
     expect(result.navigation[0].group).toBe("Getting Started");
@@ -77,14 +96,21 @@ describe("TomeConfigSchema", () => {
 
   it("validates search config", () => {
     const result = TomeConfigSchema.parse({
-      search: { provider: "algolia", appId: "MY_APP", apiKey: "MY_KEY", indexName: "docs" },
+      search: {
+        provider: "algolia",
+        appId: "MY_APP",
+        apiKey: "MY_KEY",
+        indexName: "docs",
+      },
     });
     expect(result.search.provider).toBe("algolia");
     expect(result.search.appId).toBe("MY_APP");
   });
 
   it("rejects invalid search provider", () => {
-    expect(() => TomeConfigSchema.parse({ search: { provider: "elastic" } })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({ search: { provider: "elastic" } })
+    ).toThrow();
   });
 
   it("allows topNav links", () => {
@@ -271,7 +297,11 @@ describe("SocialLinksSchema", () => {
     const result = TomeConfigSchema.parse({
       socialLinks: [
         { platform: "github", url: "https://github.com/example/repo" },
-        { platform: "twitter", url: "https://twitter.com/example", label: "Follow us" },
+        {
+          platform: "twitter",
+          url: "https://twitter.com/example",
+          label: "Follow us",
+        },
         { platform: "discord", url: "https://discord.gg/example" },
       ],
     });
@@ -282,15 +312,21 @@ describe("SocialLinksSchema", () => {
   });
 
   it("rejects an invalid URL", () => {
-    expect(() => TomeConfigSchema.parse({
-      socialLinks: [{ platform: "github", url: "not-a-url" }],
-    })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({
+        socialLinks: [{ platform: "github", url: "not-a-url" }],
+      })
+    ).toThrow();
   });
 
   it("rejects an invalid platform", () => {
-    expect(() => TomeConfigSchema.parse({
-      socialLinks: [{ platform: "facebook", url: "https://facebook.com/example" }],
-    })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({
+        socialLinks: [
+          { platform: "facebook", url: "https://facebook.com/example" },
+        ],
+      })
+    ).toThrow();
   });
 
   it("accepts an empty array", () => {
@@ -306,7 +342,12 @@ describe("SocialLinksSchema", () => {
   it("accepts a custom platform with an icon", () => {
     const result = TomeConfigSchema.parse({
       socialLinks: [
-        { platform: "custom", url: "https://example.com", label: "Website", icon: "M0 0h16v16H0z" },
+        {
+          platform: "custom",
+          url: "https://example.com",
+          label: "Website",
+          icon: "M0 0h16v16H0z",
+        },
       ],
     });
     expect(result.socialLinks![0].platform).toBe("custom");
@@ -333,15 +374,19 @@ describe("RedirectSchema", () => {
   });
 
   it("rejects redirect missing required fields", () => {
-    expect(() => TomeConfigSchema.parse({
-      redirects: [{ from: "/old" }],
-    })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({
+        redirects: [{ from: "/old" }],
+      })
+    ).toThrow();
   });
 
   it("rejects redirect with extra fields (strict mode)", () => {
-    expect(() => TomeConfigSchema.parse({
-      redirects: [{ from: "/old", to: "/new", status: 302 }],
-    })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({
+        redirects: [{ from: "/old", to: "/new", status: 302 }],
+      })
+    ).toThrow();
   });
 });
 
@@ -455,9 +500,11 @@ describe("ApiSchema asyncSpec", () => {
   });
 
   it("rejects api config with neither spec nor asyncSpec", () => {
-    expect(() => TomeConfigSchema.parse({
-      api: { path: "/reference" },
-    })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({
+        api: { path: "/reference" },
+      })
+    ).toThrow();
   });
 });
 
@@ -473,7 +520,15 @@ describe("SearchSchema ai option", () => {
   });
 
   it("preserves provider when ai is set", () => {
-    const result = TomeConfigSchema.parse({ search: { provider: "algolia", ai: true, appId: "x", apiKey: "y", indexName: "z" } });
+    const result = TomeConfigSchema.parse({
+      search: {
+        provider: "algolia",
+        ai: true,
+        appId: "x",
+        apiKey: "y",
+        indexName: "z",
+      },
+    });
     expect(result.search.provider).toBe("algolia");
     expect(result.search.ai).toBe(true);
   });
@@ -555,13 +610,15 @@ describe("I18nSchema localeDirs (RTL support)", () => {
   });
 
   it("rejects invalid direction values in localeDirs", () => {
-    expect(() => TomeConfigSchema.parse({
-      i18n: {
-        defaultLocale: "en",
-        locales: ["en", "ar"],
-        localeDirs: { ar: "bidi" },
-      },
-    })).toThrow();
+    expect(() =>
+      TomeConfigSchema.parse({
+        i18n: {
+          defaultLocale: "en",
+          locales: ["en", "ar"],
+          localeDirs: { ar: "bidi" },
+        },
+      })
+    ).toThrow();
   });
 
   it("allows omitting localeDirs entirely", () => {

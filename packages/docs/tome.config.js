@@ -65,10 +65,7 @@ export default {
     },
     {
       group: "Tutorials",
-      pages: [
-        "tutorials/first-site",
-        "tutorials/deploy-to-cloud",
-      ],
+      pages: ["tutorials/first-site", "tutorials/deploy-to-cloud"],
     },
     {
       group: "Reference",
@@ -82,10 +79,7 @@ export default {
     },
     {
       group: "Concepts",
-      pages: [
-        "concepts/architecture",
-        "concepts/file-routing",
-      ],
+      pages: ["concepts/architecture", "concepts/file-routing"],
     },
     {
       group: "CLI",

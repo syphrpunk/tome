@@ -2,27 +2,27 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
-  ListToolsRequestSchema,
   ListResourcesRequestSchema,
+  ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { readFileSync, existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
 // ── TYPES ───────────────────────────────────────────────
 export interface McpPage {
-  url: string;
-  title: string;
+  content?: string;
   description: string;
   headings: string[];
   tags: string[];
-  content?: string;
+  title: string;
+  url: string;
 }
 
 export interface McpManifest {
   name: string;
-  version: string;
   pages: McpPage[];
+  version: string;
 }
 
 // ── HELPERS (exported for testing) ──────────────────────
@@ -45,7 +45,12 @@ export function loadManifest(manifestPath: string): McpManifest | null {
 export function searchPages(
   pages: McpPage[],
   query: string
-): Array<{ url: string; title: string; description: string; headings: string[] }> {
+): Array<{
+  url: string;
+  title: string;
+  description: string;
+  headings: string[];
+}> {
   const q = query.toLowerCase();
   return pages
     .filter(

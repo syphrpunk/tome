@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { CodeSamples, CodeSample } from "./CodeSamples";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { type CodeSample, CodeSamples } from "./CodeSamples";
 
 const sampleData: CodeSample[] = [
   { language: "js", label: "JavaScript", code: 'console.log("hello");' },
@@ -21,7 +21,9 @@ describe("CodeSamples", () => {
 
   it("renders all sample labels as buttons", () => {
     render(<CodeSamples samples={sampleData} />);
-    expect(screen.getByRole("button", { name: "JavaScript" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "JavaScript" })
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Python" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ruby" })).toBeInTheDocument();
   });

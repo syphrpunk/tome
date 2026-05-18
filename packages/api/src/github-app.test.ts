@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { verifyWebhookSignature, parseRepoUrl } from "./github-app.js";
+import { describe, expect, it } from "vitest";
+import { parseRepoUrl, verifyWebhookSignature } from "./github-app.js";
 
 // ── parseRepoUrl ────────────────────────────────────────
 
@@ -44,9 +44,13 @@ describe("verifyWebhookSignature", () => {
       new TextEncoder().encode(secret),
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["sign"],
+      ["sign"]
     );
-    const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+    const mac = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(payload)
+    );
     const hex = Array.from(new Uint8Array(mac))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -60,7 +64,7 @@ describe("verifyWebhookSignature", () => {
     const result = await verifyWebhookSignature(
       '{"action":"push"}',
       "sha256=0000000000000000000000000000000000000000000000000000000000000000",
-      "test-secret",
+      "test-secret"
     );
     expect(result).toBe(false);
   });
@@ -69,13 +73,13 @@ describe("verifyWebhookSignature", () => {
     const result = await verifyWebhookSignature(
       '{"action":"push"}',
       "invalid-signature",
-      "test-secret",
+      "test-secret"
     );
     expect(result).toBe(false);
   });
 
   it("rejects empty signature", async () => {
-    const result = await verifyWebhookSignature('{}', "", "secret");
+    const result = await verifyWebhookSignature("{}", "", "secret");
     expect(result).toBe(false);
   });
 });

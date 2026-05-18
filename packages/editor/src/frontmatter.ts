@@ -6,8 +6,8 @@
  */
 
 export interface FrontmatterFields {
-  title: string;
   description?: string;
+  title: string;
   [key: string]: unknown;
 }
 
@@ -25,12 +25,16 @@ export function buildFrontmatter(fields: FrontmatterFields): string {
   const lines: string[] = ["---"];
 
   for (const [key, value] of Object.entries(fields)) {
-    if (value === undefined || value === null || value === "") continue;
+    if (value === undefined || value === null || value === "") {
+      continue;
+    }
 
     if (typeof value === "string") {
       // Quote strings that contain colons, hash signs, or leading/trailing spaces
-      if (/[:#\[\]{}>|]/.test(value) || value !== value.trim()) {
-        lines.push(`${key}: "${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+      if (/[:#[\]{}>|]/.test(value) || value !== value.trim()) {
+        lines.push(
+          `${key}: "${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+        );
       } else {
         lines.push(`${key}: ${value}`);
       }
@@ -60,19 +64,26 @@ export function buildDocument(fields: FrontmatterFields, body: string): string {
  * Parse frontmatter from a markdown document.
  * Returns the fields and the body content.
  */
-export function parseFrontmatter(doc: string): { fields: Record<string, string>; body: string } {
+export function parseFrontmatter(doc: string): {
+  fields: Record<string, string>;
+  body: string;
+} {
   const match = doc.match(/^---\n([\s\S]*?)\n---\n?\n?([\s\S]*)$/);
-  if (!match) return { fields: {}, body: doc };
+  if (!match) {
+    return { fields: {}, body: doc };
+  }
 
   const fields: Record<string, string> = {};
   for (const line of match[1].split("\n")) {
     const colonIdx = line.indexOf(":");
-    if (colonIdx === -1) continue;
+    if (colonIdx === -1) {
+      continue;
+    }
     const key = line.slice(0, colonIdx).trim();
     let value = line.slice(colonIdx + 1).trim();
     // Remove surrounding quotes
     if (value.startsWith('"') && value.endsWith('"')) {
-      value = value.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      value = value.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
     }
     fields[key] = value;
   }

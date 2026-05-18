@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 
 /**
  * Property/type table — displays typed fields with name, type, required, default, description.
@@ -22,7 +22,9 @@ export const TypeTableNode = Node.create({
         default: [],
         parseHTML: (el) => {
           const raw = el.getAttribute("data-type-table-fields");
-          if (!raw) return [];
+          if (!raw) {
+            return [];
+          }
           try {
             return JSON.parse(raw);
           } catch {

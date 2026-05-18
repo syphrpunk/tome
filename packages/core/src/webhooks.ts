@@ -14,50 +14,50 @@ export type WebhookEventType =
   | "domain.verified";
 
 export interface WebhookConfig {
-  /** Webhook URL */
-  url: string;
   /** Channel type */
   channel: WebhookChannel;
   /** Which events to send (empty = all) */
   events?: WebhookEventType[];
   /** Optional secret for HMAC signature */
   secret?: string;
+  /** Webhook URL */
+  url: string;
 }
 
 export interface WebhookPayload {
-  /** Event type */
-  event: WebhookEventType;
-  /** When the event occurred */
-  timestamp: string;
-  /** Project name */
-  project: string;
-  /** Deploy/preview URL */
-  url?: string;
-  /** Deployment ID */
-  deploymentId?: string;
   /** Branch name (for previews) */
   branch?: string;
-  /** File count */
-  fileCount?: number;
-  /** Total size in bytes */
-  size?: number;
-  /** Error message (for failures) */
-  error?: string;
+  /** Deployment ID */
+  deploymentId?: string;
   /** Domain that was verified */
   domain?: string;
+  /** Error message (for failures) */
+  error?: string;
+  /** Event type */
+  event: WebhookEventType;
+  /** File count */
+  fileCount?: number;
+  /** Project name */
+  project: string;
   /** Whether to show Tome branding in webhook messages */
   showBranding?: boolean;
+  /** Total size in bytes */
+  size?: number;
+  /** When the event occurred */
+  timestamp: string;
+  /** Deploy/preview URL */
+  url?: string;
 }
 
 export interface WebhookResult {
-  /** Webhook URL (masked) */
-  url: string;
+  /** Error message if failed */
+  error?: string;
   /** Whether the webhook was sent successfully */
   ok: boolean;
   /** HTTP status code */
   status: number;
-  /** Error message if failed */
-  error?: string;
+  /** Webhook URL (masked) */
+  url: string;
 }
 
 // ── PAYLOAD FORMATTERS ──────────────────────────────────
@@ -66,7 +66,9 @@ export interface WebhookResult {
  * Format a webhook payload for Slack's incoming webhook API.
  * Uses Slack's Block Kit for rich formatting.
  */
-export function formatSlackPayload(payload: WebhookPayload): Record<string, unknown> {
+export function formatSlackPayload(
+  payload: WebhookPayload
+): Record<string, unknown> {
   const icon = payload.event.includes("failed") ? ":x:" : ":white_check_mark:";
   const title = formatEventTitle(payload.event);
 
@@ -83,10 +85,18 @@ export function formatSlackPayload(payload: WebhookPayload): Record<string, unkn
       type: "section",
       fields: [
         { type: "mrkdwn", text: `*Project:*\n${payload.project}` },
-        ...(payload.url ? [{ type: "mrkdwn", text: `*URL:*\n<${payload.url}|View site>` }] : []),
-        ...(payload.branch ? [{ type: "mrkdwn", text: `*Branch:*\n\`${payload.branch}\`` }] : []),
-        ...(payload.fileCount != null ? [{ type: "mrkdwn", text: `*Files:*\n${payload.fileCount}` }] : []),
-        ...(payload.domain ? [{ type: "mrkdwn", text: `*Domain:*\n${payload.domain}` }] : []),
+        ...(payload.url
+          ? [{ type: "mrkdwn", text: `*URL:*\n<${payload.url}|View site>` }]
+          : []),
+        ...(payload.branch
+          ? [{ type: "mrkdwn", text: `*Branch:*\n\`${payload.branch}\`` }]
+          : []),
+        ...(payload.fileCount == null
+          ? []
+          : [{ type: "mrkdwn", text: `*Files:*\n${payload.fileCount}` }]),
+        ...(payload.domain
+          ? [{ type: "mrkdwn", text: `*Domain:*\n${payload.domain}` }]
+          : []),
       ],
     },
   ];
@@ -106,9 +116,10 @@ export function formatSlackPayload(payload: WebhookPayload): Record<string, unkn
     elements: [
       {
         type: "mrkdwn",
-        text: payload.showBranding !== false
-          ? `Sent by Tome · ${new Date(payload.timestamp).toLocaleString()}`
-          : new Date(payload.timestamp).toLocaleString(),
+        text:
+          payload.showBranding === false
+            ? new Date(payload.timestamp).toLocaleString()
+            : `Sent by Tome · ${new Date(payload.timestamp).toLocaleString()}`,
       },
     ],
   });
@@ -120,10 +131,12 @@ export function formatSlackPayload(payload: WebhookPayload): Record<string, unkn
  * Format a webhook payload for Discord's webhook API.
  * Uses Discord's embed format for rich formatting.
  */
-export function formatDiscordPayload(payload: WebhookPayload): Record<string, unknown> {
+export function formatDiscordPayload(
+  payload: WebhookPayload
+): Record<string, unknown> {
   const isFailure = payload.event.includes("failed");
   const title = formatEventTitle(payload.event);
-  const color = isFailure ? 0xef4444 : 0x22c55e; // red or green
+  const color = isFailure ? 0xef_44_44 : 0x22_c5_5e; // red or green
 
   const fields: Array<{ name: string; value: string; inline: boolean }> = [
     { name: "Project", value: payload.project, inline: true },
@@ -133,13 +146,25 @@ export function formatDiscordPayload(payload: WebhookPayload): Record<string, un
     fields.push({ name: "URL", value: payload.url, inline: true });
   }
   if (payload.branch) {
-    fields.push({ name: "Branch", value: `\`${payload.branch}\``, inline: true });
+    fields.push({
+      name: "Branch",
+      value: `\`${payload.branch}\``,
+      inline: true,
+    });
   }
   if (payload.fileCount != null) {
-    fields.push({ name: "Files", value: String(payload.fileCount), inline: true });
+    fields.push({
+      name: "Files",
+      value: String(payload.fileCount),
+      inline: true,
+    });
   }
   if (payload.size != null) {
-    fields.push({ name: "Size", value: `${(payload.size / 1024).toFixed(1)} KB`, inline: true });
+    fields.push({
+      name: "Size",
+      value: `${(payload.size / 1024).toFixed(1)} KB`,
+      inline: true,
+    });
   }
   if (payload.domain) {
     fields.push({ name: "Domain", value: payload.domain, inline: true });
@@ -150,7 +175,7 @@ export function formatDiscordPayload(payload: WebhookPayload): Record<string, un
     color,
     fields,
     timestamp: payload.timestamp,
-    ...(payload.showBranding !== false ? { footer: { text: "Tome" } } : {}),
+    ...(payload.showBranding === false ? {} : { footer: { text: "Tome" } }),
   };
 
   if (payload.error) {
@@ -164,7 +189,9 @@ export function formatDiscordPayload(payload: WebhookPayload): Record<string, un
  * Format a webhook payload for generic HTTP POST.
  * Sends the raw payload as JSON.
  */
-export function formatHttpPayload(payload: WebhookPayload): Record<string, unknown> {
+export function formatHttpPayload(
+  payload: WebhookPayload
+): Record<string, unknown> {
   return { ...payload };
 }
 
@@ -207,7 +234,10 @@ export function maskUrl(url: string): string {
 /**
  * Generate HMAC-SHA256 signature for a payload.
  */
-export async function signPayload(payload: string, secret: string): Promise<string> {
+export async function signPayload(
+  payload: string,
+  secret: string
+): Promise<string> {
   const { createHmac } = await import("crypto");
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
@@ -219,10 +249,14 @@ export async function signPayload(payload: string, secret: string): Promise<stri
  */
 export async function sendWebhook(
   config: WebhookConfig,
-  payload: WebhookPayload,
+  payload: WebhookPayload
 ): Promise<WebhookResult> {
   // Check if this webhook cares about this event
-  if (config.events && config.events.length > 0 && !config.events.includes(payload.event)) {
+  if (
+    config.events &&
+    config.events.length > 0 &&
+    !config.events.includes(payload.event)
+  ) {
     return {
       url: maskUrl(config.url),
       ok: true,
@@ -287,12 +321,14 @@ export async function sendWebhook(
  */
 export async function dispatchWebhooks(
   webhooks: WebhookConfig[],
-  payload: WebhookPayload,
+  payload: WebhookPayload
 ): Promise<WebhookResult[]> {
-  if (webhooks.length === 0) return [];
+  if (webhooks.length === 0) {
+    return [];
+  }
 
   const results = await Promise.allSettled(
-    webhooks.map((config) => sendWebhook(config, payload)),
+    webhooks.map((config) => sendWebhook(config, payload))
   );
 
   return results.map((r) =>
@@ -302,8 +338,9 @@ export async function dispatchWebhooks(
           url: "***",
           ok: false,
           status: 0,
-          error: r.reason instanceof Error ? r.reason.message : String(r.reason),
-        },
+          error:
+            r.reason instanceof Error ? r.reason.message : String(r.reason),
+        }
   );
 }
 
@@ -315,7 +352,7 @@ export function createDeployPayload(
   url: string,
   deploymentId: string,
   fileCount: number,
-  size: number,
+  size: number
 ): WebhookPayload {
   return {
     event: "deploy.succeeded",
@@ -333,7 +370,7 @@ export function createDeployPayload(
  */
 export function createDeployFailedPayload(
   project: string,
-  error: string,
+  error: string
 ): WebhookPayload {
   return {
     event: "deploy.failed",
@@ -352,7 +389,7 @@ export function createPreviewPayload(
   branch: string,
   deploymentId: string,
   fileCount: number,
-  size: number,
+  size: number
 ): WebhookPayload {
   return {
     event: "preview.deployed",
@@ -371,7 +408,7 @@ export function createPreviewPayload(
  */
 export function createDomainVerifiedPayload(
   project: string,
-  domain: string,
+  domain: string
 ): WebhookPayload {
   return {
     event: "domain.verified",

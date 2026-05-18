@@ -1,12 +1,17 @@
-import { resolve, basename, dirname, join } from "path";
-import { readFileSync, existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { glob } from "glob";
 import matter from "gray-matter";
+import { basename, dirname, join, resolve } from "path";
 import type { TomeConfig } from "./config.js";
 import type { PageFrontmatter } from "./markdown.js";
 
 // ── TYPES ────────────────────────────────────────────────
-export type BadgeVariant = "info" | "success" | "warning" | "danger" | "default";
+export type BadgeVariant =
+  | "info"
+  | "success"
+  | "warning"
+  | "danger"
+  | "default";
 
 export interface Badge {
   text: string;
@@ -17,41 +22,45 @@ export interface Badge {
 export function normalizeBadge(
   raw: string | { text: string; variant?: BadgeVariant } | undefined
 ): Badge | undefined {
-  if (raw === undefined || raw === null) return undefined;
-  if (typeof raw === "string") return { text: raw, variant: "default" };
+  if (raw === undefined || raw === null) {
+    return;
+  }
+  if (typeof raw === "string") {
+    return { text: raw, variant: "default" };
+  }
   return { text: raw.text, variant: raw.variant || "default" };
 }
 
 export interface PageRoute {
-  /** Unique page ID derived from file path: "getting-started", "api/endpoints" */
-  id: string;
-  /** File path relative to pages dir */
-  filePath: string;
   /** Absolute file path */
   absolutePath: string;
-  /** URL path: "/getting-started", "/api/endpoints" */
-  urlPath: string;
+  /** File path relative to pages dir */
+  filePath: string;
   /** Parsed frontmatter */
   frontmatter: PageFrontmatter;
+  /** Unique page ID derived from file path: "getting-started", "api/endpoints" */
+  id: string;
   /** Is this an MDX file? */
   isMdx: boolean;
-  /** Version this page belongs to (when versioning is configured) */
-  version?: string;
   /** Locale this page belongs to (when i18n is configured) */
   locale?: string;
+  /** URL path: "/getting-started", "/api/endpoints" */
+  urlPath: string;
+  /** Version this page belongs to (when versioning is configured) */
+  version?: string;
 }
 
 export interface NavigationItem {
-  title: string;
-  id: string;
-  urlPath: string;
-  icon?: string;
   badge?: Badge;
+  icon?: string;
+  id: string;
+  title: string;
+  urlPath: string;
 }
 
 export interface NavigationGroup {
-  section: string;
   pages: (NavigationItem | NavigationGroup)[];
+  section: string;
 }
 
 // ── VERSIONING CONFIG TYPE ────────────────────────────────
@@ -63,16 +72,16 @@ export interface VersioningConfig {
 // ── I18N CONFIG TYPE ─────────────────────────────────────
 export interface I18nConfig {
   defaultLocale: string;
-  locales: string[];
-  localeNames?: Record<string, string>;
   fallback: boolean;
+  localeNames?: Record<string, string>;
+  locales: string[];
 }
 
 // ── PAGE DISCOVERY ───────────────────────────────────────
 export async function discoverPages(
   pagesDir: string,
   versioning?: VersioningConfig,
-  i18n?: I18nConfig,
+  i18n?: I18nConfig
 ): Promise<PageRoute[]> {
   if (!existsSync(pagesDir)) {
     return [];
@@ -84,7 +93,9 @@ export async function discoverPages(
 
     for (const locale of i18n.locales) {
       const localeDir = join(pagesDir, locale);
-      if (!existsSync(localeDir)) continue;
+      if (!existsSync(localeDir)) {
+        continue;
+      }
 
       const files = await glob("**/*.{md,mdx}", {
         cwd: localeDir,
@@ -108,8 +119,12 @@ export async function discoverPages(
 
         // Default locale pages serve at root URLs; non-default locales are prefixed
         const urlPath = isDefault
-          ? (id === "" ? "/" : `/${id}`)
-          : (id === "" ? `/${locale}` : `/${locale}/${id}`);
+          ? id === ""
+            ? "/"
+            : `/${id}`
+          : id === ""
+            ? `/${locale}`
+            : `/${locale}/${id}`;
 
         let title = data.title;
         if (!title) {
@@ -131,7 +146,7 @@ export async function discoverPages(
         };
 
         allRoutes.push({
-          id: isDefault ? (id || "index") : `${locale}/${id || "index"}`,
+          id: isDefault ? id || "index" : `${locale}/${id || "index"}`,
           filePath: `${locale}/${nfile}`,
           absolutePath,
           urlPath,
@@ -144,14 +159,18 @@ export async function discoverPages(
 
     // Fallback: when enabled, for each non-default locale, add missing pages from the default locale
     if (i18n.fallback) {
-      const defaultLocaleRoutes = allRoutes.filter(r => r.locale === i18n.defaultLocale);
+      const defaultLocaleRoutes = allRoutes.filter(
+        (r) => r.locale === i18n.defaultLocale
+      );
       for (const locale of i18n.locales) {
-        if (locale === i18n.defaultLocale) continue;
+        if (locale === i18n.defaultLocale) {
+          continue;
+        }
 
         const localeRouteIds = new Set(
           allRoutes
-            .filter(r => r.locale === locale)
-            .map(r => {
+            .filter((r) => r.locale === locale)
+            .map((r) => {
               // Strip the locale prefix from the id to get the base page id
               const prefix = `${locale}/`;
               return r.id.startsWith(prefix) ? r.id.slice(prefix.length) : r.id;
@@ -162,9 +181,8 @@ export async function discoverPages(
           const baseId = defaultRoute.id;
           if (!localeRouteIds.has(baseId)) {
             // Create a fallback route for this locale using the default locale's page
-            const urlPath = baseId === "index"
-              ? `/${locale}`
-              : `/${locale}/${baseId}`;
+            const urlPath =
+              baseId === "index" ? `/${locale}` : `/${locale}/${baseId}`;
 
             allRoutes.push({
               ...defaultRoute,
@@ -185,7 +203,9 @@ export async function discoverPages(
     const allRoutes: PageRoute[] = [];
     for (const version of versioning.versions) {
       const versionDir = join(pagesDir, version);
-      if (!existsSync(versionDir)) continue;
+      if (!existsSync(versionDir)) {
+        continue;
+      }
 
       const files = await glob("**/*.{md,mdx}", {
         cwd: versionDir,
@@ -208,8 +228,12 @@ export async function discoverPages(
         const isCurrent = version === versioning.current;
         // Current version pages serve at root URLs; older versions are prefixed
         const urlPath = isCurrent
-          ? (id === "" ? "/" : `/${id}`)
-          : (id === "" ? `/${version}` : `/${version}/${id}`);
+          ? id === ""
+            ? "/"
+            : `/${id}`
+          : id === ""
+            ? `/${version}`
+            : `/${version}/${id}`;
 
         let title = data.title;
         if (!title) {
@@ -231,7 +255,7 @@ export async function discoverPages(
         };
 
         allRoutes.push({
-          id: isCurrent ? (id || "index") : `${version}/${id || "index"}`,
+          id: isCurrent ? id || "index" : `${version}/${id || "index"}`,
           filePath: `${version}/${nfile}`,
           absolutePath,
           urlPath,
@@ -308,31 +332,48 @@ export function buildNavigation(
   // If config has explicit navigation, use it to order pages
   if (config.navigation && config.navigation.length > 0) {
     // Collect all page IDs referenced in navigation (recursively)
-    function collectIds(entries: Array<string | { group: string; pages: Array<unknown> }>): string[] {
+    function collectIds(
+      entries: Array<string | { group: string; pages: Array<unknown> }>
+    ): string[] {
       const ids: string[] = [];
       for (const entry of entries) {
         if (typeof entry === "string") {
           ids.push(entry);
         } else {
-          ids.push(...collectIds(entry.pages as Array<string | { group: string; pages: Array<unknown> }>));
+          ids.push(
+            ...collectIds(
+              entry.pages as Array<
+                string | { group: string; pages: Array<unknown> }
+              >
+            )
+          );
         }
       }
       return ids;
     }
 
     const explicitIds = new Set(
-      config.navigation.flatMap((g) => collectIds(g.pages as Array<string | { group: string; pages: Array<unknown> }>))
+      config.navigation.flatMap((g) =>
+        collectIds(
+          g.pages as Array<string | { group: string; pages: Array<unknown> }>
+        )
+      )
     );
 
     // Recursively resolve config nav entries to NavigationItem | NavigationGroup
-    function resolvePages(entries: Array<string | { group: string; pages: Array<unknown> }>): (NavigationItem | NavigationGroup)[] {
+    function resolvePages(
+      entries: Array<string | { group: string; pages: Array<unknown> }>
+    ): (NavigationItem | NavigationGroup)[] {
       const result: (NavigationItem | NavigationGroup)[] = [];
       for (const entry of entries) {
         if (typeof entry === "string") {
           const route = routes.find(
-            (r) => r.id === entry || r.filePath.replace(/\.(md|mdx)$/, "") === entry
+            (r) =>
+              r.id === entry || r.filePath.replace(/\.(md|mdx)$/, "") === entry
           );
-          if (!route || route.frontmatter.hidden) continue;
+          if (!route || route.frontmatter.hidden) {
+            continue;
+          }
           result.push({
             title: route.frontmatter.sidebarTitle || route.frontmatter.title,
             id: route.id,
@@ -341,7 +382,11 @@ export function buildNavigation(
             badge: normalizeBadge(route.frontmatter.badge),
           });
         } else {
-          const nested = resolvePages(entry.pages as Array<string | { group: string; pages: Array<unknown> }>);
+          const nested = resolvePages(
+            entry.pages as Array<
+              string | { group: string; pages: Array<unknown> }
+            >
+          );
           if (nested.length > 0) {
             result.push({ section: entry.group, pages: nested });
           }
@@ -352,7 +397,9 @@ export function buildNavigation(
 
     const groups: NavigationGroup[] = config.navigation.map((group) => ({
       section: group.group,
-      pages: resolvePages(group.pages as Array<string | { group: string; pages: Array<unknown> }>),
+      pages: resolvePages(
+        group.pages as Array<string | { group: string; pages: Array<unknown> }>
+      ),
     }));
 
     // Append remote/content-source pages not listed in explicit navigation.
@@ -360,8 +407,7 @@ export function buildNavigation(
     // user's config.navigation — group them under "External" by default.
     const remotePagesNotInNav = routes.filter(
       (r) =>
-        !explicitIds.has(r.id) &&
-        !r.frontmatter.hidden &&
+        !(explicitIds.has(r.id) || r.frontmatter.hidden) &&
         r.filePath.startsWith("__remote__/")
     );
 
@@ -385,12 +431,18 @@ export function buildNavigation(
   const groups: Map<string, NavigationItem[]> = new Map();
 
   for (const route of routes) {
-    if (route.frontmatter.hidden) continue;
+    if (route.frontmatter.hidden) {
+      continue;
+    }
 
     const dir = dirname(route.filePath);
-    const section = dir === "." ? "Documentation" : dir.split("/")[0]
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const section =
+      dir === "."
+        ? "Documentation"
+        : dir
+            .split("/")[0]
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
 
     if (!groups.has(section)) {
       groups.set(section, []);
@@ -425,7 +477,9 @@ export function flattenNavItems(groups: NavigationGroup[]): NavigationItem[] {
       }
     }
   }
-  for (const g of groups) walk(g.pages);
+  for (const g of groups) {
+    walk(g.pages);
+  }
   return items;
 }
 
@@ -436,7 +490,9 @@ export function getPrevNext(
   const allPages = flattenNavItems(navigation);
   const idx = allPages.findIndex((p) => p.id === currentId);
 
-  if (idx === -1) return { prev: null, next: null };
+  if (idx === -1) {
+    return { prev: null, next: null };
+  }
 
   return {
     prev: idx > 0 ? allPages[idx - 1] : null,

@@ -20,10 +20,12 @@ export async function createSsoSession(
     email: string;
     groups?: string[];
     expiresInMs?: number;
-  },
+  }
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const expiresInSec = Math.floor((payload.expiresInMs ?? DEFAULT_EXPIRY_MS) / 1000);
+  const expiresInSec = Math.floor(
+    (payload.expiresInMs ?? DEFAULT_EXPIRY_MS) / 1000
+  );
 
   const header = { alg: "HS256", typ: "JWT" };
   const body = {
@@ -39,7 +41,11 @@ export async function createSsoSession(
   const signingInput = `${headerB64}.${bodyB64}`;
 
   const key = await importHmacKey(secret);
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signingInput));
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(signingInput)
+  );
 
   return `${signingInput}.${base64url(sig)}`;
 }
@@ -51,10 +57,12 @@ export async function createSsoSession(
 export async function validateSsoSession(
   secret: string,
   token: string,
-  slug: string,
+  slug: string
 ): Promise<{ email: string; groups?: string[] } | null> {
   const parts = token.split(".");
-  if (parts.length !== 3) return null;
+  if (parts.length !== 3) {
+    return null;
+  }
 
   const signingInput = `${parts[0]}.${parts[1]}`;
 
@@ -65,7 +73,7 @@ export async function validateSsoSession(
     const expectedSig = await crypto.subtle.sign(
       "HMAC",
       key,
-      new TextEncoder().encode(signingInput),
+      new TextEncoder().encode(signingInput)
     );
     const actualSig = base64urlDecode(parts[2]);
     valid = timingSafeEqual(new Uint8Array(expectedSig), actualSig);
@@ -73,7 +81,9 @@ export async function validateSsoSession(
     return null;
   }
 
-  if (!valid) return null;
+  if (!valid) {
+    return null;
+  }
 
   // Decode and validate payload
   let payload: Record<string, unknown>;
@@ -85,19 +95,29 @@ export async function validateSsoSession(
   }
 
   // Check required fields
-  if (typeof payload.slug !== "string" || typeof payload.email !== "string") return null;
-  if (typeof payload.exp !== "number") return null;
+  if (typeof payload.slug !== "string" || typeof payload.email !== "string") {
+    return null;
+  }
+  if (typeof payload.exp !== "number") {
+    return null;
+  }
 
   // Check slug match
-  if (payload.slug !== slug) return null;
+  if (payload.slug !== slug) {
+    return null;
+  }
 
   // Check expiry
   const now = Math.floor(Date.now() / 1000);
-  if (payload.exp < now) return null;
+  if (payload.exp < now) {
+    return null;
+  }
 
   return {
     email: payload.email as string,
-    ...(Array.isArray(payload.groups) && { groups: payload.groups as string[] }),
+    ...(Array.isArray(payload.groups) && {
+      groups: payload.groups as string[],
+    }),
   };
 }
 
@@ -109,16 +129,20 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
     new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"],
+    ["sign"]
   );
 }
 
 function base64urlDecode(input: string): Uint8Array {
-  return Uint8Array.from(atob(base64urlToBase64(input)), (c) => c.charCodeAt(0));
+  return Uint8Array.from(atob(base64urlToBase64(input)), (c) =>
+    c.charCodeAt(0)
+  );
 }
 
 function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) return false;
+  if (a.length !== b.length) {
+    return false;
+  }
   let mismatch = 0;
   for (let i = 0; i < a.length; i++) {
     mismatch |= a[i] ^ b[i];

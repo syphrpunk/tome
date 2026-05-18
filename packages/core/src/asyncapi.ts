@@ -4,60 +4,60 @@ import { parse as parseYaml } from "yaml";
 // ── TYPES ───────────────────────────────────────────────
 
 export interface AsyncApiManifest {
-  title: string;
-  version: string;
+  channels: AsyncApiChannel[];
   description?: string;
   servers: AsyncApiServer[];
-  channels: AsyncApiChannel[];
   tags: Array<{ name: string; description?: string }>;
+  title: string;
+  version: string;
 }
 
 export interface AsyncApiServer {
-  name: string;
-  url: string;
-  protocol: string; // ws, wss, mqtt, mqtts, kafka, amqp, amqps, etc.
   description?: string;
+  name: string;
+  protocol: string; // ws, wss, mqtt, mqtts, kafka, amqp, amqps, etc.
+  url: string;
 }
 
 export interface AsyncApiChannel {
-  name: string; // channel path, e.g. "user/signedup"
+  bindings?: Record<string, unknown>;
   description?: string;
+  name: string; // channel path, e.g. "user/signedup"
+  parameters: AsyncApiParameter[];
   publish?: AsyncApiOperation;
   subscribe?: AsyncApiOperation;
-  parameters: AsyncApiParameter[];
   tags: string[];
-  bindings?: Record<string, unknown>;
 }
 
 export interface AsyncApiOperation {
-  operationId?: string;
-  summary?: string;
   description?: string;
   message?: AsyncApiMessage;
+  operationId?: string;
+  summary?: string;
   tags: string[];
 }
 
 export interface AsyncApiMessage {
-  name?: string;
-  title?: string;
-  summary?: string;
-  description?: string;
   contentType?: string;
-  payload?: unknown; // JSON Schema
+  description?: string;
   examples?: Array<{ name?: string; payload?: unknown }>;
+  name?: string;
+  payload?: unknown; // JSON Schema
+  summary?: string;
+  title?: string;
 }
 
 export interface AsyncApiParameter {
-  name: string;
   description?: string;
-  schema?: unknown;
   location?: string;
+  name: string;
+  schema?: unknown;
 }
 
 export interface AsyncApiCodeSample {
-  language: string;
-  label: string;
   code: string;
+  label: string;
+  language: string;
 }
 
 // ── $REF RESOLUTION ─────────────────────────────────────
@@ -81,7 +81,11 @@ export function resolveRef(obj: unknown, root: unknown): unknown {
     const segments = refPath.slice(2).split("/");
     let current: unknown = root;
     for (const segment of segments) {
-      if (current === null || current === undefined || typeof current !== "object") {
+      if (
+        current === null ||
+        current === undefined ||
+        typeof current !== "object"
+      ) {
         return obj;
       }
       current = (current as Record<string, unknown>)[segment];
@@ -100,9 +104,11 @@ export function resolveRef(obj: unknown, root: unknown): unknown {
 
 function extractOperation(
   raw: Record<string, unknown> | undefined,
-  root: unknown,
+  root: unknown
 ): AsyncApiOperation | undefined {
-  if (!raw) return undefined;
+  if (!raw) {
+    return;
+  }
   const resolved = resolveRef(raw, root) as Record<string, unknown>;
 
   let message: AsyncApiMessage | undefined;
@@ -134,7 +140,11 @@ function extractOperation(
     for (const t of resolved.tags) {
       if (typeof t === "string") {
         tags.push(t);
-      } else if (t && typeof t === "object" && typeof (t as Record<string, unknown>).name === "string") {
+      } else if (
+        t &&
+        typeof t === "object" &&
+        typeof (t as Record<string, unknown>).name === "string"
+      ) {
         tags.push((t as Record<string, unknown>).name as string);
       }
     }
@@ -151,9 +161,11 @@ function extractOperation(
 
 function extractParameters(
   params: Record<string, unknown> | undefined,
-  root: unknown,
+  root: unknown
 ): AsyncApiParameter[] {
-  if (!params || typeof params !== "object") return [];
+  if (!params || typeof params !== "object") {
+    return [];
+  }
   return Object.entries(params).map(([name, value]) => {
     const resolved = resolveRef(value, root) as Record<string, unknown>;
     return {
@@ -169,7 +181,7 @@ function extractParameters(
 
 export function generateAsyncCodeSamples(
   channel: AsyncApiChannel,
-  server?: AsyncApiServer,
+  server?: AsyncApiServer
 ): AsyncApiCodeSample[] {
   const protocol = server?.protocol || "ws";
   const url = server?.url || "localhost";
@@ -178,97 +190,110 @@ export function generateAsyncCodeSamples(
   switch (protocol) {
     case "ws":
     case "wss": {
-      const wsUrl = url.startsWith("ws://") || url.startsWith("wss://")
-        ? url
-        : `${protocol}://${url}`;
+      const wsUrl =
+        url.startsWith("ws://") || url.startsWith("wss://")
+          ? url
+          : `${protocol}://${url}`;
 
       const lines: string[] = [];
       lines.push(`const ws = new WebSocket("${wsUrl}/${channelName}");`);
-      lines.push(``);
-      lines.push(`ws.onopen = () => {`);
+      lines.push("");
+      lines.push("ws.onopen = () => {");
       lines.push(`  console.log("Connected to ${channelName}");`);
 
       if (channel.publish?.message?.payload) {
-        lines.push(`  ws.send(JSON.stringify(${JSON.stringify(channel.publish.message.examples?.[0]?.payload || {}, null, 2).replace(/\n/g, "\n  ")}));`);
+        lines.push(
+          `  ws.send(JSON.stringify(${JSON.stringify(channel.publish.message.examples?.[0]?.payload || {}, null, 2).replace(/\n/g, "\n  ")}));`
+        );
       }
 
-      lines.push(`};`);
-      lines.push(``);
-      lines.push(`ws.onmessage = (event) => {`);
-      lines.push(`  const data = JSON.parse(event.data);`);
+      lines.push("};");
+      lines.push("");
+      lines.push("ws.onmessage = (event) => {");
+      lines.push("  const data = JSON.parse(event.data);");
       lines.push(`  console.log("Received:", data);`);
-      lines.push(`};`);
+      lines.push("};");
 
-      return [{ language: "javascript", label: "WebSocket", code: lines.join("\n") }];
+      return [
+        { language: "javascript", label: "WebSocket", code: lines.join("\n") },
+      ];
     }
 
     case "mqtt":
     case "mqtts": {
-      const mqttUrl = url.startsWith("mqtt://") || url.startsWith("mqtts://")
-        ? url
-        : `${protocol}://${url}`;
+      const mqttUrl =
+        url.startsWith("mqtt://") || url.startsWith("mqtts://")
+          ? url
+          : `${protocol}://${url}`;
 
       const lines: string[] = [];
       lines.push(`import mqtt from "mqtt";`);
-      lines.push(``);
+      lines.push("");
       lines.push(`const client = mqtt.connect("${mqttUrl}");`);
-      lines.push(``);
+      lines.push("");
       lines.push(`client.on("connect", () => {`);
       lines.push(`  client.subscribe("${channelName}");`);
       lines.push(`  console.log("Subscribed to ${channelName}");`);
-      lines.push(`});`);
-      lines.push(``);
+      lines.push("});");
+      lines.push("");
       lines.push(`client.on("message", (topic, message) => {`);
-      lines.push(`  const data = JSON.parse(message.toString());`);
+      lines.push("  const data = JSON.parse(message.toString());");
       lines.push(`  console.log("Received:", data);`);
-      lines.push(`});`);
+      lines.push("});");
 
-      return [{ language: "javascript", label: "MQTT", code: lines.join("\n") }];
+      return [
+        { language: "javascript", label: "MQTT", code: lines.join("\n") },
+      ];
     }
 
     case "kafka": {
       const lines: string[] = [];
       lines.push(`import { Kafka } from "kafkajs";`);
-      lines.push(``);
-      lines.push(`const kafka = new Kafka({`);
+      lines.push("");
+      lines.push("const kafka = new Kafka({");
       lines.push(`  brokers: ["${url}"],`);
-      lines.push(`});`);
-      lines.push(``);
+      lines.push("});");
+      lines.push("");
       lines.push(`const consumer = kafka.consumer({ groupId: "my-group" });`);
-      lines.push(``);
-      lines.push(`await consumer.connect();`);
+      lines.push("");
+      lines.push("await consumer.connect();");
       lines.push(`await consumer.subscribe({ topic: "${channelName}" });`);
-      lines.push(``);
-      lines.push(`await consumer.run({`);
-      lines.push(`  eachMessage: async ({ message }) => {`);
-      lines.push(`    const data = JSON.parse(message.value.toString());`);
+      lines.push("");
+      lines.push("await consumer.run({");
+      lines.push("  eachMessage: async ({ message }) => {");
+      lines.push("    const data = JSON.parse(message.value.toString());");
       lines.push(`    console.log("Received:", data);`);
-      lines.push(`  },`);
-      lines.push(`});`);
+      lines.push("  },");
+      lines.push("});");
 
-      return [{ language: "javascript", label: "Kafka", code: lines.join("\n") }];
+      return [
+        { language: "javascript", label: "Kafka", code: lines.join("\n") },
+      ];
     }
 
     case "amqp":
     case "amqps": {
-      const amqpUrl = url.startsWith("amqp://") || url.startsWith("amqps://")
-        ? url
-        : `${protocol}://${url}`;
+      const amqpUrl =
+        url.startsWith("amqp://") || url.startsWith("amqps://")
+          ? url
+          : `${protocol}://${url}`;
 
       const lines: string[] = [];
       lines.push(`import amqp from "amqplib";`);
-      lines.push(``);
+      lines.push("");
       lines.push(`const connection = await amqp.connect("${amqpUrl}");`);
-      lines.push(`const channel = await connection.createChannel();`);
-      lines.push(``);
+      lines.push("const channel = await connection.createChannel();");
+      lines.push("");
       lines.push(`await channel.assertQueue("${channelName}");`);
       lines.push(`channel.consume("${channelName}", (msg) => {`);
-      lines.push(`  const data = JSON.parse(msg.content.toString());`);
+      lines.push("  const data = JSON.parse(msg.content.toString());");
       lines.push(`  console.log("Received:", data);`);
-      lines.push(`  channel.ack(msg);`);
-      lines.push(`});`);
+      lines.push("  channel.ack(msg);");
+      lines.push("});");
 
-      return [{ language: "javascript", label: "AMQP", code: lines.join("\n") }];
+      return [
+        { language: "javascript", label: "AMQP", code: lines.join("\n") },
+      ];
     }
 
     default: {
@@ -281,7 +306,7 @@ export function generateAsyncCodeSamples(
 // ── PARSER ──────────────────────────────────────────────
 
 export async function parseAsyncApiSpec(
-  specPath: string,
+  specPath: string
 ): Promise<AsyncApiManifest> {
   // Read file
   let raw: string;
@@ -300,7 +325,9 @@ export async function parseAsyncApiSpec(
       doc = parseYaml(raw) as Record<string, unknown>;
     }
   } catch {
-    throw new Error(`Failed to parse AsyncAPI spec: invalid JSON/YAML in ${specPath}`);
+    throw new Error(
+      `Failed to parse AsyncAPI spec: invalid JSON/YAML in ${specPath}`
+    );
   }
 
   // Validate asyncapi field
@@ -311,7 +338,7 @@ export async function parseAsyncApiSpec(
   const asyncapiVersion = doc.asyncapi as string;
   if (!asyncapiVersion.startsWith("2.")) {
     throw new Error(
-      `Unsupported AsyncAPI version: ${asyncapiVersion}. Only 2.x is supported.`,
+      `Unsupported AsyncAPI version: ${asyncapiVersion}. Only 2.x is supported.`
     );
   }
 
@@ -326,7 +353,9 @@ export async function parseAsyncApiSpec(
 
   // Extract servers
   const servers: AsyncApiServer[] = [];
-  const rawServers = resolved.servers as Record<string, Record<string, unknown>> | undefined;
+  const rawServers = resolved.servers as
+    | Record<string, Record<string, unknown>>
+    | undefined;
   if (rawServers && typeof rawServers === "object") {
     for (const [name, serverDef] of Object.entries(rawServers)) {
       servers.push({
@@ -340,23 +369,29 @@ export async function parseAsyncApiSpec(
 
   // Extract channels
   const channels: AsyncApiChannel[] = [];
-  const rawChannels = resolved.channels as Record<string, Record<string, unknown>> | undefined;
+  const rawChannels = resolved.channels as
+    | Record<string, Record<string, unknown>>
+    | undefined;
   if (rawChannels && typeof rawChannels === "object") {
     for (const [channelPath, channelDef] of Object.entries(rawChannels)) {
       const channelTags: string[] = [];
 
       const publish = extractOperation(
         channelDef.publish as Record<string, unknown> | undefined,
-        resolved,
+        resolved
       );
       const subscribe = extractOperation(
         channelDef.subscribe as Record<string, unknown> | undefined,
-        resolved,
+        resolved
       );
 
       // Collect tags from operations
-      if (publish?.tags) channelTags.push(...publish.tags);
-      if (subscribe?.tags) channelTags.push(...subscribe.tags);
+      if (publish?.tags) {
+        channelTags.push(...publish.tags);
+      }
+      if (subscribe?.tags) {
+        channelTags.push(...subscribe.tags);
+      }
 
       channels.push({
         name: channelPath,
@@ -365,7 +400,7 @@ export async function parseAsyncApiSpec(
         subscribe,
         parameters: extractParameters(
           channelDef.parameters as Record<string, unknown> | undefined,
-          resolved,
+          resolved
         ),
         tags: [...new Set(channelTags)],
         bindings: channelDef.bindings as Record<string, unknown> | undefined,

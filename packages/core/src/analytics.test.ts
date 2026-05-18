@@ -1,12 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
+  type AnalyticsEvent,
+  aggregateEvents,
   generateAnalyticsScript,
   generateSessionId,
-  aggregateEvents,
   type PageViewEvent,
   type SearchEvent,
-  type FeedbackEvent,
-  type AnalyticsEvent,
 } from "./analytics.js";
 
 // ── generateAnalyticsScript ──────────────────────────
@@ -65,7 +64,7 @@ describe("generateSessionId", () => {
 
 describe("aggregateEvents", () => {
   const makePageView = (
-    overrides: Partial<PageViewEvent> = {},
+    overrides: Partial<PageViewEvent> = {}
   ): PageViewEvent => ({
     type: "pageview",
     url: "/docs/intro",
@@ -79,7 +78,7 @@ describe("aggregateEvents", () => {
   });
 
   const makeSearchEvent = (
-    overrides: Partial<SearchEvent> = {},
+    overrides: Partial<SearchEvent> = {}
   ): SearchEvent => ({
     type: "search",
     query: "getting started",
@@ -230,9 +229,30 @@ describe("search analytics", () => {
 
   it("counts total searches", () => {
     const events: AnalyticsEvent[] = [
-      { type: "search", query: "install", resultsCount: 3, timestamp: 1, sessionId: "s1", siteId: "x" },
-      { type: "search", query: "deploy", resultsCount: 0, timestamp: 2, sessionId: "s1", siteId: "x" },
-      { type: "search", query: "install", resultsCount: 3, timestamp: 3, sessionId: "s2", siteId: "x" },
+      {
+        type: "search",
+        query: "install",
+        resultsCount: 3,
+        timestamp: 1,
+        sessionId: "s1",
+        siteId: "x",
+      },
+      {
+        type: "search",
+        query: "deploy",
+        resultsCount: 0,
+        timestamp: 2,
+        sessionId: "s1",
+        siteId: "x",
+      },
+      {
+        type: "search",
+        query: "install",
+        resultsCount: 3,
+        timestamp: 3,
+        sessionId: "s2",
+        siteId: "x",
+      },
     ];
     const summary = aggregateEvents(events);
     expect(summary.totalSearches).toBe(3);
@@ -240,10 +260,38 @@ describe("search analytics", () => {
 
   it("computes zero-result queries", () => {
     const events: AnalyticsEvent[] = [
-      { type: "search", query: "install", resultsCount: 3, timestamp: 1, sessionId: "s1", siteId: "x" },
-      { type: "search", query: "nonexistent", resultsCount: 0, timestamp: 2, sessionId: "s1", siteId: "x" },
-      { type: "search", query: "nonexistent", resultsCount: 0, timestamp: 3, sessionId: "s2", siteId: "x" },
-      { type: "search", query: "missing", resultsCount: 0, timestamp: 4, sessionId: "s1", siteId: "x" },
+      {
+        type: "search",
+        query: "install",
+        resultsCount: 3,
+        timestamp: 1,
+        sessionId: "s1",
+        siteId: "x",
+      },
+      {
+        type: "search",
+        query: "nonexistent",
+        resultsCount: 0,
+        timestamp: 2,
+        sessionId: "s1",
+        siteId: "x",
+      },
+      {
+        type: "search",
+        query: "nonexistent",
+        resultsCount: 0,
+        timestamp: 3,
+        sessionId: "s2",
+        siteId: "x",
+      },
+      {
+        type: "search",
+        query: "missing",
+        resultsCount: 0,
+        timestamp: 4,
+        sessionId: "s1",
+        siteId: "x",
+      },
     ];
     const summary = aggregateEvents(events);
     expect(summary.zeroResultQueries).toEqual([
@@ -258,8 +306,23 @@ describe("search analytics", () => {
 describe("feedback analytics", () => {
   it("counts total feedback events", () => {
     const events: AnalyticsEvent[] = [
-      { type: "feedback", pageId: "intro", rating: "up", timestamp: 1, sessionId: "s1", siteId: "x" },
-      { type: "feedback", pageId: "api", rating: "down", comment: "confusing", timestamp: 2, sessionId: "s1", siteId: "x" },
+      {
+        type: "feedback",
+        pageId: "intro",
+        rating: "up",
+        timestamp: 1,
+        sessionId: "s1",
+        siteId: "x",
+      },
+      {
+        type: "feedback",
+        pageId: "api",
+        rating: "down",
+        comment: "confusing",
+        timestamp: 2,
+        sessionId: "s1",
+        siteId: "x",
+      },
     ];
     const summary = aggregateEvents(events);
     expect(summary.totalFeedback).toBe(2);
@@ -267,9 +330,30 @@ describe("feedback analytics", () => {
 
   it("aggregates feedback by rating", () => {
     const events: AnalyticsEvent[] = [
-      { type: "feedback", pageId: "intro", rating: "up", timestamp: 1, sessionId: "s1", siteId: "x" },
-      { type: "feedback", pageId: "api", rating: "down", timestamp: 2, sessionId: "s1", siteId: "x" },
-      { type: "feedback", pageId: "guide", rating: "up", timestamp: 3, sessionId: "s2", siteId: "x" },
+      {
+        type: "feedback",
+        pageId: "intro",
+        rating: "up",
+        timestamp: 1,
+        sessionId: "s1",
+        siteId: "x",
+      },
+      {
+        type: "feedback",
+        pageId: "api",
+        rating: "down",
+        timestamp: 2,
+        sessionId: "s1",
+        siteId: "x",
+      },
+      {
+        type: "feedback",
+        pageId: "guide",
+        rating: "up",
+        timestamp: 3,
+        sessionId: "s2",
+        siteId: "x",
+      },
     ];
     const summary = aggregateEvents(events);
     expect(summary.feedbackByRating).toEqual({ up: 2, down: 1 });

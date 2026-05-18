@@ -1,60 +1,60 @@
 import { useState } from "react";
-import { ApiPlayground } from "./ApiPlayground.js";
 import type { ApiPlaygroundProps } from "./ApiPlayground.js";
-import { CodeSamples } from "./CodeSamples.js";
+import { ApiPlayground } from "./ApiPlayground.js";
 import type { CodeSample } from "./CodeSamples.js";
+import { CodeSamples } from "./CodeSamples.js";
 
 // ── TYPES (mirrored from @tomehq/core openapi) ────────────
 // These are kept lightweight so the components package doesn't
 // depend on @tomehq/core at runtime — the data is passed as props.
 
 export interface ApiParameter {
-  name: string;
-  in: "query" | "path" | "header" | "cookie";
   description?: string;
-  required: boolean;
-  type: string;
-  schema?: Record<string, unknown>;
   example?: unknown;
+  in: "query" | "path" | "header" | "cookie";
+  name: string;
+  required: boolean;
+  schema?: Record<string, unknown>;
+  type: string;
 }
 
 export interface ApiRequestBody {
-  description?: string;
-  required: boolean;
   contentType: string;
-  schema?: Record<string, unknown>;
+  description?: string;
   example?: unknown;
+  required: boolean;
+  schema?: Record<string, unknown>;
 }
 
 export interface ApiResponse {
-  statusCode: string;
-  description: string;
   contentType?: string;
+  description: string;
   schema?: Record<string, unknown>;
+  statusCode: string;
 }
 
 export interface ApiEndpoint {
-  method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options";
-  path: string;
-  operationId?: string;
-  summary?: string;
+  codeSamples?: CodeSample[];
+  deprecated: boolean;
   description?: string;
-  tags: string[];
+  method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options";
+  operationId?: string;
   parameters: ApiParameter[];
+  path: string;
   requestBody?: ApiRequestBody;
   responses: ApiResponse[];
-  deprecated: boolean;
   security?: unknown[];
-  codeSamples?: CodeSample[];
+  summary?: string;
+  tags: string[];
 }
 
 export interface ApiManifest {
+  description?: string;
+  endpoints: ApiEndpoint[];
+  servers: Array<{ url: string; description?: string }>;
+  tags: Array<{ name: string; description?: string }>;
   title: string;
   version: string;
-  description?: string;
-  servers: Array<{ url: string; description?: string }>;
-  endpoints: ApiEndpoint[];
-  tags: Array<{ name: string; description?: string }>;
 }
 
 // ── METHOD BADGE ────────────────────────────────────────
@@ -103,7 +103,9 @@ export interface ParameterTableProps {
 }
 
 export function ParameterTable({ parameters }: ParameterTableProps) {
-  if (parameters.length === 0) return null;
+  if (parameters.length === 0) {
+    return null;
+  }
   return (
     <div style={{ overflowX: "auto", marginBottom: 16 }}>
       <table
@@ -121,11 +123,51 @@ export function ParameterTable({ parameters }: ParameterTableProps) {
               textAlign: "left",
             }}
           >
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>Name</th>
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>Type</th>
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>In</th>
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>Required</th>
-            <th style={{ padding: "8px 12px", fontWeight: 600, color: "var(--tx)" }}>Description</th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              Name
+            </th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              Type
+            </th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              In
+            </th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              Required
+            </th>
+            <th
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+                color: "var(--tx)",
+              }}
+            >
+              Description
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -159,7 +201,8 @@ export function ParameterTable({ parameters }: ParameterTableProps) {
                     padding: "1px 6px",
                     borderRadius: 3,
                     fontSize: 11,
-                    background: param.in === "path" ? "var(--ac)" + "22" : "var(--sf)",
+                    background:
+                      param.in === "path" ? "var(--ac)22" : "var(--sf)",
                     color: param.in === "path" ? "var(--ac)" : "var(--txM)",
                   }}
                 >
@@ -182,7 +225,9 @@ export function ParameterTable({ parameters }: ParameterTableProps) {
                     required
                   </span>
                 ) : (
-                  <span style={{ color: "var(--txM)", fontSize: 12 }}>optional</span>
+                  <span style={{ color: "var(--txM)", fontSize: 12 }}>
+                    optional
+                  </span>
                 )}
               </td>
               <td style={{ padding: "8px 12px", color: "var(--tx2)" }}>
@@ -205,7 +250,14 @@ export interface RequestBodyBlockProps {
 export function RequestBodyBlock({ requestBody }: RequestBodyBlockProps) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
         <span
           style={{
             padding: "2px 8px",
@@ -234,7 +286,14 @@ export function RequestBodyBlock({ requestBody }: RequestBodyBlockProps) {
         )}
       </div>
       {requestBody.description && (
-        <p style={{ fontSize: 13, color: "var(--tx2)", marginBottom: 8, marginTop: 0 }}>
+        <p
+          style={{
+            fontSize: 13,
+            color: "var(--tx2)",
+            marginBottom: 8,
+            marginTop: 0,
+          }}
+        >
           {requestBody.description}
         </p>
       )}
@@ -262,9 +321,15 @@ export function RequestBodyBlock({ requestBody }: RequestBodyBlockProps) {
 // ── RESPONSE BLOCK ──────────────────────────────────────
 
 function statusColor(code: string): string {
-  if (code.startsWith("2")) return "#22c55e";
-  if (code.startsWith("4")) return "#f59e0b";
-  if (code.startsWith("5")) return "#ef4444";
+  if (code.startsWith("2")) {
+    return "#22c55e";
+  }
+  if (code.startsWith("4")) {
+    return "#f59e0b";
+  }
+  if (code.startsWith("5")) {
+    return "#ef4444";
+  }
   return "#6b7280";
 }
 
@@ -273,7 +338,9 @@ export interface ResponseBlockProps {
 }
 
 export function ResponseBlock({ responses }: ResponseBlockProps) {
-  if (responses.length === 0) return null;
+  if (responses.length === 0) {
+    return null;
+  }
   return (
     <div style={{ marginBottom: 16 }}>
       {responses.map((res, i) => {
@@ -342,8 +409,8 @@ export function ResponseBlock({ responses }: ResponseBlockProps) {
 // ── CODE EXAMPLES ───────────────────────────────────────
 
 export interface CodeExamplesProps {
-  endpoint: ApiEndpoint;
   baseUrl?: string;
+  endpoint: ApiEndpoint;
 }
 
 function generateCurl(endpoint: ApiEndpoint, baseUrl: string): string {
@@ -358,7 +425,9 @@ function generateCurl(endpoint: ApiEndpoint, baseUrl: string): string {
   if (endpoint.requestBody) {
     parts.push(`  -H "Content-Type: ${endpoint.requestBody.contentType}"`);
     if (endpoint.requestBody.schema) {
-      parts.push(`  -d '${JSON.stringify(endpoint.requestBody.schema, null, 2)}'`);
+      parts.push(
+        `  -d '${JSON.stringify(endpoint.requestBody.schema, null, 2)}'`
+      );
     }
   }
 
@@ -379,10 +448,14 @@ function generateFetch(endpoint: ApiEndpoint, baseUrl: string): string {
     headers["Content-Type"] = endpoint.requestBody.contentType;
   }
   if (Object.keys(headers).length > 0) {
-    options.push(`  headers: ${JSON.stringify(headers, null, 4).replace(/\n/g, "\n  ")},`);
+    options.push(
+      `  headers: ${JSON.stringify(headers, null, 4).replace(/\n/g, "\n  ")},`
+    );
   }
   if (endpoint.requestBody?.schema) {
-    options.push(`  body: JSON.stringify(${JSON.stringify(endpoint.requestBody.schema, null, 4).replace(/\n/g, "\n  ")}),`);
+    options.push(
+      `  body: JSON.stringify(${JSON.stringify(endpoint.requestBody.schema, null, 4).replace(/\n/g, "\n  ")}),`
+    );
   }
 
   return `fetch("${url}", {\n${options.join("\n")}\n});`;
@@ -407,13 +480,19 @@ function generatePython(endpoint: ApiEndpoint, baseUrl: string): string {
   }
 
   if (endpoint.requestBody?.schema) {
-    lines.push(`data = ${JSON.stringify(endpoint.requestBody.schema, null, 4)}`);
+    lines.push(
+      `data = ${JSON.stringify(endpoint.requestBody.schema, null, 4)}`
+    );
     lines.push("");
   }
 
   const args: string[] = [`"${url}"`];
-  if (Object.keys(headers).length > 0) args.push("headers=headers");
-  if (endpoint.requestBody?.schema) args.push("json=data");
+  if (Object.keys(headers).length > 0) {
+    args.push("headers=headers");
+  }
+  if (endpoint.requestBody?.schema) {
+    args.push("json=data");
+  }
 
   lines.push(`response = requests.${endpoint.method}(${args.join(", ")})`);
   lines.push("print(response.json())");
@@ -423,7 +502,13 @@ function generatePython(endpoint: ApiEndpoint, baseUrl: string): string {
 
 function generateGo(endpoint: ApiEndpoint, baseUrl: string): string {
   const url = baseUrl + endpoint.path;
-  const lines: string[] = ["package main", "", 'import (', '  "fmt"', '  "net/http"'];
+  const lines: string[] = [
+    "package main",
+    "",
+    "import (",
+    '  "fmt"',
+    '  "net/http"',
+  ];
   if (endpoint.requestBody?.schema) {
     lines.push('  "bytes"', '  "encoding/json"');
   }
@@ -431,10 +516,16 @@ function generateGo(endpoint: ApiEndpoint, baseUrl: string): string {
   lines.push("func main() {");
 
   if (endpoint.requestBody?.schema) {
-    lines.push(`  body, _ := json.Marshal(${JSON.stringify(endpoint.requestBody.schema)})`);
-    lines.push(`  req, _ := http.NewRequest("${endpoint.method.toUpperCase()}", "${url}", bytes.NewBuffer(body))`);
+    lines.push(
+      `  body, _ := json.Marshal(${JSON.stringify(endpoint.requestBody.schema)})`
+    );
+    lines.push(
+      `  req, _ := http.NewRequest("${endpoint.method.toUpperCase()}", "${url}", bytes.NewBuffer(body))`
+    );
   } else {
-    lines.push(`  req, _ := http.NewRequest("${endpoint.method.toUpperCase()}", "${url}", nil)`);
+    lines.push(
+      `  req, _ := http.NewRequest("${endpoint.method.toUpperCase()}", "${url}", nil)`
+    );
   }
 
   const headerParams = endpoint.parameters.filter((p) => p.in === "header");
@@ -442,7 +533,9 @@ function generateGo(endpoint: ApiEndpoint, baseUrl: string): string {
     lines.push(`  req.Header.Set("${h.name}", "<value>")`);
   }
   if (endpoint.requestBody) {
-    lines.push(`  req.Header.Set("Content-Type", "${endpoint.requestBody.contentType}")`);
+    lines.push(
+      `  req.Header.Set("Content-Type", "${endpoint.requestBody.contentType}")`
+    );
   }
 
   lines.push("  resp, _ := http.DefaultClient.Do(req)");
@@ -463,14 +556,20 @@ function generateJava(endpoint: ApiEndpoint, baseUrl: string): string {
   ];
 
   if (endpoint.requestBody?.schema) {
-    lines.push(`var body = ${JSON.stringify(JSON.stringify(endpoint.requestBody.schema))};`);
-    lines.push(`var request = HttpRequest.newBuilder()`);
+    lines.push(
+      `var body = ${JSON.stringify(JSON.stringify(endpoint.requestBody.schema))};`
+    );
+    lines.push("var request = HttpRequest.newBuilder()");
     lines.push(`  .uri(URI.create("${url}"))`);
-    lines.push(`  .method("${endpoint.method.toUpperCase()}", HttpRequest.BodyPublishers.ofString(body))`);
+    lines.push(
+      `  .method("${endpoint.method.toUpperCase()}", HttpRequest.BodyPublishers.ofString(body))`
+    );
   } else {
-    lines.push(`var request = HttpRequest.newBuilder()`);
+    lines.push("var request = HttpRequest.newBuilder()");
     lines.push(`  .uri(URI.create("${url}"))`);
-    lines.push(`  .method("${endpoint.method.toUpperCase()}", HttpRequest.BodyPublishers.noBody())`);
+    lines.push(
+      `  .method("${endpoint.method.toUpperCase()}", HttpRequest.BodyPublishers.noBody())`
+    );
   }
 
   const headerParams = endpoint.parameters.filter((p) => p.in === "header");
@@ -478,11 +577,15 @@ function generateJava(endpoint: ApiEndpoint, baseUrl: string): string {
     lines.push(`  .header("${h.name}", "<value>")`);
   }
   if (endpoint.requestBody) {
-    lines.push(`  .header("Content-Type", "${endpoint.requestBody.contentType}")`);
+    lines.push(
+      `  .header("Content-Type", "${endpoint.requestBody.contentType}")`
+    );
   }
   lines.push("  .build();");
   lines.push("");
-  lines.push("var response = client.send(request, HttpResponse.BodyHandlers.ofString());");
+  lines.push(
+    "var response = client.send(request, HttpResponse.BodyHandlers.ofString());"
+  );
   lines.push("System.out.println(response.body());");
   return lines.join("\n");
 }
@@ -501,9 +604,11 @@ function generateCSharp(endpoint: ApiEndpoint, baseUrl: string): string {
   }
 
   if (endpoint.requestBody?.schema) {
-    lines.push(`request.Content = new StringContent(`);
-    lines.push(`  ${JSON.stringify(JSON.stringify(endpoint.requestBody.schema))},`);
-    lines.push(`  System.Text.Encoding.UTF8,`);
+    lines.push("request.Content = new StringContent(");
+    lines.push(
+      `  ${JSON.stringify(JSON.stringify(endpoint.requestBody.schema))},`
+    );
+    lines.push("  System.Text.Encoding.UTF8,");
     lines.push(`  "${endpoint.requestBody.contentType}");`);
   }
 
@@ -514,7 +619,10 @@ function generateCSharp(endpoint: ApiEndpoint, baseUrl: string): string {
   return lines.join("\n");
 }
 
-export function CodeExamples({ endpoint, baseUrl = "https://api.example.com" }: CodeExamplesProps) {
+export function CodeExamples({
+  endpoint,
+  baseUrl = "https://api.example.com",
+}: CodeExamplesProps) {
   const [active, setActive] = useState(0);
 
   const tabs = ["cURL", "JavaScript", "Python", "Go", "Java", "C#"];
@@ -529,7 +637,15 @@ export function CodeExamples({ endpoint, baseUrl = "https://api.example.com" }: 
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--bd)", overflowX: "auto", WebkitOverflowScrolling: "touch" as any }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          borderBottom: "1px solid var(--bd)",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch" as any,
+        }}
+      >
         {tabs.map((tab, i) => (
           <button
             key={tab}
@@ -538,7 +654,8 @@ export function CodeExamples({ endpoint, baseUrl = "https://api.example.com" }: 
               padding: "6px 14px",
               background: "none",
               border: "none",
-              borderBottom: active === i ? "2px solid var(--ac)" : "2px solid transparent",
+              borderBottom:
+                active === i ? "2px solid var(--ac)" : "2px solid transparent",
               color: active === i ? "var(--ac)" : "var(--txM)",
               fontWeight: active === i ? 600 : 400,
               fontSize: 12,
@@ -573,16 +690,26 @@ export function CodeExamples({ endpoint, baseUrl = "https://api.example.com" }: 
 // ── ENDPOINT CARD ───────────────────────────────────────
 
 export interface EndpointCardProps {
-  endpoint: ApiEndpoint;
   baseUrl?: string;
   defaultExpanded?: boolean;
-  showPlayground?: boolean;
+  endpoint: ApiEndpoint;
   playgroundAuth?: ApiPlaygroundProps["auth"];
+  showPlayground?: boolean;
 }
 
-export function EndpointCard({ endpoint, baseUrl, defaultExpanded = false, showPlayground, playgroundAuth }: EndpointCardProps) {
+export function EndpointCard({
+  endpoint,
+  baseUrl,
+  defaultExpanded = false,
+  showPlayground,
+  playgroundAuth,
+}: EndpointCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const endpointId = (endpoint.operationId || `${endpoint.method}-${endpoint.path}`).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const endpointId = (
+    endpoint.operationId || `${endpoint.method}-${endpoint.path}`
+  )
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
 
   const hasDetails =
     endpoint.parameters.length > 0 ||
@@ -693,14 +820,29 @@ export function EndpointCard({ endpoint, baseUrl, defaultExpanded = false, showP
           }}
         >
           {endpoint.description && (
-            <p style={{ fontSize: 14, color: "var(--tx2)", lineHeight: 1.65, marginTop: 0, marginBottom: 16 }}>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--tx2)",
+                lineHeight: 1.65,
+                marginTop: 0,
+                marginBottom: 16,
+              }}
+            >
               {endpoint.description}
             </p>
           )}
 
           {endpoint.parameters.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+              <h4
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                  color: "var(--tx)",
+                }}
+              >
                 Parameters
               </h4>
               <ParameterTable parameters={endpoint.parameters} />
@@ -709,7 +851,14 @@ export function EndpointCard({ endpoint, baseUrl, defaultExpanded = false, showP
 
           {endpoint.requestBody && (
             <div style={{ marginBottom: 16 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+              <h4
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                  color: "var(--tx)",
+                }}
+              >
                 Request Body
               </h4>
               <RequestBodyBlock requestBody={endpoint.requestBody} />
@@ -718,7 +867,14 @@ export function EndpointCard({ endpoint, baseUrl, defaultExpanded = false, showP
 
           {endpoint.responses.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+              <h4
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                  color: "var(--tx)",
+                }}
+              >
                 Responses
               </h4>
               <ResponseBlock responses={endpoint.responses} />
@@ -726,22 +882,29 @@ export function EndpointCard({ endpoint, baseUrl, defaultExpanded = false, showP
           )}
 
           <div>
-            <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--tx)" }}>
+            <h4
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 8,
+                color: "var(--tx)",
+              }}
+            >
               Code Examples
             </h4>
             {endpoint.codeSamples && endpoint.codeSamples.length > 0 ? (
               <CodeSamples samples={endpoint.codeSamples} />
             ) : (
-              <CodeExamples endpoint={endpoint} baseUrl={baseUrl} />
+              <CodeExamples baseUrl={baseUrl} endpoint={endpoint} />
             )}
           </div>
 
           {showPlayground && (
             <div style={{ marginTop: 16 }}>
               <ApiPlayground
-                endpoint={endpoint}
-                baseUrl={baseUrl || "https://api.example.com"}
                 auth={playgroundAuth}
+                baseUrl={baseUrl || "https://api.example.com"}
+                endpoint={endpoint}
               />
             </div>
           )}
@@ -754,31 +917,45 @@ export function EndpointCard({ endpoint, baseUrl, defaultExpanded = false, showP
 // ── API REFERENCE (full page) ───────────────────────────
 
 export interface ApiReferenceProps {
-  manifest: ApiManifest;
   baseUrl?: string;
-  showPlayground?: boolean;
+  manifest: ApiManifest;
   playgroundAuth?: ApiPlaygroundProps["auth"];
+  showPlayground?: boolean;
 }
 
-export function ApiReference({ manifest, baseUrl, showPlayground, playgroundAuth }: ApiReferenceProps) {
+export function ApiReference({
+  manifest,
+  baseUrl,
+  showPlayground,
+  playgroundAuth,
+}: ApiReferenceProps) {
   const effectiveBaseUrl =
-    baseUrl || (manifest.servers.length > 0 ? manifest.servers[0].url : "https://api.example.com");
+    baseUrl ||
+    (manifest.servers.length > 0
+      ? manifest.servers[0].url
+      : "https://api.example.com");
 
   // Group endpoints by their first tag (or "Other" if untagged)
   const grouped = new Map<string, ApiEndpoint[]>();
   for (const ep of manifest.endpoints) {
     const tag = ep.tags.length > 0 ? ep.tags[0] : "Other";
-    if (!grouped.has(tag)) grouped.set(tag, []);
+    if (!grouped.has(tag)) {
+      grouped.set(tag, []);
+    }
     grouped.get(tag)!.push(ep);
   }
 
   // Order tags by manifest tag order, then any remaining
   const orderedTags: string[] = [];
   for (const t of manifest.tags) {
-    if (grouped.has(t.name)) orderedTags.push(t.name);
+    if (grouped.has(t.name)) {
+      orderedTags.push(t.name);
+    }
   }
   for (const key of grouped.keys()) {
-    if (!orderedTags.includes(key)) orderedTags.push(key);
+    if (!orderedTags.includes(key)) {
+      orderedTags.push(key);
+    }
   }
 
   const tagDescriptions = new Map<string, string | undefined>();
@@ -801,7 +978,16 @@ export function ApiReference({ manifest, baseUrl, showPlayground, playgroundAuth
           overflowY: "auto",
         }}
       >
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--txM)", marginBottom: 12, letterSpacing: "0.05em" }}>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            color: "var(--txM)",
+            marginBottom: 12,
+            letterSpacing: "0.05em",
+          }}
+        >
           Endpoints
         </div>
         {orderedTags.map((tag) => {
@@ -812,7 +998,9 @@ export function ApiReference({ manifest, baseUrl, showPlayground, playgroundAuth
                 href={`#${tagId}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  document.getElementById(tagId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document
+                    .getElementById(tagId)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
                 style={{
                   display: "block",
@@ -826,14 +1014,19 @@ export function ApiReference({ manifest, baseUrl, showPlayground, playgroundAuth
                 {tag}
               </a>
               {(grouped.get(tag) || []).map((ep) => {
-                const epId = (ep.operationId || `${ep.method}-${ep.path}`).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                const epId = (ep.operationId || `${ep.method}-${ep.path}`)
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-");
                 return (
                   <a
-                    key={`${ep.method}-${ep.path}`}
                     href={`#${epId}`}
+                    key={`${ep.method}-${ep.path}`}
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById(epId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      document.getElementById(epId)?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                     }}
                     style={{
                       display: "flex",
@@ -875,7 +1068,14 @@ export function ApiReference({ manifest, baseUrl, showPlayground, playgroundAuth
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>
             {manifest.title}
           </h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
             <span
               style={{
                 padding: "2px 8px",
@@ -901,7 +1101,14 @@ export function ApiReference({ manifest, baseUrl, showPlayground, playgroundAuth
             )}
           </div>
           {manifest.description && (
-            <p style={{ fontSize: 14, color: "var(--tx2)", lineHeight: 1.65, marginTop: 0 }}>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--tx2)",
+                lineHeight: 1.65,
+                marginTop: 0,
+              }}
+            >
               {manifest.description}
             </p>
           )}
@@ -910,24 +1117,34 @@ export function ApiReference({ manifest, baseUrl, showPlayground, playgroundAuth
         {/* Endpoint groups */}
         {orderedTags.map((tag) => (
           <section
-            key={tag}
-            id={tag.toLowerCase().replace(/\s+/g, "-")}
             data-testid="tag-section"
+            id={tag.toLowerCase().replace(/\s+/g, "-")}
+            key={tag}
             style={{ marginBottom: 40 }}
           >
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{tag}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
+              {tag}
+            </h2>
             {tagDescriptions.get(tag) && (
-              <p style={{ fontSize: 14, color: "var(--tx2)", lineHeight: 1.65, marginTop: 0, marginBottom: 16 }}>
+              <p
+                style={{
+                  fontSize: 14,
+                  color: "var(--tx2)",
+                  lineHeight: 1.65,
+                  marginTop: 0,
+                  marginBottom: 16,
+                }}
+              >
                 {tagDescriptions.get(tag)}
               </p>
             )}
             {(grouped.get(tag) || []).map((ep) => (
               <EndpointCard
-                key={`${ep.method}-${ep.path}`}
-                endpoint={ep}
                 baseUrl={effectiveBaseUrl}
-                showPlayground={showPlayground}
+                endpoint={ep}
+                key={`${ep.method}-${ep.path}`}
                 playgroundAuth={playgroundAuth}
+                showPlayground={showPlayground}
               />
             ))}
           </section>

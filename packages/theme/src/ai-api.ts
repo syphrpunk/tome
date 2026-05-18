@@ -6,18 +6,28 @@
 export type AiProvider = "openai" | "anthropic" | "custom";
 
 export interface AiMessage {
-  role: "user" | "assistant";
   content: string;
+  role: "user" | "assistant";
 }
 
 /**
  * Build a system prompt with optional documentation context.
  */
-export function buildSystemPrompt(context?: string, instruction?: string): string {
-  const base = instruction || "You are a helpful documentation assistant. Answer questions accurately based on the documentation provided below. If the answer isn't in the documentation, say so clearly. Keep answers concise and reference specific sections when possible.";
-  if (!context) return base;
+export function buildSystemPrompt(
+  context?: string,
+  instruction?: string
+): string {
+  const base =
+    instruction ||
+    "You are a helpful documentation assistant. Answer questions accurately based on the documentation provided below. If the answer isn't in the documentation, say so clearly. Keep answers concise and reference specific sections when possible.";
+  if (!context) {
+    return base;
+  }
   // Truncate context to stay within token limits (~100K chars ≈ 25K tokens)
-  const trimmed = context.length > 100000 ? context.slice(0, 100000) + "\n\n[Documentation truncated...]" : context;
+  const trimmed =
+    context.length > 100_000
+      ? context.slice(0, 100_000) + "\n\n[Documentation truncated...]"
+      : context;
   return `${base}\n\nDocumentation:\n${trimmed}`;
 }
 
@@ -28,13 +38,13 @@ export async function callOpenAI(
   messages: AiMessage[],
   apiKey: string,
   model: string,
-  systemPrompt: string,
+  systemPrompt: string
 ): Promise<string> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
@@ -59,7 +69,7 @@ export async function callAnthropic(
   messages: AiMessage[],
   apiKey: string,
   model: string,
-  systemPrompt: string,
+  systemPrompt: string
 ): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -88,7 +98,9 @@ export async function callAnthropic(
  * Get the default model for a provider.
  */
 export function getDefaultModel(provider: AiProvider): string {
-  if (provider === "openai") return "gpt-4o-mini";
+  if (provider === "openai") {
+    return "gpt-4o-mini";
+  }
   return "claude-sonnet-4-20250514";
 }
 
@@ -101,7 +113,7 @@ export async function callAiProvider(
   messages: AiMessage[],
   apiKey: string,
   model: string,
-  systemPrompt: string,
+  systemPrompt: string
 ): Promise<string> {
   if (provider === "openai") {
     return callOpenAI(messages, apiKey, model, systemPrompt);

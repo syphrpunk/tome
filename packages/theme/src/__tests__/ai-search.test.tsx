@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
-import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import Shell from "../Shell.js";
 
 // jsdom doesn't provide matchMedia
@@ -23,7 +22,11 @@ beforeAll(() => {
 // ── Mock the ai-api module ──────────────────────────────
 
 vi.mock("../ai-api.js", () => ({
-  callAiProvider: vi.fn().mockResolvedValue("The configuration page explains how to set up your project."),
+  callAiProvider: vi
+    .fn()
+    .mockResolvedValue(
+      "The configuration page explains how to set up your project."
+    ),
   buildSystemPrompt: vi.fn().mockReturnValue("system prompt"),
   getDefaultModel: vi.fn().mockReturnValue("gpt-4o-mini"),
 }));
@@ -38,18 +41,28 @@ const baseConfig = {
   ai: { enabled: true, provider: "anthropic" as const },
 };
 
-const navigation = [{
-  section: "Docs",
-  pages: [
-    { id: "index", title: "Introduction", urlPath: "/" },
-    { id: "config", title: "Configuration", urlPath: "/config" },
-    { id: "theming", title: "Theming", urlPath: "/theming" },
-  ],
-}];
+const navigation = [
+  {
+    section: "Docs",
+    pages: [
+      { id: "index", title: "Introduction", urlPath: "/" },
+      { id: "config", title: "Configuration", urlPath: "/config" },
+      { id: "theming", title: "Theming", urlPath: "/theming" },
+    ],
+  },
+];
 
 const docContext = [
-  { id: "index", title: "Introduction", content: "Welcome to the documentation." },
-  { id: "config", title: "Configuration", content: "Configure your site with tome.config.js." },
+  {
+    id: "index",
+    title: "Introduction",
+    content: "Welcome to the documentation.",
+  },
+  {
+    id: "config",
+    title: "Configuration",
+    content: "Configure your site with tome.config.js.",
+  },
   { id: "theming", title: "Theming", content: "Choose from 10 theme presets." },
 ];
 
@@ -64,15 +77,15 @@ function renderShell(configOverrides = {}) {
 
   return render(
     <Shell
+      allPages={allPages}
       config={{ ...baseConfig, ...configOverrides }}
-      navigation={navigation}
       currentPageId="index"
+      docContext={docContext}
+      headings={[]}
+      navigation={navigation}
+      onNavigate={() => {}}
       pageHtml="<h1>Introduction</h1>"
       pageTitle="Introduction"
-      headings={[]}
-      allPages={allPages}
-      onNavigate={() => {}}
-      docContext={docContext}
     />
   );
 }
@@ -95,7 +108,9 @@ describe("AI Search in SearchModal", () => {
     await act(async () => {
       fireEvent.keyDown(document, { key: "k", metaKey: true });
     });
-    expect(screen.getByPlaceholderText("Search documentation...")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Search documentation...")
+    ).toBeInTheDocument();
   });
 
   it("shows search results for keyword queries", async () => {
@@ -115,12 +130,14 @@ describe("AI Search in SearchModal", () => {
 
     // Wait for debounce
     await act(async () => {
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 200));
     });
 
     // Should show keyword results (fallback since Pagefind not available in tests)
     // "Configuration" appears in sidebar too, so check that search results area has it
-    expect(screen.getAllByText("Configuration").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Configuration").length).toBeGreaterThanOrEqual(
+      1
+    );
   });
 
   it("does not show AI answer card when search.ai is false", async () => {
@@ -136,7 +153,7 @@ describe("AI Search in SearchModal", () => {
     });
 
     await act(async () => {
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 600));
     });
 
     expect(screen.queryByText("AI Answer")).not.toBeInTheDocument();
@@ -155,7 +172,7 @@ describe("AI Search in SearchModal", () => {
     });
 
     await act(async () => {
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 600));
     });
 
     // Query too short (< 3 chars), no AI answer
@@ -171,17 +188,23 @@ describe("AI Search in SearchModal", () => {
 
     const input = screen.getByPlaceholderText("Search documentation...");
     await act(async () => {
-      fireEvent.change(input, { target: { value: "how to configure my project" } });
+      fireEvent.change(input, {
+        target: { value: "how to configure my project" },
+      });
     });
 
     // Wait for both keyword debounce (120ms) and AI debounce (500ms)
     await act(async () => {
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 700));
     });
 
     // AI answer card should appear with the mocked response
     expect(screen.getByText("AI Answer")).toBeInTheDocument();
-    expect(screen.getByText("The configuration page explains how to set up your project.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The configuration page explains how to set up your project."
+      )
+    ).toBeInTheDocument();
   });
 
   it("tracks search queries in analytics", async () => {
@@ -197,7 +220,7 @@ describe("AI Search in SearchModal", () => {
     });
 
     await act(async () => {
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 200));
     });
 
     expect((window as any).__tome.trackSearch).toHaveBeenCalled();

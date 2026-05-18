@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
+import { describe, expect, it, vi } from "vitest";
 import type { Env, User } from "../types.js";
 import { deploy } from "./deploy.js";
 
@@ -25,11 +25,13 @@ function mockBucket() {
   } as unknown as R2Bucket;
 }
 
-function mockDb(overrides: {
-  deployCount?: number;
-  storageTotal?: number;
-  project?: Record<string, unknown> | null;
-} = {}) {
+function mockDb(
+  overrides: {
+    deployCount?: number;
+    storageTotal?: number;
+    project?: Record<string, unknown> | null;
+  } = {}
+) {
   const deployCount = overrides.deployCount ?? 0;
   const storageTotal = overrides.storageTotal ?? 0;
   const project = overrides.project ?? null;
@@ -82,11 +84,15 @@ describe("deploy routes", () => {
     it("rejects missing slug or files", async () => {
       const app = makeApp(communityUser);
       const env = makeEnv();
-      const res = await app.request("/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      }, env);
+      const res = await app.request(
+        "/start",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+        env
+      );
       expect(res.status).toBe(400);
     });
 
@@ -94,16 +100,20 @@ describe("deploy routes", () => {
       const db = mockDb({ project: null });
       const app = makeApp(communityUser);
       const env = makeEnv(db);
-      const res = await app.request("/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug: "my-docs",
-          files: { "index.html": "abc123", "style.css": "def456" },
-        }),
-      }, env);
+      const res = await app.request(
+        "/start",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: "my-docs",
+            files: { "index.html": "abc123", "style.css": "def456" },
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(200);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.deploymentId).toBeTruthy();
       expect(body.needed).toHaveLength(2);
       expect(body.total).toBe(2);
@@ -114,16 +124,20 @@ describe("deploy routes", () => {
       const db = mockDb({ deployCount: 10 });
       const app = makeApp(communityUser);
       const env = makeEnv(db);
-      const res = await app.request("/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug: "my-docs",
-          files: { "index.html": "abc" },
-        }),
-      }, env);
+      const res = await app.request(
+        "/start",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: "my-docs",
+            files: { "index.html": "abc" },
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(403);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.error).toContain("Monthly deployment limit reached");
       expect(body.limit).toBe(10);
       expect(body.requiredPlan).toBe("cloud");
@@ -133,14 +147,18 @@ describe("deploy routes", () => {
       const db = mockDb({ deployCount: 100, project: null });
       const app = makeApp(cloudUser);
       const env = makeEnv(db);
-      const res = await app.request("/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug: "my-docs",
-          files: { "index.html": "abc" },
-        }),
-      }, env);
+      const res = await app.request(
+        "/start",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: "my-docs",
+            files: { "index.html": "abc" },
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(200);
     });
 
@@ -149,16 +167,20 @@ describe("deploy routes", () => {
       const db = mockDb({ storageTotal: 105 * 1024 * 1024, project: null });
       const app = makeApp(communityUser);
       const env = makeEnv(db);
-      const res = await app.request("/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug: "my-docs",
-          files: { "index.html": "abc" },
-        }),
-      }, env);
+      const res = await app.request(
+        "/start",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: "my-docs",
+            files: { "index.html": "abc" },
+          }),
+        },
+        env
+      );
       expect(res.status).toBe(403);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.error).toContain("Storage limit reached");
       expect(body.limitMB).toBe(100);
     });
@@ -168,12 +190,16 @@ describe("deploy routes", () => {
     it("rejects missing deployment headers", async () => {
       const app = makeApp(communityUser);
       const env = makeEnv();
-      const res = await app.request("/upload", {
-        method: "POST",
-        body: "file-content",
-      }, env);
+      const res = await app.request(
+        "/upload",
+        {
+          method: "POST",
+          body: "file-content",
+        },
+        env
+      );
       expect(res.status).toBe(400);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(body.error).toContain("Missing deployment headers");
     });
   });
@@ -182,22 +208,30 @@ describe("deploy routes", () => {
     it("rejects missing deploymentId", async () => {
       const app = makeApp(communityUser);
       const env = makeEnv();
-      const res = await app.request("/finalize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      }, env);
+      const res = await app.request(
+        "/finalize",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+        env
+      );
       expect(res.status).toBe(400);
     });
 
     it("returns 404 for unknown deployment", async () => {
       const app = makeApp(communityUser);
       const env = makeEnv();
-      const res = await app.request("/finalize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deploymentId: "nonexistent" }),
-      }, env);
+      const res = await app.request(
+        "/finalize",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deploymentId: "nonexistent" }),
+        },
+        env
+      );
       expect(res.status).toBe(404);
     });
   });
@@ -209,7 +243,7 @@ describe("deploy routes", () => {
       const env = makeEnv(db);
       const res = await app.request("/projects", {}, env);
       expect(res.status).toBe(200);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(Array.isArray(body)).toBe(true);
     });
   });
@@ -221,7 +255,7 @@ describe("deploy routes", () => {
       const env = makeEnv(db);
       const res = await app.request("/projects/my-docs/deployments", {}, env);
       expect(res.status).toBe(200);
-      const body = await res.json() as any;
+      const body = (await res.json()) as any;
       expect(Array.isArray(body)).toBe(true);
     });
   });

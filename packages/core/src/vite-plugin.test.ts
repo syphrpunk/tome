@@ -1,6 +1,6 @@
-import { describe, it, expect, afterAll, vi } from "vitest";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import tomePlugin from "./vite-plugin.js";
 
 // ── OpenAPI JSON spec fixture ────────────────────────────
@@ -23,7 +23,7 @@ const OPENAPI_JSON = JSON.stringify({
 // Each test gets a unique temp dir to avoid ESM module cache collisions
 // (Node caches dynamic import() by URL, so re-using the same path
 // for tome.config.js returns stale config from a previous test).
-const TMP_BASE = resolve(__dirname, "../.test-tmp-vite-plugin");
+const TMP_BASE = resolve(import.meta.dirname, "../.test-tmp-vite-plugin");
 let testCounter = 0;
 
 function getTmpRoot(): string {
@@ -31,7 +31,9 @@ function getTmpRoot(): string {
 }
 
 function writeFixture(tmpRoot: string, files: Record<string, string>) {
-  if (existsSync(tmpRoot)) rmSync(tmpRoot, { recursive: true, force: true });
+  if (existsSync(tmpRoot)) {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  }
   mkdirSync(resolve(tmpRoot, "pages"), { recursive: true });
 
   if (!files["tome.config.js"]) {
@@ -48,7 +50,10 @@ function writeFixture(tmpRoot: string, files: Record<string, string>) {
 /**
  * Create and initialize a plugin instance in a unique temp directory.
  */
-async function createPlugin(files: Record<string, string>, configOverride?: string) {
+async function createPlugin(
+  files: Record<string, string>,
+  configOverride?: string
+) {
   const tmpRoot = getTmpRoot();
   if (configOverride) {
     files["tome.config.js"] = configOverride;
@@ -68,7 +73,9 @@ async function createPlugin(files: Record<string, string>, configOverride?: stri
 // ── Cleanup ──────────────────────────────────────────────
 
 afterAll(() => {
-  if (existsSync(TMP_BASE)) rmSync(TMP_BASE, { recursive: true, force: true });
+  if (existsSync(TMP_BASE)) {
+    rmSync(TMP_BASE, { recursive: true, force: true });
+  }
 });
 
 // ── resolveId ────────────────────────────────────────────
@@ -95,8 +102,12 @@ describe("vite-plugin resolveId", () => {
       "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
     });
     const resolveId = plugin.resolveId as Function;
-    expect(resolveId("virtual:tome/page/index")).toBe("\0virtual:tome/page/index");
-    expect(resolveId("virtual:tome/page/api-reference")).toBe("\0virtual:tome/page/api-reference");
+    expect(resolveId("virtual:tome/page/index")).toBe(
+      "\0virtual:tome/page/index"
+    );
+    expect(resolveId("virtual:tome/page/api-reference")).toBe(
+      "\0virtual:tome/page/api-reference"
+    );
   });
 
   it("returns null for unknown modules", async () => {
@@ -127,7 +138,7 @@ describe("vite-plugin load", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
     const load = plugin.load as Function;
     const result = await load("\0virtual:tome/page/api-reference");
@@ -153,7 +164,7 @@ describe("vite-plugin load", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
     const load = plugin.load as Function;
     const result = await load("\0virtual:tome/routes");
@@ -176,7 +187,7 @@ describe("vite-plugin load", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\nSome content here.",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
     const load = plugin.load as Function;
     const result = await load("\0virtual:tome/doc-context");
@@ -191,7 +202,7 @@ describe("vite-plugin load", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
     const load = plugin.load as Function;
     const result = await load("\0virtual:tome/page-loader");
@@ -214,7 +225,7 @@ describe("vite-plugin load", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
     const load = plugin.load as Function;
     const result = await load("\0virtual:tome/api");
@@ -236,7 +247,11 @@ describe("vite-plugin load", () => {
 
 describe("vite-plugin generateBundle", () => {
   function makeMockContext() {
-    const emittedFiles: Array<{ type: string; fileName: string; source: string }> = [];
+    const emittedFiles: Array<{
+      type: string;
+      fileName: string;
+      source: string;
+    }> = [];
     return {
       ctx: {
         emitFile(file: any) {
@@ -254,7 +269,7 @@ describe("vite-plugin generateBundle", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\nWelcome to the docs.",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
 
     const { ctx, emittedFiles } = makeMockContext();
@@ -271,7 +286,7 @@ describe("vite-plugin generateBundle", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\nContent.",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
 
     const { ctx, emittedFiles } = makeMockContext();
@@ -288,20 +303,25 @@ describe("vite-plugin generateBundle", () => {
     const plugin = await createPlugin(
       {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
-        "pages/quickstart.md": "---\ntitle: Quick Start\n---\n# Quick Start\nGet started fast.",
+        "pages/quickstart.md":
+          "---\ntitle: Quick Start\n---\n# Quick Start\nGet started fast.",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
 
     const { ctx, emittedFiles } = makeMockContext();
     await (plugin.generateBundle as Function).call(ctx, {}, {});
 
-    const htmlFiles = emittedFiles.filter((f) => f.fileName.endsWith("index.html"));
+    const htmlFiles = emittedFiles.filter((f) =>
+      f.fileName.endsWith("index.html")
+    );
     const apiHtml = htmlFiles.find((f) => f.fileName === "api/index.html");
     expect(apiHtml).toBeUndefined();
 
-    const qsHtml = htmlFiles.find((f) => f.fileName === "quickstart/index.html");
+    const qsHtml = htmlFiles.find(
+      (f) => f.fileName === "quickstart/index.html"
+    );
     expect(qsHtml).toBeDefined();
   });
 
@@ -311,7 +331,7 @@ describe("vite-plugin generateBundle", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\nHello world content.",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
 
     const { ctx, emittedFiles } = makeMockContext();
@@ -328,7 +348,7 @@ describe("vite-plugin generateBundle", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\nContent.",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
 
     const { ctx, emittedFiles } = makeMockContext();
@@ -346,7 +366,7 @@ describe("vite-plugin generateBundle", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\nContent.",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
 
     const { ctx, emittedFiles } = makeMockContext();
@@ -382,7 +402,11 @@ describe("vite-plugin without API config", () => {
       "pages/index.md": "---\ntitle: Home\n---\n# Home\nContent here.",
     });
 
-    const emittedFiles: Array<{ type: string; fileName: string; source: string }> = [];
+    const emittedFiles: Array<{
+      type: string;
+      fileName: string;
+      source: string;
+    }> = [];
     const mockContext = {
       emitFile(file: any) {
         emittedFiles.push(file);
@@ -403,7 +427,11 @@ describe("vite-plugin without API config", () => {
 
 describe("vite-plugin generateBundle content negotiation", () => {
   function makeMockContext() {
-    const emittedFiles: Array<{ type: string; fileName: string; source: string }> = [];
+    const emittedFiles: Array<{
+      type: string;
+      fileName: string;
+      source: string;
+    }> = [];
     return {
       ctx: {
         emitFile(file: any) {
@@ -418,13 +446,16 @@ describe("vite-plugin generateBundle content negotiation", () => {
   it("emits .md files alongside HTML for each page", async () => {
     const plugin = await createPlugin({
       "pages/index.md": "---\ntitle: Home\n---\n# Home\nWelcome.",
-      "pages/quickstart.md": "---\ntitle: Quickstart\n---\n# Quickstart\nGet started fast.",
+      "pages/quickstart.md":
+        "---\ntitle: Quickstart\n---\n# Quickstart\nGet started fast.",
     });
 
     const { ctx, emittedFiles } = makeMockContext();
     await (plugin.generateBundle as Function).call(ctx, {}, {});
 
-    const mdFiles = emittedFiles.filter((f) => f.fileName.endsWith(".md") && !f.fileName.startsWith("llms"));
+    const mdFiles = emittedFiles.filter(
+      (f) => f.fileName.endsWith(".md") && !f.fileName.startsWith("llms")
+    );
     expect(mdFiles.length).toBeGreaterThanOrEqual(2);
 
     const indexMd = mdFiles.find((f) => f.fileName === "index.md");
@@ -439,14 +470,17 @@ describe("vite-plugin generateBundle content negotiation", () => {
   it("does not emit .md for hidden or draft pages", async () => {
     const plugin = await createPlugin({
       "pages/index.md": "---\ntitle: Home\n---\n# Home\nVisible.",
-      "pages/hidden.md": "---\ntitle: Hidden\nhidden: true\n---\n# Hidden\nSecret.",
+      "pages/hidden.md":
+        "---\ntitle: Hidden\nhidden: true\n---\n# Hidden\nSecret.",
       "pages/draft.md": "---\ntitle: Draft\ndraft: true\n---\n# Draft\nWIP.",
     });
 
     const { ctx, emittedFiles } = makeMockContext();
     await (plugin.generateBundle as Function).call(ctx, {}, {});
 
-    const mdFiles = emittedFiles.filter((f) => f.fileName.endsWith(".md") && !f.fileName.startsWith("llms"));
+    const mdFiles = emittedFiles.filter(
+      (f) => f.fileName.endsWith(".md") && !f.fileName.startsWith("llms")
+    );
     const hiddenMd = mdFiles.find((f) => f.fileName === "hidden.md");
     const draftMd = mdFiles.find((f) => f.fileName === "draft.md");
     expect(hiddenMd).toBeUndefined();
@@ -461,7 +495,7 @@ describe("vite-plugin analytics script injection", () => {
     const configJs = `export default { name: "Test", analytics: { provider: "custom", key: "test-key" } };`;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
 
     const html = "<html><head></head><body>test</body></html>";
@@ -495,7 +529,7 @@ describe("vite-plugin getPage api-reference guard", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
     const load = plugin.load as Function;
 
@@ -521,7 +555,7 @@ describe("vite-plugin relative link rewriting", () => {
   it("rewrites ./pageId links to bare page IDs in HTML", async () => {
     const plugin = await createPlugin({
       "pages/index.md":
-        '---\ntitle: Home\n---\n# Home\n\n[Quick Start](./quickstart)\n[Config](./configuration)\n',
+        "---\ntitle: Home\n---\n# Home\n\n[Quick Start](./quickstart)\n[Config](./configuration)\n",
       "pages/quickstart.md": "---\ntitle: Quick Start\n---\n# Quick Start\n",
       "pages/configuration.md": "---\ntitle: Config\n---\n# Config\n",
     });
@@ -549,7 +583,7 @@ describe("vite-plugin relative link rewriting", () => {
   it("preserves external links", async () => {
     const plugin = await createPlugin({
       "pages/index.md":
-        '---\ntitle: Home\n---\n# Home\n\n[GitHub](https://github.com)\n',
+        "---\ntitle: Home\n---\n# Home\n\n[GitHub](https://github.com)\n",
     });
     const load = plugin.load as Function;
     const result = await load("\0virtual:tome/page/index");
@@ -559,7 +593,7 @@ describe("vite-plugin relative link rewriting", () => {
   it("rewrites relative links in raw markdown field too", async () => {
     const plugin = await createPlugin({
       "pages/index.md":
-        '---\ntitle: Home\n---\n# Home\n\n[Link](./quickstart)\n',
+        "---\ntitle: Home\n---\n# Home\n\n[Link](./quickstart)\n",
       "pages/quickstart.md": "---\ntitle: Quick Start\n---\n# Quick Start\n",
     });
     const load = plugin.load as Function;
@@ -577,12 +611,16 @@ describe("vite-plugin relative link rewriting", () => {
     };`;
     const plugin = await createPlugin(
       {
-        "pages/v2/index.md": '---\ntitle: Home v2\n---\n# Home\n\n[Quick Start](./quickstart)\n',
-        "pages/v2/quickstart.md": "---\ntitle: Quick Start\n---\n# Quick Start\n",
-        "pages/v1/index.md": '---\ntitle: Home v1\n---\n# Home\n\n[Quick Start](./quickstart)\n',
-        "pages/v1/quickstart.md": "---\ntitle: Quick Start v1\n---\n# Quick Start\n",
+        "pages/v2/index.md":
+          "---\ntitle: Home v2\n---\n# Home\n\n[Quick Start](./quickstart)\n",
+        "pages/v2/quickstart.md":
+          "---\ntitle: Quick Start\n---\n# Quick Start\n",
+        "pages/v1/index.md":
+          "---\ntitle: Home v1\n---\n# Home\n\n[Quick Start](./quickstart)\n",
+        "pages/v1/quickstart.md":
+          "---\ntitle: Quick Start v1\n---\n# Quick Start\n",
       },
-      configJs,
+      configJs
     );
     const load = plugin.load as Function;
 
@@ -620,7 +658,7 @@ describe("vite-plugin contentSources integration", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
     const load = plugin.load as Function;
 
@@ -651,7 +689,7 @@ describe("vite-plugin contentSources integration", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Local Home\n---\n# Local Home\n" },
-      configJs,
+      configJs
     );
     const load = plugin.load as Function;
 
@@ -680,7 +718,7 @@ describe("vite-plugin contentSources integration", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
     const load = plugin.load as Function;
 
@@ -709,7 +747,7 @@ describe("vite-plugin transformIndexHtml", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
     const transform = plugin.transformIndexHtml as Function;
     const result = transform("<html><head></head><body></body></html>");
@@ -722,7 +760,7 @@ describe("vite-plugin transformIndexHtml", () => {
     });
     const transform = plugin.transformIndexHtml as Function;
     const result = transform("<html><head></head><body></body></html>");
-    expect(result).toContain('application/ld+json');
+    expect(result).toContain("application/ld+json");
     expect(result).toContain('"@type":"WebSite"');
     expect(result).toContain('"name":"Test"');
   });
@@ -737,11 +775,11 @@ describe("vite-plugin transformIndexHtml", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
     const transform = plugin.transformIndexHtml as Function;
     const result = transform("<html><head></head><body></body></html>");
-    expect(result).toContain('Content-Security-Policy');
+    expect(result).toContain("Content-Security-Policy");
     expect(result).toContain("default-src 'self'");
   });
 
@@ -751,7 +789,7 @@ describe("vite-plugin transformIndexHtml", () => {
     });
     const transform = plugin.transformIndexHtml as Function;
     const result = transform("<html><head></head><body></body></html>");
-    expect(result).not.toContain('Content-Security-Policy');
+    expect(result).not.toContain("Content-Security-Policy");
   });
 });
 
@@ -768,7 +806,7 @@ describe("vite-plugin configureServer redirects", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
 
     // Extract middleware from configureServer
@@ -788,11 +826,7 @@ describe("vite-plugin configureServer redirects", () => {
     const writeHead = vi.fn();
     const end = vi.fn();
     const next = vi.fn();
-    middlewares[1](
-      { url: "/old-page" },
-      { writeHead, end },
-      next,
-    );
+    middlewares[1]({ url: "/old-page" }, { writeHead, end }, next);
     expect(writeHead).toHaveBeenCalledWith(301, { Location: "/new-page" });
     expect(end).toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
@@ -800,7 +834,8 @@ describe("vite-plugin configureServer redirects", () => {
 
   it("redirects frontmatter redirect_from with 301", async () => {
     const plugin = await createPlugin({
-      "pages/index.md": "---\ntitle: Home\nredirect_from:\n  - /legacy-home\n---\n# Home\n",
+      "pages/index.md":
+        "---\ntitle: Home\nredirect_from:\n  - /legacy-home\n---\n# Home\n",
     });
 
     const middlewares: Function[] = [];
@@ -828,7 +863,7 @@ describe("vite-plugin configureServer redirects", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
 
     const middlewares: Function[] = [];
@@ -839,7 +874,11 @@ describe("vite-plugin configureServer redirects", () => {
     (plugin.configureServer as Function)(mockServer);
 
     const next = vi.fn();
-    middlewares[1]({ url: "/not-redirected" }, { writeHead: vi.fn(), end: vi.fn() }, next);
+    middlewares[1](
+      { url: "/not-redirected" },
+      { writeHead: vi.fn(), end: vi.fn() },
+      next
+    );
     expect(next).toHaveBeenCalled();
   });
 });
@@ -857,10 +896,11 @@ describe("vite-plugin generateBundle redirects", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
 
-    const emitted: Array<{ type: string; fileName: string; source: string }> = [];
+    const emitted: Array<{ type: string; fileName: string; source: string }> =
+      [];
     const ctx = {
       emitFile: (file: any) => emitted.push(file),
     };
@@ -875,7 +915,7 @@ describe("vite-plugin generateBundle redirects", () => {
     const metaRefresh = emitted.find((f) => f.fileName === "old-page.html");
     expect(metaRefresh).toBeDefined();
     expect(metaRefresh!.source).toContain('meta http-equiv="refresh"');
-    expect(metaRefresh!.source).toContain('url=/new-page');
+    expect(metaRefresh!.source).toContain("url=/new-page");
   });
 
   it("does not emit _redirects when no redirects configured", async () => {
@@ -883,7 +923,8 @@ describe("vite-plugin generateBundle redirects", () => {
       "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
     });
 
-    const emitted: Array<{ type: string; fileName: string; source: string }> = [];
+    const emitted: Array<{ type: string; fileName: string; source: string }> =
+      [];
     const ctx = { emitFile: (file: any) => emitted.push(file) };
     await (plugin.generateBundle as Function).call(ctx, {}, {});
 
@@ -905,7 +946,7 @@ describe("vite-plugin transformIndexHtml analytics injection", () => {
     `;
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      configJs,
+      configJs
     );
 
     const html = "<html><head></head><body>test</body></html>";
@@ -969,11 +1010,18 @@ describe("content negotiation", () => {
     let headers: Record<string, string> = {};
     let body = "";
     const res = {
-      writeHead: (code: number, h: Record<string, string>) => { statusCode = code; headers = h; },
-      end: (b: string) => { body = b; },
+      writeHead: (code: number, h: Record<string, string>) => {
+        statusCode = code;
+        headers = h;
+      },
+      end: (b: string) => {
+        body = b;
+      },
     };
     let nextCalled = false;
-    const next = () => { nextCalled = true; };
+    const next = () => {
+      nextCalled = true;
+    };
 
     await contentNegotiationMiddleware(req, res, next);
 
@@ -998,7 +1046,9 @@ describe("content negotiation", () => {
     const req = { url: "/index", headers: { accept: "text/html" } };
     const res = { writeHead: vi.fn(), end: vi.fn() };
     let nextCalled = false;
-    const next = () => { nextCalled = true; };
+    const next = () => {
+      nextCalled = true;
+    };
 
     await middlewares[0](req, res, next);
 
@@ -1023,7 +1073,7 @@ describe("vite-plugin white labeling", () => {
   it("excludes Tome branding from JSON-LD when branding.powered is false", async () => {
     const plugin = await createPlugin(
       { "pages/index.md": "---\ntitle: Home\n---\n# Home\n" },
-      `export default { name: "Test", branding: { powered: false } };`,
+      `export default { name: "Test", branding: { powered: false } };`
     );
 
     const html = "<html><head></head><body>test</body></html>";
@@ -1040,13 +1090,17 @@ describe("API reference path configuration", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json" } };`
     );
 
-    const pageLoaderModule = await (plugin.load as Function)("\0virtual:tome/page-loader");
+    const pageLoaderModule = await (plugin.load as Function)(
+      "\0virtual:tome/page-loader"
+    );
     expect(pageLoaderModule).toContain("api-reference");
 
-    const routesModule = await (plugin.load as Function)("\0virtual:tome/routes");
+    const routesModule = await (plugin.load as Function)(
+      "\0virtual:tome/routes"
+    );
     expect(routesModule).toContain('"/api"');
   });
 
@@ -1056,10 +1110,12 @@ describe("API reference path configuration", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json", path: "/reference" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json", path: "/reference" } };`
     );
 
-    const routesModule = await (plugin.load as Function)("\0virtual:tome/routes");
+    const routesModule = await (plugin.load as Function)(
+      "\0virtual:tome/routes"
+    );
     expect(routesModule).toContain('"/reference"');
     expect(routesModule).not.toContain('"/api"');
   });
@@ -1070,10 +1126,12 @@ describe("API reference path configuration", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "openapi.json": OPENAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json", path: "/docs/api-reference" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json", path: "/docs/api-reference" } };`
     );
 
-    const routesModule = await (plugin.load as Function)("\0virtual:tome/routes");
+    const routesModule = await (plugin.load as Function)(
+      "\0virtual:tome/routes"
+    );
     expect(routesModule).toContain('"/docs/api-reference"');
   });
 });
@@ -1089,7 +1147,10 @@ const ASYNCAPI_JSON = JSON.stringify({
         operationId: "onUserSignup",
         summary: "User signed up",
         message: {
-          payload: { type: "object", properties: { userId: { type: "string" } } },
+          payload: {
+            type: "object",
+            properties: { userId: { type: "string" } },
+          },
         },
       },
     },
@@ -1106,10 +1167,12 @@ describe("AsyncAPI vite-plugin integration", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "asyncapi.json": ASYNCAPI_JSON,
       },
-      `export default { name: "Test", api: { asyncSpec: "./asyncapi.json" } };`,
+      `export default { name: "Test", api: { asyncSpec: "./asyncapi.json" } };`
     );
 
-    const routesModule = await (plugin.load as Function)("\0virtual:tome/routes");
+    const routesModule = await (plugin.load as Function)(
+      "\0virtual:tome/routes"
+    );
     expect(routesModule).toContain("api-reference");
   });
 
@@ -1119,10 +1182,12 @@ describe("AsyncAPI vite-plugin integration", () => {
         "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
         "asyncapi.json": ASYNCAPI_JSON,
       },
-      `export default { name: "Test", api: { asyncSpec: "./asyncapi.json" } };`,
+      `export default { name: "Test", api: { asyncSpec: "./asyncapi.json" } };`
     );
 
-    const pageModule = await (plugin.load as Function)("\0virtual:tome/page/api-reference");
+    const pageModule = await (plugin.load as Function)(
+      "\0virtual:tome/page/api-reference"
+    );
     expect(pageModule).toContain("asyncApiManifest");
     expect(pageModule).toContain("isApiReference");
     expect(pageModule).toContain("user/signedup");
@@ -1135,10 +1200,12 @@ describe("AsyncAPI vite-plugin integration", () => {
         "openapi.json": OPENAPI_JSON,
         "asyncapi.json": ASYNCAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json", asyncSpec: "./asyncapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json", asyncSpec: "./asyncapi.json" } };`
     );
 
-    const pageModule = await (plugin.load as Function)("\0virtual:tome/page/api-reference");
+    const pageModule = await (plugin.load as Function)(
+      "\0virtual:tome/page/api-reference"
+    );
     expect(pageModule).toContain("apiManifest");
     expect(pageModule).toContain("asyncApiManifest");
     expect(pageModule).toContain("listUsers");
@@ -1152,7 +1219,7 @@ describe("AsyncAPI vite-plugin integration", () => {
         "openapi.json": OPENAPI_JSON,
         "asyncapi.json": ASYNCAPI_JSON,
       },
-      `export default { name: "Test", api: { spec: "./openapi.json", asyncSpec: "./asyncapi.json" } };`,
+      `export default { name: "Test", api: { spec: "./openapi.json", asyncSpec: "./asyncapi.json" } };`
     );
 
     const apiModule = await (plugin.load as Function)("\0virtual:tome/api");
@@ -1165,7 +1232,9 @@ describe("AsyncAPI vite-plugin integration", () => {
       "pages/index.md": "---\ntitle: Home\n---\n# Home\n",
     });
 
-    const routesModule = await (plugin.load as Function)("\0virtual:tome/routes");
+    const routesModule = await (plugin.load as Function)(
+      "\0virtual:tome/routes"
+    );
     expect(routesModule).not.toContain("api-reference");
   });
 });

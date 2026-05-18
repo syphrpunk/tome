@@ -1,19 +1,18 @@
 // ── PLAN DEFINITIONS ──────────────────────────────────
 
 export interface Plan {
-  id: string;
-  name: string;
-  price: number; // monthly price in cents
   annualPrice: number; // annual price in cents (per year)
   features: string[];
+  id: string;
   limits: {
     deployments: number; // per month (-1 = unlimited)
     customDomains: number; // -1 = unlimited
     teamMembers: number; // -1 = unlimited
     storage: number; // MB
   };
+  name: string;
+  price: number; // monthly price in cents
 }
-
 
 export const PLANS: Record<string, Plan> = {
   community: {
@@ -21,11 +20,7 @@ export const PLANS: Record<string, Plan> = {
     name: "Community",
     price: 0,
     annualPrice: 0,
-    features: [
-      "Unlimited public docs",
-      "Pagefind search",
-      "Community support",
-    ],
+    features: ["Unlimited public docs", "Pagefind search", "Community support"],
     limits: {
       deployments: 10,
       customDomains: 0,
@@ -37,7 +32,7 @@ export const PLANS: Record<string, Plan> = {
     id: "cloud",
     name: "Cloud",
     price: 1999, // $19.99/mo
-    annualPrice: 19990, // $199.90/yr (2 months free)
+    annualPrice: 19_990, // $199.90/yr (2 months free)
     features: [
       "Custom domain",
       "Algolia search",
@@ -55,7 +50,7 @@ export const PLANS: Record<string, Plan> = {
     id: "team",
     name: "Team",
     price: 4999, // $49.99/mo
-    annualPrice: 49990, // $499.90/yr (2 months free)
+    annualPrice: 49_990, // $499.90/yr (2 months free)
     features: [
       "Everything in Cloud",
       "Unlimited custom domains",
@@ -67,7 +62,7 @@ export const PLANS: Record<string, Plan> = {
       deployments: -1,
       customDomains: -1,
       teamMembers: -1,
-      storage: 10000,
+      storage: 10_000,
     },
   },
 };
@@ -75,17 +70,17 @@ export const PLANS: Record<string, Plan> = {
 // ── BILLING TYPES ──────────────────────────────────────
 
 export interface Subscription {
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: Date;
   id: string;
   planId: string;
   status: "active" | "trialing" | "past_due" | "canceled";
-  currentPeriodEnd: Date;
   trialEnd?: Date;
-  cancelAtPeriodEnd: boolean;
 }
 
 export interface BillingCustomer {
-  id: string;
   email: string;
+  id: string;
   subscription?: Subscription;
 }
 
@@ -184,7 +179,9 @@ export async function createPortalSession(options: {
   apiUrl?: string;
 }): Promise<{ url: string }> {
   if (!options.token) {
-    return { url: `https://billing.stripe.com/mock-portal/${options.customerId}` };
+    return {
+      url: `https://billing.stripe.com/mock-portal/${options.customerId}`,
+    };
   }
 
   const res = await fetch(`${options.apiUrl ?? API_URL}/api/billing/portal`, {
@@ -198,9 +195,10 @@ export async function createPortalSession(options: {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(`Portal session failed: ${(err as { error: string }).error}`);
+    throw new Error(
+      `Portal session failed: ${(err as { error: string }).error}`
+    );
   }
 
   return (await res.json()) as { url: string };
 }
-

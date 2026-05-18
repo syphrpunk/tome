@@ -8,29 +8,30 @@
  *   GET /github/status/:slug  — Check connection status (authenticated)
  */
 
-import { Hono } from "hono";
 import type { Context } from "hono";
-import type { Env, User } from "../types.js";
+import { Hono } from "hono";
 import {
-  verifyWebhookSignature,
-  getInstallationToken,
   dispatchWorkflow,
-  postPrComment,
+  getInstallationToken,
   parseRepoUrl,
+  postPrComment,
+  verifyWebhookSignature,
 } from "../github-app.js";
+import type { Env, User } from "../types.js";
 
 // ── Types ───────────────────────────────────────────────
 
 interface PushEvent {
+  head_commit?: { id: string; message: string; author?: { name: string } };
+  installation?: { id: number };
+  pusher?: { name: string };
   ref: string;
   repository: { full_name: string; default_branch: string };
-  installation?: { id: number };
-  head_commit?: { id: string; message: string; author?: { name: string } };
-  pusher?: { name: string };
 }
 
 interface PullRequestEvent {
   action: string;
+  installation?: { id: number };
   number: number;
   pull_request: {
     head: { ref: string; sha: string };
@@ -38,7 +39,6 @@ interface PullRequestEvent {
     title: string;
   };
   repository: { full_name: string; default_branch: string };
-  installation?: { id: number };
 }
 
 // ── Routes ──────────────────────────────────────────────
@@ -99,19 +99,27 @@ github.post("/connect", async (c) => {
     branch?: string;
   }>();
 
-  if (!body.slug || !body.repository || !body.installationId) {
-    return c.json({ error: "Missing slug, repository, or installationId" }, 400);
+  if (!(body.slug && body.repository && body.installationId)) {
+    return c.json(
+      { error: "Missing slug, repository, or installationId" },
+      400
+    );
   }
 
   const parsed = parseRepoUrl(body.repository);
   if (!parsed) {
-    return c.json({ error: "Invalid repository format. Use owner/repo or GitHub URL." }, 400);
+    return c.json(
+      { error: "Invalid repository format. Use owner/repo or GitHub URL." },
+      400
+    );
   }
 
   // Verify the project belongs to this user
   const project = await c.env.TOME_DB.prepare(
-    "SELECT id FROM projects WHERE slug = ? AND user_id = ?",
-  ).bind(body.slug, user.id).first<{ id: string }>();
+    "SELECT id FROM projects WHERE slug = ? AND user_id = ?"
+  )
+    .bind(body.slug, user.id)
+    .first<{ id: string }>();
 
   if (!project) {
     return c.json({ error: "Project not found or not owned by you" }, 404);
@@ -119,13 +127,15 @@ github.post("/connect", async (c) => {
 
   // Store the connection
   await c.env.TOME_DB.prepare(
-    "UPDATE projects SET github_repo = ?, github_installation_id = ?, github_branch = ? WHERE id = ?",
-  ).bind(
-    `${parsed.owner}/${parsed.repo}`,
-    body.installationId,
-    body.branch || "main",
-    project.id,
-  ).run();
+    "UPDATE projects SET github_repo = ?, github_installation_id = ?, github_branch = ? WHERE id = ?"
+  )
+    .bind(
+      `${parsed.owner}/${parsed.repo}`,
+      body.installationId,
+      body.branch || "main",
+      project.id
+    )
+    .run();
 
   return c.json({
     ok: true,
@@ -147,16 +157,20 @@ github.delete("/connect", async (c) => {
   }
 
   const project = await c.env.TOME_DB.prepare(
-    "SELECT id FROM projects WHERE slug = ? AND user_id = ?",
-  ).bind(body.slug, user.id).first<{ id: string }>();
+    "SELECT id FROM projects WHERE slug = ? AND user_id = ?"
+  )
+    .bind(body.slug, user.id)
+    .first<{ id: string }>();
 
   if (!project) {
     return c.json({ error: "Project not found or not owned by you" }, 404);
   }
 
   await c.env.TOME_DB.prepare(
-    "UPDATE projects SET github_repo = NULL, github_installation_id = NULL, github_branch = NULL WHERE id = ?",
-  ).bind(project.id).run();
+    "UPDATE projects SET github_repo = NULL, github_installation_id = NULL, github_branch = NULL WHERE id = ?"
+  )
+    .bind(project.id)
+    .run();
 
   return c.json({ ok: true });
 });
@@ -170,12 +184,14 @@ github.get("/status/:slug", async (c) => {
   const slug = c.req.param("slug");
 
   const project = await c.env.TOME_DB.prepare(
-    "SELECT github_repo, github_installation_id, github_branch FROM projects WHERE slug = ? AND user_id = ?",
-  ).bind(slug, user.id).first<{
-    github_repo: string | null;
-    github_installation_id: number | null;
-    github_branch: string | null;
-  }>();
+    "SELECT github_repo, github_installation_id, github_branch FROM projects WHERE slug = ? AND user_id = ?"
+  )
+    .bind(slug, user.id)
+    .first<{
+      github_repo: string | null;
+      github_installation_id: number | null;
+      github_branch: string | null;
+    }>();
 
   if (!project) {
     return c.json({ error: "Project not found" }, 404);
@@ -203,22 +219,27 @@ async function handlePush(c: Context<{ Bindings: Env }>, payload: PushEvent) {
 
   // Find the project connected to this repo + branch
   const project = await c.env.TOME_DB.prepare(
-    "SELECT p.slug, p.id, u.api_token FROM projects p JOIN users u ON p.user_id = u.id WHERE p.github_repo = ? AND p.github_branch = ?",
-  ).bind(repoFullName, branch).first<{
-    slug: string;
-    id: string;
-    api_token: string;
-  }>();
+    "SELECT p.slug, p.id, u.api_token FROM projects p JOIN users u ON p.user_id = u.id WHERE p.github_repo = ? AND p.github_branch = ?"
+  )
+    .bind(repoFullName, branch)
+    .first<{
+      slug: string;
+      id: string;
+      api_token: string;
+    }>();
 
   if (!project) {
-    return c.json({ ok: true, message: "No project connected to this repo/branch" });
+    return c.json({
+      ok: true,
+      message: "No project connected to this repo/branch",
+    });
   }
 
   // Get installation token and dispatch workflow
   const appId = c.env.GITHUB_APP_ID;
   const privateKey = c.env.GITHUB_APP_PRIVATE_KEY;
 
-  if (!appId || !privateKey) {
+  if (!(appId && privateKey)) {
     return c.json({ error: "GitHub App credentials not configured" }, 503);
   }
 
@@ -226,26 +247,47 @@ async function handlePush(c: Context<{ Bindings: Env }>, payload: PushEvent) {
     const token = await getInstallationToken(installationId, appId, privateKey);
     const [owner, repo] = repoFullName.split("/");
 
-    const dispatched = await dispatchWorkflow(token, owner, repo, branch, "tome-deploy.yml", {
-      tome_token: project.api_token,
-      project_slug: project.slug,
-    });
+    const dispatched = await dispatchWorkflow(
+      token,
+      owner,
+      repo,
+      branch,
+      "tome-deploy.yml",
+      {
+        tome_token: project.api_token,
+        project_slug: project.slug,
+      }
+    );
 
     if (dispatched) {
-      return c.json({ ok: true, message: "Build dispatched", slug: project.slug });
+      return c.json({
+        ok: true,
+        message: "Build dispatched",
+        slug: project.slug,
+      });
     }
 
     // Workflow file might not exist yet — that's OK
-    return c.json({ ok: true, message: "Workflow not found. Create .github/workflows/tome-deploy.yml in your repo." });
+    return c.json({
+      ok: true,
+      message:
+        "Workflow not found. Create .github/workflows/tome-deploy.yml in your repo.",
+    });
   } catch (err) {
     console.error("Failed to dispatch build:", err);
     return c.json({ error: "Failed to dispatch build" }, 500);
   }
 }
 
-async function handlePullRequest(c: Context<{ Bindings: Env }>, payload: PullRequestEvent) {
+async function handlePullRequest(
+  c: Context<{ Bindings: Env }>,
+  payload: PullRequestEvent
+) {
   if (payload.action !== "opened" && payload.action !== "synchronize") {
-    return c.json({ ok: true, message: `Ignored PR action: ${payload.action}` });
+    return c.json({
+      ok: true,
+      message: `Ignored PR action: ${payload.action}`,
+    });
   }
 
   const repoFullName = payload.repository.full_name;
@@ -260,12 +302,14 @@ async function handlePullRequest(c: Context<{ Bindings: Env }>, payload: PullReq
 
   // Find the project connected to this repo (check base branch)
   const project = await c.env.TOME_DB.prepare(
-    "SELECT p.slug, p.id, u.api_token FROM projects p JOIN users u ON p.user_id = u.id WHERE p.github_repo = ? AND p.github_branch = ?",
-  ).bind(repoFullName, baseBranch).first<{
-    slug: string;
-    id: string;
-    api_token: string;
-  }>();
+    "SELECT p.slug, p.id, u.api_token FROM projects p JOIN users u ON p.user_id = u.id WHERE p.github_repo = ? AND p.github_branch = ?"
+  )
+    .bind(repoFullName, baseBranch)
+    .first<{
+      slug: string;
+      id: string;
+      api_token: string;
+    }>();
 
   if (!project) {
     return c.json({ ok: true, message: "No project connected to this repo" });
@@ -274,7 +318,7 @@ async function handlePullRequest(c: Context<{ Bindings: Env }>, payload: PullReq
   const appId = c.env.GITHUB_APP_ID;
   const privateKey = c.env.GITHUB_APP_PRIVATE_KEY;
 
-  if (!appId || !privateKey) {
+  if (!(appId && privateKey)) {
     return c.json({ error: "GitHub App credentials not configured" }, 503);
   }
 
@@ -283,16 +327,26 @@ async function handlePullRequest(c: Context<{ Bindings: Env }>, payload: PullReq
     const [owner, repo] = repoFullName.split("/");
 
     // Dispatch preview build
-    const dispatched = await dispatchWorkflow(token, owner, repo, prBranch, "tome-deploy.yml", {
-      tome_token: project.api_token,
-      project_slug: project.slug,
-      preview: "true",
-      pr_number: String(prNumber),
-    });
+    const dispatched = await dispatchWorkflow(
+      token,
+      owner,
+      repo,
+      prBranch,
+      "tome-deploy.yml",
+      {
+        tome_token: project.api_token,
+        project_slug: project.slug,
+        preview: "true",
+        pr_number: String(prNumber),
+      }
+    );
 
     if (dispatched) {
       // Post a comment with the preview URL
-      const branchSlug = prBranch.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const branchSlug = prBranch
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
       const previewUrl = `https://${branchSlug}.preview.${project.slug}.tome.center`;
 
       await postPrComment(
@@ -300,7 +354,7 @@ async function handlePullRequest(c: Context<{ Bindings: Env }>, payload: PullReq
         owner,
         repo,
         prNumber,
-        `## Tome Preview\n\nA preview deployment is building for this PR.\n\n**Preview URL:** ${previewUrl}\n\n---\n*Deployed by [Tome](https://tome.center)*`,
+        `## Tome Preview\n\nA preview deployment is building for this PR.\n\n**Preview URL:** ${previewUrl}\n\n---\n*Deployed by [Tome](https://tome.center)*`
       );
     }
 

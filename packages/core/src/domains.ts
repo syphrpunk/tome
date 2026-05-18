@@ -6,15 +6,15 @@ export interface DomainConfig {
 }
 
 export interface DomainStatus {
-  domain: string;
-  verified: boolean;
-  sslStatus: "pending" | "active" | "failed";
   dnsRecords: DnsRecord[];
+  domain: string;
+  sslStatus: "pending" | "active" | "failed";
+  verified: boolean;
 }
 
 export interface DnsRecord {
-  type: "CNAME" | "TXT";
   name: string;
+  type: "CNAME" | "TXT";
   value: string;
   verified: boolean;
 }
@@ -28,7 +28,10 @@ export interface DnsRecord {
  * The CNAME name is the user's actual domain (e.g. "docs.acme.io"),
  * and the value targets the project's subdomain on tome.center.
  */
-export function generateDnsRecords(domain: string, projectSlug: string): DnsRecord[] {
+export function generateDnsRecords(
+  domain: string,
+  projectSlug: string
+): DnsRecord[] {
   return [
     {
       type: "CNAME",
@@ -51,7 +54,10 @@ export function generateDnsRecords(domain: string, projectSlug: string): DnsReco
  * Validate a domain string format.
  * Checks for basic format: no spaces, has TLD, no protocol prefix.
  */
-export function validateDomain(domain: string): { valid: boolean; error?: string } {
+export function validateDomain(domain: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (!domain || domain.trim().length === 0) {
     return { valid: false, error: "Domain cannot be empty" };
   }
@@ -61,13 +67,19 @@ export function validateDomain(domain: string): { valid: boolean; error?: string
   }
 
   if (/^https?:\/\//i.test(domain)) {
-    return { valid: false, error: "Domain should not include protocol (http:// or https://)" };
+    return {
+      valid: false,
+      error: "Domain should not include protocol (http:// or https://)",
+    };
   }
 
   // Must have at least one dot separating labels, with a TLD of 2+ chars
   const domainPattern = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
   if (!domainPattern.test(domain)) {
-    return { valid: false, error: "Invalid domain format (must have a valid TLD)" };
+    return {
+      valid: false,
+      error: "Invalid domain format (must have a valid TLD)",
+    };
   }
 
   return { valid: true };
@@ -82,7 +94,12 @@ const API_URL = process.env.TOME_API_URL ?? "https://api.tome.center";
 /**
  * Check domain DNS verification status via Tome API.
  */
-export async function checkDomainDns(domain: string, projectSlug: string, apiUrl?: string, token?: string): Promise<DomainStatus> {
+export async function checkDomainDns(
+  domain: string,
+  projectSlug: string,
+  apiUrl?: string,
+  token?: string
+): Promise<DomainStatus> {
   if (!token) {
     // Fallback to local generation when no API available
     return {
@@ -93,12 +110,20 @@ export async function checkDomainDns(domain: string, projectSlug: string, apiUrl
     };
   }
 
-  const res = await fetch(`${apiUrl ?? API_URL}/api/domains/${encodeURIComponent(domain)}/verify`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch(
+    `${apiUrl ?? API_URL}/api/domains/${encodeURIComponent(domain)}/verify`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
 
   if (!res.ok) {
-    return { domain, verified: false, sslStatus: "pending", dnsRecords: generateDnsRecords(domain, projectSlug) };
+    return {
+      domain,
+      verified: false,
+      sslStatus: "pending",
+      dnsRecords: generateDnsRecords(domain, projectSlug),
+    };
   }
 
   return (await res.json()) as DomainStatus;
@@ -109,19 +134,28 @@ export async function checkDomainDns(domain: string, projectSlug: string, apiUrl
 /**
  * Add a custom domain to a project via Tome API.
  */
-export async function addDomain(config: DomainConfig, token: string, apiUrl?: string): Promise<DomainStatus> {
+export async function addDomain(
+  config: DomainConfig,
+  token: string,
+  apiUrl?: string
+): Promise<DomainStatus> {
   const res = await fetch(`${apiUrl ?? API_URL}/api/domains`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ domain: config.domain, projectSlug: config.projectSlug }),
+    body: JSON.stringify({
+      domain: config.domain,
+      projectSlug: config.projectSlug,
+    }),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(`Failed to add domain: ${(err as { error: string }).error}`);
+    throw new Error(
+      `Failed to add domain: ${(err as { error: string }).error}`
+    );
   }
 
   return (await res.json()) as DomainStatus;
@@ -132,15 +166,24 @@ export async function addDomain(config: DomainConfig, token: string, apiUrl?: st
 /**
  * Remove a custom domain from a project via Tome API.
  */
-export async function removeDomain(domain: string, token: string, apiUrl?: string): Promise<{ removed: boolean }> {
-  const res = await fetch(`${apiUrl ?? API_URL}/api/domains/${encodeURIComponent(domain)}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function removeDomain(
+  domain: string,
+  token: string,
+  apiUrl?: string
+): Promise<{ removed: boolean }> {
+  const res = await fetch(
+    `${apiUrl ?? API_URL}/api/domains/${encodeURIComponent(domain)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(`Failed to remove domain: ${(err as { error: string }).error}`);
+    throw new Error(
+      `Failed to remove domain: ${(err as { error: string }).error}`
+    );
   }
 
   return (await res.json()) as { removed: boolean };
@@ -151,7 +194,11 @@ export async function removeDomain(domain: string, token: string, apiUrl?: strin
 /**
  * List domains for user's projects via Tome API.
  */
-export async function listDomains(projectSlug: string, token: string, apiUrl?: string): Promise<DomainStatus[]> {
+export async function listDomains(
+  projectSlug: string,
+  token: string,
+  apiUrl?: string
+): Promise<DomainStatus[]> {
   const res = await fetch(`${apiUrl ?? API_URL}/api/domains`, {
     headers: { Authorization: `Bearer ${token}` },
   });

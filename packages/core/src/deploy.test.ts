@@ -1,20 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
-  mkdtempSync,
-  rmSync,
-  mkdirSync,
-  writeFileSync,
   existsSync,
+  mkdirSync,
+  mkdtempSync,
   readFileSync,
+  rmSync,
+  writeFileSync,
 } from "fs";
-import { join } from "path";
 import { tmpdir } from "os";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   collectBuildFiles,
   computeFileHashes,
+  deployToCloud,
   readAuthToken,
   saveAuthToken,
-  deployToCloud,
 } from "./deploy.js";
 
 // ── collectBuildFiles ───────────────────────────────────
@@ -156,14 +156,18 @@ describe("deployToCloud", () => {
             total: needed.length,
             skipped: 0,
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
 
       if (urlStr.endsWith("/api/deploy/upload")) {
         return new Response(
-          JSON.stringify({ ok: true, path: needed[callIndex++] || "file", size: 100 }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          JSON.stringify({
+            ok: true,
+            path: needed[callIndex++] || "file",
+            size: 100,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
 
@@ -174,7 +178,7 @@ describe("deployToCloud", () => {
             deploymentId: "deploy-abc123",
             status: "live",
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
 
@@ -194,7 +198,7 @@ describe("deployToCloud", () => {
         token: "test-token",
         slug: "my-project",
       },
-      tmpDir,
+      tmpDir
     );
 
     expect(result.url).toBe("https://my-project.tome.center");
@@ -209,8 +213,12 @@ describe("deployToCloud", () => {
     mockFetchSequence(["index.html"]);
 
     await deployToCloud(
-      { apiUrl: "https://api.tome.center", token: "test-token", slug: "my-docs" },
-      tmpDir,
+      {
+        apiUrl: "https://api.tome.center",
+        token: "test-token",
+        slug: "my-docs",
+      },
+      tmpDir
     );
 
     // First call should be to /start with manifest
@@ -227,14 +235,21 @@ describe("deployToCloud", () => {
     mockFetchSequence(["page.html"]);
 
     await deployToCloud(
-      { apiUrl: "https://api.tome.center", token: "test-token", slug: "my-docs" },
-      tmpDir,
+      {
+        apiUrl: "https://api.tome.center",
+        token: "test-token",
+        slug: "my-docs",
+      },
+      tmpDir
     );
 
     // Second call should be upload
     const uploadCall = fetchSpy.mock.calls[1];
     expect(uploadCall[0]).toBe("https://api.tome.center/api/deploy/upload");
-    const headers = (uploadCall[1] as RequestInit).headers as Record<string, string>;
+    const headers = (uploadCall[1] as RequestInit).headers as Record<
+      string,
+      string
+    >;
     expect(headers["X-Deployment-Id"]).toBe("deploy-abc123");
     expect(headers["X-File-Path"]).toBe("page.html");
     expect(headers["X-File-Hash"]).toBeTruthy();
@@ -250,22 +265,35 @@ describe("deployToCloud", () => {
 
       if (urlStr.endsWith("/api/deploy/start")) {
         return new Response(
-          JSON.stringify({ deploymentId: "deploy-xyz", needed: [], total: 1, skipped: 1 }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          JSON.stringify({
+            deploymentId: "deploy-xyz",
+            needed: [],
+            total: 1,
+            skipped: 1,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
       if (urlStr.endsWith("/api/deploy/finalize")) {
         return new Response(
-          JSON.stringify({ url: "https://cached.tome.center", deploymentId: "deploy-xyz", status: "live" }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          JSON.stringify({
+            url: "https://cached.tome.center",
+            deploymentId: "deploy-xyz",
+            status: "live",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
       return new Response("Not found", { status: 404 });
     });
 
     const result = await deployToCloud(
-      { apiUrl: "https://api.tome.center", token: "test-token", slug: "cached" },
-      tmpDir,
+      {
+        apiUrl: "https://api.tome.center",
+        token: "test-token",
+        slug: "cached",
+      },
+      tmpDir
     );
 
     expect(result.url).toBe("https://cached.tome.center");
@@ -283,8 +311,8 @@ describe("deployToCloud", () => {
           token: "test-token",
           slug: "my-project",
         },
-        emptyDir,
-      ),
+        emptyDir
+      )
     ).rejects.toThrow("No files found");
   });
 
@@ -292,14 +320,14 @@ describe("deployToCloud", () => {
     writeFileSync(join(tmpDir, "index.html"), "<html></html>");
 
     fetchSpy.mockResolvedValue(
-      new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
+      new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
     );
 
     await expect(
       deployToCloud(
         { apiUrl: "https://api.tome.center", token: "bad-token", slug: "fail" },
-        tmpDir,
-      ),
+        tmpDir
+      )
     ).rejects.toThrow("Deploy failed: Unauthorized");
   });
 
@@ -311,22 +339,26 @@ describe("deployToCloud", () => {
       callNum++;
       if (callNum === 1) {
         return new Response(
-          JSON.stringify({ deploymentId: "d1", needed: ["index.html"], total: 1, skipped: 0 }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          JSON.stringify({
+            deploymentId: "d1",
+            needed: ["index.html"],
+            total: 1,
+            skipped: 0,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
       // Upload fails
-      return new Response(
-        JSON.stringify({ error: "Storage full" }),
-        { status: 507 },
-      );
+      return new Response(JSON.stringify({ error: "Storage full" }), {
+        status: 507,
+      });
     });
 
     await expect(
       deployToCloud(
         { apiUrl: "https://api.tome.center", token: "tok", slug: "full" },
-        tmpDir,
-      ),
+        tmpDir
+      )
     ).rejects.toThrow("Upload failed for index.html: Storage full");
   });
 });

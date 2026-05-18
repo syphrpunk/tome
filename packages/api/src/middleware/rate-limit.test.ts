@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
 import { Hono } from "hono";
-import { rateLimit } from "./rate-limit.js";
+import { describe, expect, it } from "vitest";
 import type { Env } from "../types.js";
+import { rateLimit } from "./rate-limit.js";
 
 function makeApp(maxRequests: number, windowMs: number) {
   const app = new Hono<{ Bindings: Env }>();

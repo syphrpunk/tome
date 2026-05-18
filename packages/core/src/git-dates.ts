@@ -6,15 +6,24 @@ import { dirname, isAbsolute } from "path";
  * Returns an ISO 8601 date string, or null if git is not available or the file is untracked.
  */
 export function getGitLastUpdated(absolutePath: string): string | null {
-  if (!absolutePath || !isAbsolute(absolutePath) || absolutePath.startsWith("-")) {
+  if (
+    !(absolutePath && isAbsolute(absolutePath)) ||
+    absolutePath.startsWith("-")
+  ) {
     return null;
   }
 
   try {
     const cwd = dirname(absolutePath);
     const result = execFileSync(
-      "git", ["log", "-1", "--format=%cI", "--", absolutePath],
-      { cwd, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"], shell: process.platform === "win32" }
+      "git",
+      ["log", "-1", "--format=%cI", "--", absolutePath],
+      {
+        cwd,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+        shell: process.platform === "win32",
+      }
     ).trim();
     return result || null;
   } catch {
@@ -27,7 +36,7 @@ export function getGitLastUpdated(absolutePath: string): string | null {
  * More efficient than calling getGitLastUpdated for each file individually.
  */
 export function getGitDatesForFiles(
-  absolutePaths: string[],
+  absolutePaths: string[]
 ): Map<string, string> {
   const dates = new Map<string, string>();
 
@@ -50,28 +59,53 @@ export function formatRelativeDate(isoDate: string): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
 
-  if (isNaN(diffMs)) return "";
+  if (isNaN(diffMs)) {
+    return "";
+  }
 
   const seconds = Math.floor(diffMs / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (seconds < 60) return "just now";
-  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+  if (seconds < 60) {
+    return "just now";
+  }
+  if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  }
+  if (hours < 24) {
+    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  }
+  if (days < 30) {
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }
 
   // Calendar-based months/years for longer periods
   let years = now.getFullYear() - date.getFullYear();
   let months = now.getMonth() - date.getMonth();
-  if (now.getDate() < date.getDate()) months -= 1;
-  if (months < 0) { years -= 1; months += 12; }
+  if (now.getDate() < date.getDate()) {
+    months -= 1;
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
 
-  if (years === 0 && months > 0) return `${months} month${months === 1 ? "" : "s"} ago`;
-  if (years === 1 && months === 0) return "1 year ago";
-  if (years >= 1) return `${years} year${years === 1 ? "" : "s"} ago`;
+  if (years === 0 && months > 0) {
+    return `${months} month${months === 1 ? "" : "s"} ago`;
+  }
+  if (years === 1 && months === 0) {
+    return "1 year ago";
+  }
+  if (years >= 1) {
+    return `${years} year${years === 1 ? "" : "s"} ago`;
+  }
 
   // Fallback: absolute date
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }

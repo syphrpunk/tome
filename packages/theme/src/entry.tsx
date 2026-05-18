@@ -1,45 +1,47 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { createRoot } from "react-dom/client";
-import { Shell } from "./Shell.js";
-import { pathnameToPageId as _pathnameToPageId, pageIdToPath as _pageIdToPath } from "./routing.js";
-import {
-  loadPage,
-  computeEditUrl,
-  resolveInitialPageId,
-  detectCurrentVersion,
-  type LoadedPage,
-} from "./entry-helpers.js";
-
-// @ts-ignore — resolved by vite-plugin-tome
+// @ts-expect-error — resolved by vite-plugin-tome
 import config from "virtual:tome/config";
-// @ts-ignore — resolved by vite-plugin-tome
-import { routes, navigation, versions, i18n } from "virtual:tome/routes";
-// @ts-ignore — resolved by vite-plugin-tome
-import loadPageModule from "virtual:tome/page-loader";
-// @ts-ignore — resolved by vite-plugin-tome
+// @ts-expect-error — resolved by vite-plugin-tome
 import docContext from "virtual:tome/doc-context";
-// @ts-ignore — resolved by vite-plugin-tome
+// @ts-expect-error — resolved by vite-plugin-tome
 import overrides from "virtual:tome/overrides";
-
+// @ts-expect-error — resolved by vite-plugin-tome
+import loadPageModule from "virtual:tome/page-loader";
+// @ts-expect-error — resolved by vite-plugin-tome
+import { i18n, navigation, routes, versions } from "virtual:tome/routes";
 // TOM-8: Built-in MDX components from @tomehq/components
 // These are injected into every MDX page automatically
 import {
-  Callout,
-  Tabs,
-  Card,
-  CardGroup,
-  Steps,
   Accordion,
-  ChangelogTimeline,
-  PackageManager,
-  TypeTable,
-  FileTree,
-  CodeSamples,
-  LinkCard,
-  CardGrid,
   ApiReference,
   AsyncApiReference,
+  Callout,
+  Card,
+  CardGrid,
+  CardGroup,
+  ChangelogTimeline,
+  CodeSamples,
+  FileTree,
+  LinkCard,
+  PackageManager,
+  Steps,
+  Tabs,
+  TypeTable,
 } from "@tomehq/components";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  computeEditUrl,
+  detectCurrentVersion,
+  type LoadedPage,
+  loadPage,
+  resolveInitialPageId,
+} from "./entry-helpers.js";
+import {
+  pageIdToPath as _pageIdToPath,
+  pathnameToPageId as _pathnameToPageId,
+} from "./routing.js";
+import { Shell } from "./Shell.js";
 
 const MDX_COMPONENTS: Record<string, React.ComponentType<any>> = {
   Callout,
@@ -296,7 +298,7 @@ const _initialPageId = resolveInitialPageId(
   window.location.hash,
   routes,
   basePath,
-  _pathnameToPageId,
+  _pathnameToPageId
 );
 const _initialPagePromise = loadPage(_initialPageId, routes, loadPageModule);
 
@@ -310,50 +312,59 @@ function App() {
   // Navigation counter for race condition protection — only the latest navigation wins
   const navCounterRef = useRef(0);
 
-  const navigateTo = useCallback(async (id: string, opts?: { replace?: boolean; skipScroll?: boolean }) => {
-    // Increment counter — this navigation's ID
-    const navId = ++navCounterRef.current;
+  const navigateTo = useCallback(
+    async (id: string, opts?: { replace?: boolean; skipScroll?: boolean }) => {
+      // Increment counter — this navigation's ID
+      const navId = ++navCounterRef.current;
 
-    setLoading(true);
+      setLoading(true);
 
-    // Load the page BEFORE updating any state — on failure or cancellation, nothing changes
-    let data: LoadedPage | null;
-    try {
-      data = await loadPage(id, routes, loadPageModule);
-    } catch (err) {
-      // If a newer navigation started while we were loading, bail silently
-      if (navCounterRef.current !== navId) return;
-      console.error(`[tome] Navigation failed for page: ${id}`, err);
-      data = null;
-    }
-
-    // If a newer navigation started while we were loading, bail silently
-    if (navCounterRef.current !== navId) return;
-
-    // Only update state and push history after successful page load
-    const fullPath = pageIdToPath(id);
-    if (opts?.replace) {
-      window.history.replaceState(null, "", fullPath);
-    } else {
-      window.history.pushState(null, "", fullPath);
-    }
-
-    setCurrentPageId(id);
-    setPageData(data);
-    setLoading(false);
-    // Scroll to heading anchor if present, otherwise scroll to top
-    if (!opts?.skipScroll) {
-      const anchor = window.location.hash.slice(1);
-      if (anchor) {
-        requestAnimationFrame(() => {
-          const el = document.getElementById(anchor);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      } else {
-        window.scrollTo(0, 0);
+      // Load the page BEFORE updating any state — on failure or cancellation, nothing changes
+      let data: LoadedPage | null;
+      try {
+        data = await loadPage(id, routes, loadPageModule);
+      } catch (err) {
+        // If a newer navigation started while we were loading, bail silently
+        if (navCounterRef.current !== navId) {
+          return;
+        }
+        console.error(`[tome] Navigation failed for page: ${id}`, err);
+        data = null;
       }
-    }
-  }, []);
+
+      // If a newer navigation started while we were loading, bail silently
+      if (navCounterRef.current !== navId) {
+        return;
+      }
+
+      // Only update state and push history after successful page load
+      const fullPath = pageIdToPath(id);
+      if (opts?.replace) {
+        window.history.replaceState(null, "", fullPath);
+      } else {
+        window.history.pushState(null, "", fullPath);
+      }
+
+      setCurrentPageId(id);
+      setPageData(data);
+      setLoading(false);
+      // Scroll to heading anchor if present, otherwise scroll to top
+      if (!opts?.skipScroll) {
+        const anchor = window.location.hash.slice(1);
+        if (anchor) {
+          requestAnimationFrame(() => {
+            const el = document.getElementById(anchor);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          });
+        } else {
+          window.scrollTo(0, 0);
+        }
+      }
+    },
+    []
+  );
 
   // Initial page load — use the eagerly-started promise from module scope
   useEffect(() => {
@@ -390,14 +401,24 @@ function App() {
   // Also re-renders when theme changes (dark ↔ light) so colors stay correct.
   const mermaidModuleRef = useRef<any>(null);
   const [mermaidTheme, setMermaidTheme] = useState(() => {
-    if (typeof document === "undefined") return "light";
+    if (typeof document === "undefined") {
+      return "light";
+    }
     // Check the class first (already set), then fall back to config + system preference
     // to avoid a white flash before Shell syncs the dark class onto <html>
-    if (document.documentElement.classList.contains("dark")) return "dark";
+    if (document.documentElement.classList.contains("dark")) {
+      return "dark";
+    }
     const mode = config.theme?.mode || "auto";
-    if (mode === "dark") return "dark";
-    if (mode === "light") return "light";
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    if (mode === "dark") {
+      return "dark";
+    }
+    if (mode === "light") {
+      return "light";
+    }
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
   });
 
   // Watch for dark class changes on <html> to trigger mermaid re-render
@@ -406,26 +427,39 @@ function App() {
       const isDark = document.documentElement.classList.contains("dark");
       setMermaidTheme(isDark ? "dark" : "light");
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
     const els = document.querySelectorAll(".tome-mermaid[data-mermaid]");
-    if (els.length === 0) return;
+    if (els.length === 0) {
+      return;
+    }
     let cancelled = false;
 
-    const MERMAID_CDN = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    const MERMAID_CDN =
+      "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
 
     (async () => {
       try {
         if (!mermaidModuleRef.current) {
-          mermaidModuleRef.current = (await import(/* @vite-ignore */ MERMAID_CDN)).default;
+          mermaidModuleRef.current = (
+            await import(/* @vite-ignore */ MERMAID_CDN)
+          ).default;
         }
         const mermaid = mermaidModuleRef.current;
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const isDark = mermaidTheme === "dark";
-        const resolvedFont = getComputedStyle(document.documentElement).getPropertyValue("--font-body").trim() || "sans-serif";
+        const resolvedFont =
+          getComputedStyle(document.documentElement)
+            .getPropertyValue("--font-body")
+            .trim() || "sans-serif";
         mermaid.initialize({
           startOnLoad: false,
           theme: isDark ? "dark" : "default",
@@ -436,40 +470,53 @@ function App() {
         for (let i = 0; i < els.length; i++) {
           const el = els[i] as HTMLElement;
           const encoded = el.getAttribute("data-mermaid");
-          if (!encoded) continue;
+          if (!encoded) {
+            continue;
+          }
           try {
             const code = atob(encoded);
             // Render new SVG off-screen first, then swap — avoids white flash on theme change
-            const { svg } = await mermaid.render(`tome-mermaid-${i}-${Date.now()}`, code);
+            const { svg } = await mermaid.render(
+              `tome-mermaid-${i}-${Date.now()}`,
+              code
+            );
             if (!cancelled) {
               el.innerHTML = svg;
             }
           } catch (err) {
             console.warn("[tome] Mermaid render failed:", err);
             el.textContent = "Diagram rendering failed";
-            (el as HTMLElement).style.cssText = "padding:16px;color:var(--txM);font-size:13px;border:1px dashed var(--bd);border-radius:2px;text-align:center;";
+            (el as HTMLElement).style.cssText =
+              "padding:16px;color:var(--txM);font-size:13px;border:1px dashed var(--bd);border-radius:2px;text-align:center;";
           }
         }
       } catch (err) {
         console.warn("[tome] Failed to load mermaid from CDN:", err);
         els.forEach((el) => {
           (el as HTMLElement).textContent = "Failed to load diagram renderer";
-          (el as HTMLElement).style.cssText = "padding:16px;color:var(--txM);font-size:13px;border:1px dashed var(--bd);border-radius:2px;text-align:center;";
+          (el as HTMLElement).style.cssText =
+            "padding:16px;color:var(--txM);font-size:13px;border:1px dashed var(--bd);border-radius:2px;text-align:center;";
         });
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [pageData, loading, mermaidTheme]);
 
   // Add copy buttons to all pre blocks (expressive code blocks)
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     const preBlocks = document.querySelectorAll(".tome-content pre");
     const buttons: HTMLButtonElement[] = [];
     preBlocks.forEach((pre) => {
       // Skip if already has a copy button
-      if (pre.querySelector(".tome-copy-btn")) return;
+      if (pre.querySelector(".tome-copy-btn")) {
+        return;
+      }
       const btn = document.createElement("button");
       btn.className = "tome-copy-btn";
       btn.textContent = "Copy";
@@ -479,11 +526,15 @@ function App() {
           try {
             await navigator.clipboard.writeText(code.textContent || "");
             btn.textContent = "Copied!";
-            setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+            setTimeout(() => {
+              btn.textContent = "Copy";
+            }, 2000);
           } catch {
             // Fallback for non-HTTPS contexts
             btn.textContent = "Failed";
-            setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+            setTimeout(() => {
+              btn.textContent = "Copy";
+            }, 2000);
           }
         }
       });
@@ -512,10 +563,15 @@ function App() {
 
   // KaTeX CSS: inject stylesheet when math is enabled or math placeholders exist
   useEffect(() => {
-    const hasMathPlaceholders = document.querySelectorAll(".tome-math[data-math]").length > 0;
-    if (!(config as any).math && !hasMathPlaceholders) return;
+    const hasMathPlaceholders =
+      document.querySelectorAll(".tome-math[data-math]").length > 0;
+    if (!((config as any).math || hasMathPlaceholders)) {
+      return;
+    }
     const id = "tome-katex-css";
-    if (document.getElementById(id)) return;
+    if (document.getElementById(id)) {
+      return;
+    }
     const link = document.createElement("link");
     link.id = id;
     link.rel = "stylesheet";
@@ -527,18 +583,25 @@ function App() {
   // Client-side KaTeX rendering for MDX math placeholders (.tome-math[data-math])
   useEffect(() => {
     const els = document.querySelectorAll(".tome-math[data-math]");
-    if (els.length === 0) return;
+    if (els.length === 0) {
+      return;
+    }
     let cancelled = false;
 
-    const KATEX_CDN = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.mjs";
+    const KATEX_CDN =
+      "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.mjs";
 
     (async () => {
       try {
         const katex = (await import(/* @vite-ignore */ KATEX_CDN)).default;
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         for (const el of els) {
           const encoded = el.getAttribute("data-math");
-          if (!encoded) continue;
+          if (!encoded) {
+            continue;
+          }
           try {
             const tex = atob(encoded);
             const isBlock = el.classList.contains("tome-math-block");
@@ -555,44 +618,62 @@ function App() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [pageData, loading]);
 
   return (
     <>
       <style>{contentStyles}</style>
       <Shell
-        config={config}
-        navigation={navigation}
-        currentPageId={currentPageId}
-        pageHtml={!pageData?.isMdx ? (loading ? "" : pageData?.html || "<p>Page not found</p>") : undefined}
-        pageComponent={pageData?.isMdx ? pageData.component : undefined}
-        mdxComponents={MDX_COMPONENTS}
-        pageTitle={pageData?.frontmatter.title || (loading ? "" : "Not Found")}
-        pageDescription={pageData?.frontmatter.description}
-        headings={pageData?.headings || []}
-        tocEnabled={pageData?.frontmatter.toc !== false}
-        editUrl={editUrl}
-        lastUpdated={currentRoute?.lastUpdated}
-        changelogEntries={!pageData?.isMdx ? pageData?.changelogEntries : undefined}
-        apiManifest={(!pageData?.isMdx && pageData?.isApiReference) ? pageData.apiManifest : undefined}
-        asyncApiManifest={(!pageData?.isMdx && pageData?.isApiReference) ? (pageData as any).asyncApiManifest : undefined}
-        apiBaseUrl={config.api?.baseUrl}
-        apiPlayground={config.api?.playground}
-        apiAuth={config.api?.auth}
         ApiReferenceComponent={ApiReference}
         AsyncApiReferenceComponent={AsyncApiReference}
-        onNavigate={navigateTo}
         allPages={allPages}
-        docContext={docContext}
-        versioning={versions || undefined}
-        currentVersion={currentVersion}
+        apiAuth={config.api?.auth}
+        apiBaseUrl={config.api?.baseUrl}
+        apiManifest={
+          !pageData?.isMdx && pageData?.isApiReference
+            ? pageData.apiManifest
+            : undefined
+        }
+        apiPlayground={config.api?.playground}
+        asyncApiManifest={
+          !pageData?.isMdx && pageData?.isApiReference
+            ? (pageData as any).asyncApiManifest
+            : undefined
+        }
         basePath={basePath}
-        isDraft={currentRoute?.frontmatter?.draft === true}
-        dir={dir}
-        i18n={i18n || undefined}
+        changelogEntries={
+          pageData?.isMdx ? undefined : pageData?.changelogEntries
+        }
+        config={config}
         currentLocale={currentLocale}
+        currentPageId={currentPageId}
+        currentVersion={currentVersion}
+        dir={dir}
+        docContext={docContext}
+        editUrl={editUrl}
+        headings={pageData?.headings || []}
+        i18n={i18n || undefined}
+        isDraft={currentRoute?.frontmatter?.draft === true}
+        lastUpdated={currentRoute?.lastUpdated}
+        mdxComponents={MDX_COMPONENTS}
+        navigation={navigation}
+        onNavigate={navigateTo}
         overrides={overrides}
+        pageComponent={pageData?.isMdx ? pageData.component : undefined}
+        pageDescription={pageData?.frontmatter.description}
+        pageHtml={
+          pageData?.isMdx
+            ? undefined
+            : loading
+              ? ""
+              : pageData?.html || "<p>Page not found</p>"
+        }
+        pageTitle={pageData?.frontmatter.title || (loading ? "" : "Not Found")}
+        tocEnabled={pageData?.frontmatter.toc !== false}
+        versioning={versions || undefined}
       />
     </>
   );

@@ -9,8 +9,8 @@
  */
 
 import { Hono } from "hono";
-import type { Env, User } from "../types.js";
 import { hasRole, type Role } from "../middleware/rbac.js";
+import type { Env, User } from "../types.js";
 
 const VALID_ROLES: Role[] = ["viewer", "editor", "admin", "owner"];
 
@@ -26,25 +26,33 @@ async function authorizeManager(
   db: D1Database,
   userId: string,
   userEmail: string,
-  projectSlug: string,
+  projectSlug: string
 ): Promise<{ id: string; user_id: string } | null> {
   const project = await db
     .prepare("SELECT id, user_id FROM projects WHERE slug = ?")
     .bind(projectSlug)
     .first<{ id: string; user_id: string }>();
 
-  if (!project) return null;
+  if (!project) {
+    return null;
+  }
 
   // Project owner always has access
-  if (project.user_id === userId) return project;
+  if (project.user_id === userId) {
+    return project;
+  }
 
   // Check if user has admin role in project_roles
   const roleRow = await db
-    .prepare("SELECT role FROM project_roles WHERE project_id = ? AND email = ?")
+    .prepare(
+      "SELECT role FROM project_roles WHERE project_id = ? AND email = ?"
+    )
     .bind(project.id, userEmail)
     .first<{ role: string }>();
 
-  if (roleRow && hasRole(roleRow.role, "admin")) return project;
+  if (roleRow && hasRole(roleRow.role, "admin")) {
+    return project;
+  }
 
   return null;
 }
@@ -59,30 +67,36 @@ roles.post("/", async (c) => {
     role: string;
   }>();
 
-  if (!body.projectSlug || !body.email || !body.role) {
+  if (!(body.projectSlug && body.email && body.role)) {
     return c.json({ error: "Missing projectSlug, email, or role" }, 400);
   }
 
   if (!VALID_ROLES.includes(body.role as Role)) {
-    return c.json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}` }, 400);
+    return c.json(
+      { error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}` },
+      400
+    );
   }
 
   const project = await authorizeManager(
     c.env.TOME_DB,
     user.id,
     user.email,
-    body.projectSlug,
+    body.projectSlug
   );
 
   if (!project) {
-    return c.json({ error: "Project not found or insufficient permissions" }, 403);
+    return c.json(
+      { error: "Project not found or insufficient permissions" },
+      403
+    );
   }
 
   const id = crypto.randomUUID();
   await c.env.TOME_DB.prepare(
     `INSERT INTO project_roles (id, project_id, email, role)
      VALUES (?, ?, ?, ?)
-     ON CONFLICT(project_id, email) DO UPDATE SET role = excluded.role`,
+     ON CONFLICT(project_id, email) DO UPDATE SET role = excluded.role`
   )
     .bind(id, project.id, body.email, body.role)
     .run();
@@ -100,15 +114,18 @@ roles.get("/:slug", async (c) => {
     c.env.TOME_DB,
     user.id,
     user.email,
-    slug,
+    slug
   );
 
   if (!project) {
-    return c.json({ error: "Project not found or insufficient permissions" }, 403);
+    return c.json(
+      { error: "Project not found or insufficient permissions" },
+      403
+    );
   }
 
   const { results } = await c.env.TOME_DB.prepare(
-    "SELECT id, email, role, created_at FROM project_roles WHERE project_id = ?",
+    "SELECT id, email, role, created_at FROM project_roles WHERE project_id = ?"
   )
     .bind(project.id)
     .all<{ id: string; email: string; role: string; created_at: string }>();
@@ -125,7 +142,7 @@ roles.delete("/", async (c) => {
     email: string;
   }>();
 
-  if (!body.projectSlug || !body.email) {
+  if (!(body.projectSlug && body.email)) {
     return c.json({ error: "Missing projectSlug or email" }, 400);
   }
 
@@ -133,15 +150,18 @@ roles.delete("/", async (c) => {
     c.env.TOME_DB,
     user.id,
     user.email,
-    body.projectSlug,
+    body.projectSlug
   );
 
   if (!project) {
-    return c.json({ error: "Project not found or insufficient permissions" }, 403);
+    return c.json(
+      { error: "Project not found or insufficient permissions" },
+      403
+    );
   }
 
   await c.env.TOME_DB.prepare(
-    "DELETE FROM project_roles WHERE project_id = ? AND email = ?",
+    "DELETE FROM project_roles WHERE project_id = ? AND email = ?"
   )
     .bind(project.id, body.email)
     .run();

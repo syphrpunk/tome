@@ -1,13 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
-  defineContentSource,
-  githubSource,
-  notionSource,
-  notionBlocksToMarkdown,
-  richTextToMd,
-  fetchRemoteContent,
-  type ContentSource,
   type ContentPage,
+  type ContentSource,
+  defineContentSource,
+  fetchRemoteContent,
+  githubSource,
+  notionBlocksToMarkdown,
+  notionSource,
+  richTextToMd,
 } from "./content-source.js";
 
 // ── defineContentSource ──────────────────────────────────
@@ -51,40 +51,41 @@ describe("richTextToMd", () => {
   });
 
   it("converts plain text", () => {
-    expect(
-      richTextToMd([{ plain_text: "Hello world" }]),
-    ).toBe("Hello world");
+    expect(richTextToMd([{ plain_text: "Hello world" }])).toBe("Hello world");
   });
 
   it("converts bold text", () => {
     expect(
-      richTextToMd([{ plain_text: "bold", annotations: { bold: true } }]),
+      richTextToMd([{ plain_text: "bold", annotations: { bold: true } }])
     ).toBe("**bold**");
   });
 
   it("converts italic text", () => {
     expect(
-      richTextToMd([{ plain_text: "italic", annotations: { italic: true } }]),
+      richTextToMd([{ plain_text: "italic", annotations: { italic: true } }])
     ).toBe("*italic*");
   });
 
   it("converts code text", () => {
     expect(
-      richTextToMd([{ plain_text: "code", annotations: { code: true } }]),
+      richTextToMd([{ plain_text: "code", annotations: { code: true } }])
     ).toBe("`code`");
   });
 
   it("converts links", () => {
     expect(
-      richTextToMd([{ plain_text: "click here", href: "https://example.com" }]),
+      richTextToMd([{ plain_text: "click here", href: "https://example.com" }])
     ).toBe("[click here](https://example.com)");
   });
 
   it("combines multiple annotations", () => {
     expect(
       richTextToMd([
-        { plain_text: "bold-italic", annotations: { bold: true, italic: true } },
-      ]),
+        {
+          plain_text: "bold-italic",
+          annotations: { bold: true, italic: true },
+        },
+      ])
     ).toBe("***bold-italic***");
   });
 
@@ -93,7 +94,7 @@ describe("richTextToMd", () => {
       richTextToMd([
         { plain_text: "Hello " },
         { plain_text: "world", annotations: { bold: true } },
-      ]),
+      ])
     ).toBe("Hello **world**");
   });
 });
@@ -108,7 +109,10 @@ describe("notionBlocksToMarkdown", () => {
 
   it("converts paragraph blocks", () => {
     const blocks = [
-      { type: "paragraph", paragraph: { rich_text: [{ plain_text: "Hello" }] } },
+      {
+        type: "paragraph",
+        paragraph: { rich_text: [{ plain_text: "Hello" }] },
+      },
     ];
     const result = notionBlocksToMarkdown("Test", blocks);
     expect(result).toContain("Hello\n\n");
@@ -128,8 +132,14 @@ describe("notionBlocksToMarkdown", () => {
 
   it("converts list items", () => {
     const blocks = [
-      { type: "bulleted_list_item", bulleted_list_item: { rich_text: [{ plain_text: "bullet" }] } },
-      { type: "numbered_list_item", numbered_list_item: { rich_text: [{ plain_text: "number" }] } },
+      {
+        type: "bulleted_list_item",
+        bulleted_list_item: { rich_text: [{ plain_text: "bullet" }] },
+      },
+      {
+        type: "numbered_list_item",
+        numbered_list_item: { rich_text: [{ plain_text: "number" }] },
+      },
     ];
     const result = notionBlocksToMarkdown("Test", blocks);
     expect(result).toContain("- bullet\n");
@@ -140,7 +150,10 @@ describe("notionBlocksToMarkdown", () => {
     const blocks = [
       {
         type: "code",
-        code: { language: "javascript", rich_text: [{ plain_text: "const x = 1;" }] },
+        code: {
+          language: "javascript",
+          rich_text: [{ plain_text: "const x = 1;" }],
+        },
       },
     ];
     const result = notionBlocksToMarkdown("Test", blocks);
@@ -175,7 +188,10 @@ describe("notionBlocksToMarkdown", () => {
   it("skips unknown block types", () => {
     const blocks = [
       { type: "unsupported_block_type" },
-      { type: "paragraph", paragraph: { rich_text: [{ plain_text: "after" }] } },
+      {
+        type: "paragraph",
+        paragraph: { rich_text: [{ plain_text: "after" }] },
+      },
     ];
     const result = notionBlocksToMarkdown("Test", blocks);
     expect(result).toContain("after");
@@ -216,7 +232,8 @@ describe("githubSource", () => {
     // Mock raw content responses
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => "---\ntitle: Getting Started\n---\n\n# Getting Started\n\nHello!",
+      text: async () =>
+        "---\ntitle: Getting Started\n---\n\n# Getting Started\n\nHello!",
     });
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -231,7 +248,12 @@ describe("githubSource", () => {
     globalThis.fetch = mockFetch;
 
     try {
-      const source = githubSource({ owner: "acme", repo: "docs", branch: "main", path: "docs" });
+      const source = githubSource({
+        owner: "acme",
+        repo: "docs",
+        branch: "main",
+        path: "docs",
+      });
       const pages = await source.fetchPages();
 
       expect(pages).toHaveLength(3);
@@ -248,7 +270,11 @@ describe("githubSource", () => {
       // Verify API call includes correct URL
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.github.com/repos/acme/docs/git/trees/main?recursive=1",
-        expect.objectContaining({ headers: expect.objectContaining({ Accept: "application/vnd.github.v3+json" }) }),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Accept: "application/vnd.github.v3+json",
+          }),
+        })
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -266,14 +292,20 @@ describe("githubSource", () => {
     globalThis.fetch = mockFetch;
 
     try {
-      const source = githubSource({ owner: "acme", repo: "private-docs", token: "ghp_abc123" });
+      const source = githubSource({
+        owner: "acme",
+        repo: "private-docs",
+        token: "ghp_abc123",
+      });
       await source.fetchPages();
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          headers: expect.objectContaining({ Authorization: "Bearer ghp_abc123" }),
-        }),
+          headers: expect.objectContaining({
+            Authorization: "Bearer ghp_abc123",
+          }),
+        })
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -287,7 +319,9 @@ describe("githubSource", () => {
 
     try {
       const source = githubSource({ owner: "acme", repo: "docs" });
-      await expect(source.fetchPages()).rejects.toThrow("GitHub API error: 403");
+      await expect(source.fetchPages()).rejects.toThrow(
+        "GitHub API error: 403"
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -307,7 +341,7 @@ describe("githubSource", () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         "https://api.github.com/repos/acme/docs/git/trees/main?recursive=1",
-        expect.any(Object),
+        expect.any(Object)
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -351,8 +385,14 @@ describe("notionSource", () => {
       ok: true,
       json: async () => ({
         results: [
-          { type: "paragraph", paragraph: { rich_text: [{ plain_text: "Welcome to the docs." }] } },
-          { type: "heading_1", heading_1: { rich_text: [{ plain_text: "Installation" }] } },
+          {
+            type: "paragraph",
+            paragraph: { rich_text: [{ plain_text: "Welcome to the docs." }] },
+          },
+          {
+            type: "heading_1",
+            heading_1: { rich_text: [{ plain_text: "Installation" }] },
+          },
         ],
       }),
     });
@@ -380,7 +420,7 @@ describe("notionSource", () => {
             Authorization: "Bearer ntn_test",
             "Notion-Version": "2022-06-28",
           }),
-        }),
+        })
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -394,7 +434,9 @@ describe("notionSource", () => {
 
     try {
       const source = notionSource({ apiKey: "bad", databaseId: "db-123" });
-      await expect(source.fetchPages()).rejects.toThrow("Notion API error: 401");
+      await expect(source.fetchPages()).rejects.toThrow(
+        "Notion API error: 401"
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -510,7 +552,7 @@ describe("fetchRemoteContent", () => {
     expect(pages).toHaveLength(1);
     expect(pages[0].id).toBe("good-page");
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to fetch from content source "broken"'),
+      expect.stringContaining('Failed to fetch from content source "broken"')
     );
 
     warnSpy.mockRestore();
@@ -534,9 +576,7 @@ describe("ContentSource interface", () => {
     const source: ContentSource = {
       name: "full",
       fetchPages: async () => [],
-      watch: (onChange) => {
-        return () => {};
-      },
+      watch: (onChange) => () => {},
     };
     expect(typeof source.watch).toBe("function");
     const cleanup = source.watch!(() => {});

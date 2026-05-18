@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import {
-  generateOgSvg,
-  buildOgTemplate,
-  buildOgConfig,
-  generateOgMetaTags,
-} from "./og-image.js";
-import type { OgImageConfig } from "./og-image.js";
-import type { PageRoute } from "./routes.js";
+import { describe, expect, it } from "vitest";
 import type { TomeConfig } from "./config.js";
+import type { OgImageConfig } from "./og-image.js";
+import {
+  buildOgConfig,
+  buildOgTemplate,
+  generateOgMetaTags,
+  generateOgSvg,
+} from "./og-image.js";
+import type { PageRoute } from "./routes.js";
 
 const defaultConfig: OgImageConfig = {
   siteName: "My Docs",
@@ -31,16 +31,17 @@ const mockRoute = (overrides: Partial<PageRoute> = {}): PageRoute => ({
   ...overrides,
 });
 
-const mockTomeConfig = (overrides: Partial<TomeConfig> = {}): TomeConfig => ({
-  name: "Test Docs",
-  theme: { preset: "amber", mode: "auto" },
-  navigation: [],
-  search: { provider: "local" },
-  toc: { enabled: true, depth: 3 },
-  strictLinks: false,
-  lastUpdated: true,
-  ...overrides,
-} as TomeConfig);
+const mockTomeConfig = (overrides: Partial<TomeConfig> = {}): TomeConfig =>
+  ({
+    name: "Test Docs",
+    theme: { preset: "amber", mode: "auto" },
+    navigation: [],
+    search: { provider: "local" },
+    toc: { enabled: true, depth: 3 },
+    strictLinks: false,
+    lastUpdated: true,
+    ...overrides,
+  }) as TomeConfig;
 
 // ── generateOgSvg ──────────────────────────────────────
 
@@ -113,12 +114,18 @@ describe("OG image white labeling", () => {
   });
 
   it("includes branding in SVG when showBranding is true", () => {
-    const svg = generateOgSvg("Title", undefined, { ...defaultConfig, showBranding: true });
+    const svg = generateOgSvg("Title", undefined, {
+      ...defaultConfig,
+      showBranding: true,
+    });
     expect(svg).toContain("Powered by Tome");
   });
 
   it("excludes branding from SVG when showBranding is false", () => {
-    const svg = generateOgSvg("Title", undefined, { ...defaultConfig, showBranding: false });
+    const svg = generateOgSvg("Title", undefined, {
+      ...defaultConfig,
+      showBranding: false,
+    });
     expect(svg).not.toContain("Powered by Tome");
   });
 
@@ -128,12 +135,17 @@ describe("OG image white labeling", () => {
   });
 
   it("excludes branding from satori template when showBranding is false", () => {
-    const template = buildOgTemplate("Title", undefined, { ...defaultConfig, showBranding: false });
+    const template = buildOgTemplate("Title", undefined, {
+      ...defaultConfig,
+      showBranding: false,
+    });
     expect(JSON.stringify(template)).not.toContain("Powered by Tome");
   });
 
   it("buildOgConfig passes showBranding from TomeConfig", () => {
-    const config = buildOgConfig(mockTomeConfig({ branding: { powered: false } }));
+    const config = buildOgConfig(
+      mockTomeConfig({ branding: { powered: false } })
+    );
     expect(config.showBranding).toBe(false);
   });
 
@@ -184,7 +196,9 @@ describe("buildOgTemplate", () => {
     const template = buildOgTemplate(longTitle, undefined, defaultConfig);
     const children = (template.props as any).children as any[];
     const titleChild = children.find(
-      (c: any) => typeof c?.props?.children === "string" && c.props.children.endsWith("...")
+      (c: any) =>
+        typeof c?.props?.children === "string" &&
+        c.props.children.endsWith("...")
     );
     expect(titleChild).toBeDefined();
   });
@@ -204,39 +218,49 @@ describe("buildOgConfig", () => {
   });
 
   it("uses custom accent color when provided", () => {
-    const ogConfig = buildOgConfig(mockTomeConfig({
-      theme: { preset: "amber", mode: "auto", accent: "#ff0000" },
-    }));
+    const ogConfig = buildOgConfig(
+      mockTomeConfig({
+        theme: { preset: "amber", mode: "auto", accent: "#ff0000" },
+      })
+    );
     expect(ogConfig.accentColor).toBe("#ff0000");
   });
 
   it("uses dark theme colors for auto mode", () => {
-    const ogConfig = buildOgConfig(mockTomeConfig({
-      theme: { preset: "amber", mode: "auto" },
-    }));
+    const ogConfig = buildOgConfig(
+      mockTomeConfig({
+        theme: { preset: "amber", mode: "auto" },
+      })
+    );
     expect(ogConfig.backgroundColor).toBe("#1a1a1a");
     expect(ogConfig.textColor).toBe("#ffffff");
   });
 
   it("uses light theme colors for light mode", () => {
-    const ogConfig = buildOgConfig(mockTomeConfig({
-      theme: { preset: "amber", mode: "light" },
-    }));
+    const ogConfig = buildOgConfig(
+      mockTomeConfig({
+        theme: { preset: "amber", mode: "light" },
+      })
+    );
     expect(ogConfig.backgroundColor).toBe("#ffffff");
     expect(ogConfig.textColor).toBe("#111827");
   });
 
   it("uses editorial preset colors", () => {
-    const ogConfig = buildOgConfig(mockTomeConfig({
-      theme: { preset: "editorial", mode: "dark" },
-    }));
+    const ogConfig = buildOgConfig(
+      mockTomeConfig({
+        theme: { preset: "editorial", mode: "dark" },
+      })
+    );
     expect(ogConfig.accentColor).toBe("#ff6b4a");
   });
 
   it("includes baseUrl when provided", () => {
-    const ogConfig = buildOgConfig(mockTomeConfig({
-      baseUrl: "https://docs.example.com",
-    }));
+    const ogConfig = buildOgConfig(
+      mockTomeConfig({
+        baseUrl: "https://docs.example.com",
+      })
+    );
     expect(ogConfig.baseUrl).toBe("https://docs.example.com");
   });
 });
@@ -246,25 +270,25 @@ describe("buildOgConfig", () => {
 describe("generateOgMetaTags", () => {
   it("generates og:title meta tag", () => {
     const tags = generateOgMetaTags(mockRoute(), mockTomeConfig());
-    expect(tags).toContain('og:title');
+    expect(tags).toContain("og:title");
     expect(tags).toContain("Getting Started");
   });
 
   it("generates og:image meta tag", () => {
     const tags = generateOgMetaTags(mockRoute(), mockTomeConfig());
-    expect(tags).toContain('og:image');
+    expect(tags).toContain("og:image");
     expect(tags).toContain("getting-started.png");
   });
 
   it("generates twitter:card meta tag", () => {
     const tags = generateOgMetaTags(mockRoute(), mockTomeConfig());
-    expect(tags).toContain('twitter:card');
+    expect(tags).toContain("twitter:card");
     expect(tags).toContain("summary_large_image");
   });
 
   it("generates og:description when available", () => {
     const tags = generateOgMetaTags(mockRoute(), mockTomeConfig());
-    expect(tags).toContain('og:description');
+    expect(tags).toContain("og:description");
     expect(tags).toContain("Learn how to get started");
   });
 
@@ -296,7 +320,7 @@ describe("generateOgMetaTags", () => {
   it("includes baseUrl in image paths", () => {
     const tags = generateOgMetaTags(
       mockRoute(),
-      mockTomeConfig({ baseUrl: "https://docs.example.com" }),
+      mockTomeConfig({ baseUrl: "https://docs.example.com" })
     );
     expect(tags).toContain("https://docs.example.com/og/getting-started.png");
   });
@@ -309,17 +333,17 @@ describe("generateOgMetaTags", () => {
   it("generates og:url meta tag", () => {
     const tags = generateOgMetaTags(
       mockRoute(),
-      mockTomeConfig({ baseUrl: "https://docs.example.com" }),
+      mockTomeConfig({ baseUrl: "https://docs.example.com" })
     );
-    expect(tags).toContain('og:url');
+    expect(tags).toContain("og:url");
     expect(tags).toContain("https://docs.example.com/getting-started");
   });
 
   it("generates image dimension meta tags", () => {
     const tags = generateOgMetaTags(mockRoute(), mockTomeConfig());
-    expect(tags).toContain('og:image:width');
+    expect(tags).toContain("og:image:width");
     expect(tags).toContain("1200");
-    expect(tags).toContain('og:image:height');
+    expect(tags).toContain("og:image:height");
     expect(tags).toContain("630");
   });
 

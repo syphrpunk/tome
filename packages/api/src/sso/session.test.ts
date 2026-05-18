@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { createSsoSession, validateSsoSession } from "./session";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { base64url } from "../utils";
+import { createSsoSession, validateSsoSession } from "./session";
 
 const SECRET = "test-secret-key-for-hmac-signing";
 
@@ -157,12 +157,20 @@ describe("SSO session tokens", () => {
         email: "user@example.com",
       });
 
-      const result = await validateSsoSession("wrong-secret", token, "my-project");
+      const result = await validateSsoSession(
+        "wrong-secret",
+        token,
+        "my-project"
+      );
       expect(result).toBeNull();
     });
 
     it("returns null for malformed token (not 3 parts)", async () => {
-      const result = await validateSsoSession(SECRET, "not.a.valid.jwt.token", "slug");
+      const result = await validateSsoSession(
+        SECRET,
+        "not.a.valid.jwt.token",
+        "slug"
+      );
       expect(result).toBeNull();
 
       const result2 = await validateSsoSession(SECRET, "just-one-part", "slug");
@@ -192,7 +200,9 @@ describe("SSO session tokens", () => {
 
 function b64urlToB64(input: string): string {
   let s = input.replace(/-/g, "+").replace(/_/g, "/");
-  while (s.length % 4 !== 0) s += "=";
+  while (s.length % 4 !== 0) {
+    s += "=";
+  }
   return s;
 }
 

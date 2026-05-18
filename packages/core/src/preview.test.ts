@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  slugifyBranch,
-  getPreviewUrl,
-  getExpiryDate,
   detectBranch,
   detectCommitSha,
   detectPrNumber,
   generatePreviewBanner,
+  getExpiryDate,
+  getPreviewUrl,
+  slugifyBranch,
 } from "./preview.js";
 
 // ── slugifyBranch ──────────────────────────────────────
@@ -39,7 +39,9 @@ describe("slugifyBranch", () => {
   });
 
   it("collapses consecutive dashes", () => {
-    expect(slugifyBranch("dependabot/npm_and_yarn/lodash")).toBe("dependabot-npm-and-yarn-lodash");
+    expect(slugifyBranch("dependabot/npm_and_yarn/lodash")).toBe(
+      "dependabot-npm-and-yarn-lodash"
+    );
   });
 
   it("truncates to 50 characters", () => {
@@ -83,7 +85,8 @@ describe("getExpiryDate", () => {
     const expiry = getExpiryDate();
     const expiryDate = new Date(expiry);
     const now = new Date();
-    const diffDays = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    const diffDays =
+      (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
     expect(diffDays).toBeGreaterThan(6.9);
     expect(diffDays).toBeLessThan(7.1);
   });
@@ -92,7 +95,8 @@ describe("getExpiryDate", () => {
     const expiry = getExpiryDate(14);
     const expiryDate = new Date(expiry);
     const now = new Date();
-    const diffDays = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    const diffDays =
+      (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
     expect(diffDays).toBeGreaterThan(13.9);
     expect(diffDays).toBeLessThan(14.1);
   });
@@ -247,36 +251,60 @@ describe("detectPrNumber", () => {
 
 describe("generatePreviewBanner", () => {
   it("includes branch name", () => {
-    const banner = generatePreviewBanner("feature/auth", "https://preview.example.com", "2025-12-31T00:00:00Z");
+    const banner = generatePreviewBanner(
+      "feature/auth",
+      "https://preview.example.com",
+      "2025-12-31T00:00:00Z"
+    );
     expect(banner).toContain("feature/auth");
   });
 
   it("includes Preview Deployment text", () => {
-    const banner = generatePreviewBanner("main", "https://preview.example.com", "2025-12-31T00:00:00Z");
+    const banner = generatePreviewBanner(
+      "main",
+      "https://preview.example.com",
+      "2025-12-31T00:00:00Z"
+    );
     expect(banner).toContain("Preview Deployment");
   });
 
   it("includes expiry date", () => {
-    const banner = generatePreviewBanner("main", "https://preview.example.com", "2025-06-15T12:00:00Z");
+    const banner = generatePreviewBanner(
+      "main",
+      "https://preview.example.com",
+      "2025-06-15T12:00:00Z"
+    );
     expect(banner).toContain("Jun");
     expect(banner).toContain("15");
     expect(banner).toContain("2025");
   });
 
   it("includes dismiss button", () => {
-    const banner = generatePreviewBanner("main", "https://preview.example.com", "2025-12-31T00:00:00Z");
+    const banner = generatePreviewBanner(
+      "main",
+      "https://preview.example.com",
+      "2025-12-31T00:00:00Z"
+    );
     expect(banner).toContain("button");
     expect(banner).toContain("Dismiss");
   });
 
   it("escapes HTML in branch names", () => {
-    const banner = generatePreviewBanner('<script>alert("xss")</script>', "https://preview.example.com", "2025-12-31T00:00:00Z");
+    const banner = generatePreviewBanner(
+      '<script>alert("xss")</script>',
+      "https://preview.example.com",
+      "2025-12-31T00:00:00Z"
+    );
     expect(banner).not.toContain("<script>");
     expect(banner).toContain("&lt;script&gt;");
   });
 
   it("has fixed positioning", () => {
-    const banner = generatePreviewBanner("main", "https://preview.example.com", "2025-12-31T00:00:00Z");
+    const banner = generatePreviewBanner(
+      "main",
+      "https://preview.example.com",
+      "2025-12-31T00:00:00Z"
+    );
     expect(banner).toContain("position:fixed");
     expect(banner).toContain("z-index:99999");
   });

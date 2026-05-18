@@ -1,18 +1,18 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { WebhookConfig, WebhookPayload } from "./webhooks.js";
 import {
-  formatSlackPayload,
+  createDeployFailedPayload,
+  createDeployPayload,
+  createDomainVerifiedPayload,
+  createPreviewPayload,
+  dispatchWebhooks,
   formatDiscordPayload,
-  formatHttpPayload,
   formatEventTitle,
+  formatHttpPayload,
+  formatSlackPayload,
   maskUrl,
   sendWebhook,
-  dispatchWebhooks,
-  createDeployPayload,
-  createDeployFailedPayload,
-  createPreviewPayload,
-  createDomainVerifiedPayload,
 } from "./webhooks.js";
-import type { WebhookConfig, WebhookPayload } from "./webhooks.js";
 
 const basePayload: WebhookPayload = {
   event: "deploy.succeeded",
@@ -21,7 +21,7 @@ const basePayload: WebhookPayload = {
   url: "https://my-docs.tome.center",
   deploymentId: "dep-123",
   fileCount: 42,
-  size: 102400,
+  size: 102_400,
 };
 
 // ── formatSlackPayload ─────────────────────────────────
@@ -45,7 +45,9 @@ describe("formatSlackPayload", () => {
     const result = formatSlackPayload(basePayload);
     const blocks = result.blocks as any[];
     const section = blocks.find((b: any) => b.type === "section" && b.fields);
-    const projectField = section.fields.find((f: any) => f.text.includes("my-docs"));
+    const projectField = section.fields.find((f: any) =>
+      f.text.includes("my-docs")
+    );
     expect(projectField).toBeDefined();
   });
 
@@ -58,7 +60,7 @@ describe("formatSlackPayload", () => {
     const result = formatSlackPayload(failPayload);
     const blocks = result.blocks as any[];
     const errorBlock = blocks.find(
-      (b: any) => b.type === "section" && b.text?.text?.includes("Error"),
+      (b: any) => b.type === "section" && b.text?.text?.includes("Error")
     );
     expect(errorBlock).toBeDefined();
   });
@@ -72,7 +74,9 @@ describe("formatSlackPayload", () => {
     const result = formatSlackPayload(previewPayload);
     const blocks = result.blocks as any[];
     const section = blocks.find((b: any) => b.type === "section" && b.fields);
-    const branchField = section.fields.find((f: any) => f.text.includes("feature/auth"));
+    const branchField = section.fields.find((f: any) =>
+      f.text.includes("feature/auth")
+    );
     expect(branchField).toBeDefined();
   });
 
@@ -96,14 +100,17 @@ describe("formatDiscordPayload", () => {
   it("uses green color for success events", () => {
     const result = formatDiscordPayload(basePayload);
     const embed = (result.embeds as any[])[0];
-    expect(embed.color).toBe(0x22c55e);
+    expect(embed.color).toBe(0x22_c5_5e);
   });
 
   it("uses red color for failure events", () => {
-    const failPayload: WebhookPayload = { ...basePayload, event: "deploy.failed" };
+    const failPayload: WebhookPayload = {
+      ...basePayload,
+      event: "deploy.failed",
+    };
     const result = formatDiscordPayload(failPayload);
     const embed = (result.embeds as any[])[0];
-    expect(embed.color).toBe(0xef4444);
+    expect(embed.color).toBe(0xef_44_44);
   });
 
   it("includes project name in fields", () => {
@@ -378,7 +385,13 @@ describe("dispatchWebhooks", () => {
 
 describe("createDeployPayload", () => {
   it("creates deploy.succeeded payload", () => {
-    const payload = createDeployPayload("my-docs", "https://my-docs.tome.center", "dep-1", 10, 5000);
+    const payload = createDeployPayload(
+      "my-docs",
+      "https://my-docs.tome.center",
+      "dep-1",
+      10,
+      5000
+    );
     expect(payload.event).toBe("deploy.succeeded");
     expect(payload.project).toBe("my-docs");
     expect(payload.url).toBe("https://my-docs.tome.center");
@@ -400,7 +413,14 @@ describe("createDeployFailedPayload", () => {
 
 describe("createPreviewPayload", () => {
   it("creates preview.deployed payload", () => {
-    const payload = createPreviewPayload("my-docs", "https://preview.tome.center", "feature/auth", "dep-2", 5, 2000);
+    const payload = createPreviewPayload(
+      "my-docs",
+      "https://preview.tome.center",
+      "feature/auth",
+      "dep-2",
+      5,
+      2000
+    );
     expect(payload.event).toBe("preview.deployed");
     expect(payload.branch).toBe("feature/auth");
   });
@@ -421,7 +441,10 @@ describe("webhooks config schema", () => {
     const { TomeConfigSchema } = await import("./config.js");
     const result = TomeConfigSchema.safeParse({
       webhooks: [
-        { url: "https://hooks.slack.com/services/T00/B00/abc", channel: "slack" },
+        {
+          url: "https://hooks.slack.com/services/T00/B00/abc",
+          channel: "slack",
+        },
       ],
     });
     expect(result.success).toBe(true);
@@ -471,9 +494,7 @@ describe("webhooks config schema", () => {
   it("rejects invalid webhook URL", async () => {
     const { TomeConfigSchema } = await import("./config.js");
     const result = TomeConfigSchema.safeParse({
-      webhooks: [
-        { url: "not-a-url", channel: "slack" },
-      ],
+      webhooks: [{ url: "not-a-url", channel: "slack" }],
     });
     expect(result.success).toBe(false);
   });
@@ -481,9 +502,7 @@ describe("webhooks config schema", () => {
   it("rejects invalid channel", async () => {
     const { TomeConfigSchema } = await import("./config.js");
     const result = TomeConfigSchema.safeParse({
-      webhooks: [
-        { url: "https://hooks.example.com", channel: "telegram" },
-      ],
+      webhooks: [{ url: "https://hooks.example.com", channel: "telegram" }],
     });
     expect(result.success).toBe(false);
   });
@@ -508,7 +527,10 @@ describe("webhook white labeling", () => {
   });
 
   it("excludes Tome footer from Discord payload when showBranding is false", () => {
-    const result = formatDiscordPayload({ ...basePayload, showBranding: false });
+    const result = formatDiscordPayload({
+      ...basePayload,
+      showBranding: false,
+    });
     expect(JSON.stringify(result)).not.toContain('"text":"Tome"');
   });
 });
