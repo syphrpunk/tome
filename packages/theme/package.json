@@ -9,8 +9,8 @@
     "./entry": "./src/entry.tsx"
   },
   "scripts": {
-    "build": "tsdown src/index.tsx src/entry.tsx --format esm --dts --external react --external react-dom --external 'virtual:tome/config' --external 'virtual:tome/routes' --external 'virtual:tome/page-loader' --external 'virtual:tome/doc-context' --external 'virtual:tome/overrides' --external '@tomehq/components'",
-    "dev": "tsdown src/index.tsx src/entry.tsx --format esm --dts --external react --external react-dom --external 'virtual:tome/config' --external 'virtual:tome/routes' --external 'virtual:tome/page-loader' --external 'virtual:tome/doc-context' --external '@tomehq/components' --watch",
+    "build": "tsdown src/index.tsx src/entry.tsx --format esm --dts --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle 'virtual:tome/config' --deps.never-bundle 'virtual:tome/routes' --deps.never-bundle 'virtual:tome/page-loader' --deps.never-bundle 'virtual:tome/doc-context' --deps.never-bundle 'virtual:tome/overrides' --deps.never-bundle '@tomehq/components'",
+    "dev": "tsdown src/index.tsx src/entry.tsx --format esm --dts --deps.never-bundle react --deps.never-bundle react-dom --deps.never-bundle 'virtual:tome/config' --deps.never-bundle 'virtual:tome/routes' --deps.never-bundle 'virtual:tome/page-loader' --deps.never-bundle 'virtual:tome/doc-context' --deps.never-bundle '@tomehq/components' --watch",
     "clean": "rm -rf dist"
   },
   "dependencies": {

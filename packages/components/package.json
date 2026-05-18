@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./src/index.tsx",
   "scripts": {
-    "build": "tsdown src/index.tsx --format esm --dts --external react",
+    "build": "tsdown src/index.tsx --format esm --dts --deps.never-bundle react",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
