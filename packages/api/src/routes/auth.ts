@@ -275,7 +275,6 @@ authRoutes.get("/me", async (c) => {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatar_url,
-    plan: user.plan,
     createdAt: user.created_at,
   });
 });

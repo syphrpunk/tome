@@ -140,18 +140,6 @@ describe("API server", () => {
       expect(res.status).toBe(401);
     });
 
-    it("returns 401 for /api/billing without auth", async () => {
-      const env = mockEnv();
-      const res = await app.request(
-        "/api/billing/status",
-        {
-          headers: API_HEADERS,
-        },
-        env
-      );
-      expect(res.status).toBe(401);
-    });
-
     it("returns 401 for /api/auth/me without auth", async () => {
       const env = mockEnv();
       const res = await app.request(

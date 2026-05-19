@@ -10,8 +10,6 @@ const testUser: User = {
   name: "Test User",
   avatar_url: null,
   api_token: "tome_abc123",
-  stripe_customer_id: null,
-  plan: "community",
   created_at: "2025-01-01",
   updated_at: "2025-01-01",
 };
@@ -172,7 +170,6 @@ describe("auth routes", () => {
       expect(res.status).toBe(200);
       const body = (await res.json()) as any;
       expect(body.email).toBe("test@example.com");
-      expect(body.plan).toBe("community");
     });
 
     it("returns 401 when not authenticated", async () => {

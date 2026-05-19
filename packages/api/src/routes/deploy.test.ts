@@ -9,13 +9,11 @@ const communityUser: User = {
   name: "Test",
   avatar_url: null,
   api_token: "tome_abc",
-  stripe_customer_id: null,
-  plan: "community",
   created_at: "2025-01-01",
   updated_at: "2025-01-01",
 };
 
-const cloudUser: User = { ...communityUser, plan: "cloud" };
+const cloudUser: User = { ...communityUser };
 
 function mockBucket() {
   return {
@@ -120,29 +118,6 @@ describe("deploy routes", () => {
       expect(body.skipped).toBe(0);
     });
 
-    it("enforces monthly deployment limit for community plan", async () => {
-      const db = mockDb({ deployCount: 10 });
-      const app = makeApp(communityUser);
-      const env = makeEnv(db);
-      const res = await app.request(
-        "/start",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug: "my-docs",
-            files: { "index.html": "abc" },
-          }),
-        },
-        env
-      );
-      expect(res.status).toBe(403);
-      const body = (await res.json()) as any;
-      expect(body.error).toContain("Monthly deployment limit reached");
-      expect(body.limit).toBe(10);
-      expect(body.requiredPlan).toBe("cloud");
-    });
-
     it("allows cloud plan unlimited deployments", async () => {
       const db = mockDb({ deployCount: 100, project: null });
       const app = makeApp(cloudUser);
@@ -160,29 +135,6 @@ describe("deploy routes", () => {
         env
       );
       expect(res.status).toBe(200);
-    });
-
-    it("enforces storage limit for community plan", async () => {
-      // 100 MB limit in bytes
-      const db = mockDb({ storageTotal: 105 * 1024 * 1024, project: null });
-      const app = makeApp(communityUser);
-      const env = makeEnv(db);
-      const res = await app.request(
-        "/start",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug: "my-docs",
-            files: { "index.html": "abc" },
-          }),
-        },
-        env
-      );
-      expect(res.status).toBe(403);
-      const body = (await res.json()) as any;
-      expect(body.error).toContain("Storage limit reached");
-      expect(body.limitMB).toBe(100);
     });
   });
 

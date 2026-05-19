@@ -5,14 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import "@tomehq/editor/editor.css";
 
 // ── Types ──────────────────────────────────────────────────
-interface User {
-  avatarUrl: string | null;
-  createdAt: string;
-  email: string;
-  id: string;
-  name: string | null;
-  plan: string;
-}
 interface PageEntry {
   content: string;
   description: string;
@@ -287,7 +279,6 @@ export default function EditorPage({
     email: string;
     name: string | null;
     avatarUrl: string | null;
-    plan: string;
     createdAt: string;
   };
 }) {

@@ -9,14 +9,12 @@ const communityUser: User = {
   name: "Test",
   avatar_url: null,
   api_token: "tome_abc",
-  stripe_customer_id: null,
-  plan: "community",
   created_at: "2025-01-01",
   updated_at: "2025-01-01",
 };
 
-const cloudUser: User = { ...communityUser, plan: "cloud" };
-const teamUser: User = { ...communityUser, plan: "team" };
+const cloudUser: User = { ...communityUser };
+const teamUser: User = { ...communityUser };
 
 function mockDb(
   overrides: {
@@ -91,27 +89,6 @@ vi.stubGlobal("fetch", mockFetch);
 
 describe("domain routes", () => {
   describe("POST /", () => {
-    it("blocks community users from adding domains", async () => {
-      const app = makeApp(communityUser);
-      const env = makeEnv();
-      const res = await app.request(
-        "/",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            domain: "docs.acme.io",
-            projectSlug: "my-docs",
-          }),
-        },
-        env
-      );
-      expect(res.status).toBe(403);
-      const body = (await res.json()) as any;
-      expect(body.error).toContain("Cloud plan or higher");
-      expect(body.requiredPlan).toBe("cloud");
-    });
-
     it("allows cloud users to add a domain", async () => {
       const db = mockDb();
       const app = makeApp(cloudUser);
@@ -133,27 +110,6 @@ describe("domain routes", () => {
       expect(body.domain).toBe("docs.acme.io");
       expect(body.verified).toBe(false);
       expect(body.dnsRecords).toHaveLength(2);
-    });
-
-    it("blocks cloud users who already have max domains", async () => {
-      const db = mockDb({ domainCount: 1 }); // cloud limit is 1
-      const app = makeApp(cloudUser);
-      const env = makeEnv(db);
-      const res = await app.request(
-        "/",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            domain: "docs2.acme.io",
-            projectSlug: "my-docs",
-          }),
-        },
-        env
-      );
-      expect(res.status).toBe(403);
-      const body = (await res.json()) as any;
-      expect(body.error).toContain("Domain limit reached");
     });
 
     it("allows team users unlimited domains", async () => {

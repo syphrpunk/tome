@@ -1,13 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { auth } from "./middleware/auth.js";
-import { requirePlan } from "./middleware/plan-gate.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { checkPageAccess } from "./middleware/rbac.js";
 import { validateSessionToken } from "./password.js";
 import { analytics } from "./routes/analytics.js";
 import { authRoutes } from "./routes/auth.js";
-import { billing } from "./routes/billing.js";
 import { deploy } from "./routes/deploy.js";
 import { domains } from "./routes/domains.js";
 import { editor } from "./routes/editor.js";
@@ -15,7 +13,6 @@ import { github } from "./routes/github.js";
 import { roles } from "./routes/roles.js";
 import { siteAuth } from "./routes/site-auth.js";
 import { sso } from "./routes/sso.js";
-import { webhooks } from "./routes/webhooks.js";
 import { isApiHost, resolveHostname, serveFromR2 } from "./serve.js";
 import { validateSsoSession } from "./sso/session.js";
 import type { Env } from "./types.js";
@@ -197,8 +194,6 @@ app.use(
   rateLimit({ maxRequests: 100, windowMs: 60_000 })
 );
 
-app.route("/api/webhooks", webhooks);
-
 // GitHub App webhook (public, uses HMAC signature verification)
 app.use(
   "/api/github/webhook",
@@ -208,16 +203,14 @@ app.use(
 // SSO site-level routes (public, rate limited)
 app.use("/api/sso/sites/*", rateLimit({ maxRequests: 30, windowMs: 60_000 }));
 
-// Analytics: event ingestion is public, summary requires auth + Cloud plan
+// Analytics: event ingestion is public, summary requires auth
 app.use("/api/analytics/summary", auth);
-app.use("/api/analytics/summary", requirePlan("cloud"));
 app.route("/api/analytics", analytics);
 
 // ── Authenticated routes ─────────────────────────────────
 // Auth middleware only on protected routes (not on /token, /providers, /oauth/callback)
 app.use("/api/deploy/*", auth);
 app.use("/api/domains/*", auth);
-app.use("/api/billing/*", auth);
 app.use("/api/auth/me", auth);
 app.use("/api/github/connect", auth);
 app.use("/api/github/status/*", auth);
@@ -229,7 +222,6 @@ app.use("/api/editor/*", auth);
 
 app.route("/api/deploy", deploy);
 app.route("/api/domains", domains);
-app.route("/api/billing", billing);
 app.route("/api/auth", authRoutes);
 app.route("/api/sites", siteAuth);
 app.route("/api/github", github);

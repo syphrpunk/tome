@@ -10,7 +10,6 @@ interface User {
   email: string;
   id: string;
   name: string | null;
-  plan: string;
 }
 
 interface Project {
@@ -75,7 +74,6 @@ const MOCK_USER: User = {
   id: "usr_1",
   email: "dev@tome.center",
   name: "Dev User",
-  plan: "cloud",
   avatarUrl: null,
   createdAt: "2025-01-15T00:00:00Z",
 };
@@ -316,34 +314,6 @@ const THEMES = {
     "--btnGlow": "rgba(0,0,0,0.4)",
   },
 } as const;
-
-// ── Plans ──────────────────────────────────────────────────
-
-const PLANS: Record<
-  string,
-  { name: string; price: string; features: string[] }
-> = {
-  community: {
-    name: "Community",
-    price: "Free",
-    features: ["10 deploys/mo", "Pagefind search", "Community support"],
-  },
-  cloud: {
-    name: "Cloud",
-    price: "$19.99/mo",
-    features: [
-      "Unlimited deploys",
-      "1 custom domain",
-      "Analytics",
-      "Priority support",
-    ],
-  },
-  team: {
-    name: "Team",
-    price: "$49.99/mo",
-    features: ["Unlimited everything", "SSO", "AI chat", "Team collaboration"],
-  },
-};
 
 // ── CSS ────────────────────────────────────────────────────
 
@@ -600,9 +570,6 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--coral);outline-offs
   /* Token */
   .token-box { flex-wrap: wrap; }
 
-  /* Billing plan cards grid */
-  .dash-plan-grid { grid-template-columns: 1fr !important; }
-
   /* Settings info grid */
   .dash-settings-grid { grid-template-columns: 1fr !important; }
   .dash-settings-grid > span:nth-child(odd) { font-weight: 600 !important; }
@@ -677,7 +644,6 @@ function matchRoute(path: string): {
   const pages: Record<string, string> = {
     "/": "projects",
     "/login": "login",
-    "/billing": "billing",
     "/settings": "settings",
   };
   return { page: pages[route] ?? "projects", params: {} };
@@ -955,22 +921,6 @@ const ProjectsIcon = () => (
   </svg>
 );
 
-const BillingIcon = () => (
-  <svg
-    fill="none"
-    height="18"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth="1.5"
-    viewBox="0 0 24 24"
-    width="18"
-  >
-    <rect height="16" rx="2" width="22" x="1" y="4" />
-    <line x1="1" x2="23" y1="10" y2="10" />
-  </svg>
-);
-
 const SettingsIcon = () => (
   <svg
     fill="none"
@@ -1225,16 +1175,6 @@ function Shell({
             style={sidebarLinkStyle(page === "projects" || page === "project")}
           >
             <ProjectsIcon /> <span>Projects</span>
-          </a>
-          <a
-            href={`${BASE}/billing`}
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/billing");
-            }}
-            style={sidebarLinkStyle(page === "billing")}
-          >
-            <BillingIcon /> <span>Billing</span>
           </a>
           <a
             href={`${BASE}/settings`}
@@ -1683,11 +1623,7 @@ function ProjectsPage({ token }: { token: string }) {
                         try {
                           const doc = (e.target as HTMLIFrameElement)
                             .contentDocument;
-                          if (
-                            doc &&
-                            doc.body &&
-                            doc.body.innerHTML.length > 100
-                          ) {
+                          if (doc?.body && doc.body.innerHTML.length > 100) {
                             (e.target as HTMLIFrameElement).style.opacity = "1";
                           }
                         } catch {
@@ -2804,101 +2740,99 @@ function ProjectDetailPage({
 
           {/* Feedback tab */}
           {analyticsTab === "feedback" && (
-            <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                gap: 16,
+                marginBottom: 16,
+              }}
+            >
               <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-                  gap: 16,
-                  marginBottom: 16,
-                }}
+                className="stat-card"
+                style={{ textAlign: "left", padding: 24 }}
               >
                 <div
-                  className="stat-card"
-                  style={{ textAlign: "left", padding: 24 }}
+                  style={{
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: 32,
+                    fontWeight: 300,
+                    color: "var(--green)",
+                  }}
                 >
-                  <div
-                    style={{
-                      fontFamily: '"Cormorant Garamond", serif',
-                      fontSize: 32,
-                      fontWeight: 300,
-                      color: "var(--green)",
-                    }}
-                  >
-                    {((analytics as any).thumbsUp ?? 0).toLocaleString()}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginTop: 4,
-                    }}
-                  >
-                    Thumbs Up
-                  </div>
+                  {((analytics as any).thumbsUp ?? 0).toLocaleString()}
                 </div>
                 <div
-                  className="stat-card"
-                  style={{ textAlign: "left", padding: 24 }}
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginTop: 4,
+                  }}
                 >
-                  <div
-                    style={{
-                      fontFamily: '"Cormorant Garamond", serif',
-                      fontSize: 32,
-                      fontWeight: 300,
-                      color: "var(--red)",
-                    }}
-                  >
-                    {((analytics as any).thumbsDown ?? 0).toLocaleString()}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginTop: 4,
-                    }}
-                  >
-                    Thumbs Down
-                  </div>
-                </div>
-                <div
-                  className="stat-card"
-                  style={{ textAlign: "left", padding: 24 }}
-                >
-                  <div
-                    style={{
-                      fontFamily: '"Cormorant Garamond", serif',
-                      fontSize: 32,
-                      fontWeight: 300,
-                      color: "var(--tx)",
-                    }}
-                  >
-                    {(
-                      ((analytics as any).thumbsUp ?? 0) +
-                      ((analytics as any).thumbsDown ?? 0)
-                    ).toLocaleString()}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginTop: 4,
-                    }}
-                  >
-                    Total Feedback
-                  </div>
+                  Thumbs Up
                 </div>
               </div>
-            </>
+              <div
+                className="stat-card"
+                style={{ textAlign: "left", padding: 24 }}
+              >
+                <div
+                  style={{
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: 32,
+                    fontWeight: 300,
+                    color: "var(--red)",
+                  }}
+                >
+                  {((analytics as any).thumbsDown ?? 0).toLocaleString()}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginTop: 4,
+                  }}
+                >
+                  Thumbs Down
+                </div>
+              </div>
+              <div
+                className="stat-card"
+                style={{ textAlign: "left", padding: 24 }}
+              >
+                <div
+                  style={{
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: 32,
+                    fontWeight: 300,
+                    color: "var(--tx)",
+                  }}
+                >
+                  {(
+                    ((analytics as any).thumbsUp ?? 0) +
+                    ((analytics as any).thumbsDown ?? 0)
+                  ).toLocaleString()}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginTop: 4,
+                  }}
+                >
+                  Total Feedback
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -3518,327 +3452,321 @@ function ProjectDetailPage({
         </div>
       </div>
 
-      {/* SSO Configuration (Team plan only) */}
-      {user.plan === "team" && (
-        <div style={{ marginBottom: 40 }}>
-          <h3
+      {/* SSO Configuration */}
+      <div style={{ marginBottom: 40 }}>
+        <h3
+          style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontWeight: 400,
+            fontStyle: "italic",
+            fontSize: 24,
+            color: "var(--tx)",
+            marginBottom: 16,
+          }}
+        >
+          Single Sign-On (SSO)
+        </h3>
+        <div className="card" style={{ padding: 24 }}>
+          {/* Provider radio */}
+          <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+            {(["saml", "oidc"] as const).map((type) => (
+              <label
+                key={type}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 14,
+                  color: ssoType === type ? "var(--coral)" : "var(--tx2)",
+                }}
+              >
+                <input
+                  checked={ssoType === type}
+                  name="sso-type"
+                  onChange={() => setSsoType(type)}
+                  style={{ accentColor: "var(--coral)" }}
+                  type="radio"
+                />
+                {type === "saml" ? "SAML 2.0" : "OIDC"}
+              </label>
+            ))}
+          </div>
+
+          {/* SAML fields */}
+          {ssoType === "saml" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 4,
+                  }}
+                >
+                  IdP SSO URL
+                </div>
+                <input
+                  aria-label="IdP SSO URL"
+                  className="input-field"
+                  onChange={(e) =>
+                    setSsoFields({ ...ssoFields, idpSsoUrl: e.target.value })
+                  }
+                  placeholder="https://idp.example.com/sso"
+                  value={ssoFields.idpSsoUrl}
+                />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 4,
+                  }}
+                >
+                  IdP Certificate
+                </div>
+                <textarea
+                  aria-label="IdP certificate"
+                  className="input-field"
+                  onChange={(e) =>
+                    setSsoFields({ ...ssoFields, idpCert: e.target.value })
+                  }
+                  placeholder="Paste X.509 certificate here"
+                  rows={3}
+                  style={{
+                    resize: "vertical",
+                    fontFamily: '"Fira Code", monospace',
+                    fontSize: 12,
+                  }}
+                  value={ssoFields.idpCert}
+                />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 4,
+                  }}
+                >
+                  Entity ID
+                </div>
+                <input
+                  aria-label="Entity ID"
+                  className="input-field"
+                  onChange={(e) =>
+                    setSsoFields({ ...ssoFields, entityId: e.target.value })
+                  }
+                  placeholder="urn:example:sp"
+                  value={ssoFields.entityId}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* OIDC fields */}
+          {ssoType === "oidc" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 4,
+                  }}
+                >
+                  Issuer URL
+                </div>
+                <input
+                  aria-label="OIDC issuer URL"
+                  className="input-field"
+                  onChange={(e) =>
+                    setSsoFields({ ...ssoFields, issuer: e.target.value })
+                  }
+                  placeholder="https://accounts.google.com"
+                  value={ssoFields.issuer}
+                />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 4,
+                  }}
+                >
+                  Client ID
+                </div>
+                <input
+                  aria-label="Client ID"
+                  className="input-field"
+                  onChange={(e) =>
+                    setSsoFields({ ...ssoFields, clientId: e.target.value })
+                  }
+                  placeholder="your-client-id"
+                  value={ssoFields.clientId}
+                />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 11,
+                    color: "var(--txM)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    marginBottom: 4,
+                  }}
+                >
+                  Client Secret
+                </div>
+                <input
+                  aria-label="Client secret"
+                  className="input-field"
+                  onChange={(e) =>
+                    setSsoFields({
+                      ...ssoFields,
+                      clientSecret: e.target.value,
+                    })
+                  }
+                  placeholder="your-client-secret"
+                  type="password"
+                  value={ssoFields.clientSecret}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Allowed domains (shared) */}
+          <div style={{ marginTop: 12 }}>
+            <div
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontSize: 11,
+                color: "var(--txM)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: 4,
+              }}
+            >
+              Allowed Email Domains
+            </div>
+            <input
+              aria-label="Allowed email domains"
+              className="input-field"
+              onChange={(e) =>
+                setSsoFields({ ...ssoFields, allowedDomains: e.target.value })
+              }
+              placeholder="example.com, corp.io"
+              value={ssoFields.allowedDomains}
+            />
+          </div>
+
+          {/* Save button */}
+          <div
             style={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontWeight: 400,
-              fontStyle: "italic",
-              fontSize: 24,
-              color: "var(--tx)",
-              marginBottom: 16,
+              marginTop: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
-            Single Sign-On (SSO)
-          </h3>
-          <div className="card" style={{ padding: 24 }}>
-            {/* Provider radio */}
-            <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
-              {(["saml", "oidc"] as const).map((type) => (
-                <label
-                  key={type}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    cursor: "pointer",
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 14,
-                    color: ssoType === type ? "var(--coral)" : "var(--tx2)",
-                  }}
-                >
-                  <input
-                    checked={ssoType === type}
-                    name="sso-type"
-                    onChange={() => setSsoType(type)}
-                    style={{ accentColor: "var(--coral)" }}
-                    type="radio"
-                  />
-                  {type === "saml" ? "SAML 2.0" : "OIDC"}
-                </label>
-              ))}
-            </div>
-
-            {/* SAML fields */}
-            {ssoType === "saml" && (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 12 }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginBottom: 4,
-                    }}
-                  >
-                    IdP SSO URL
-                  </div>
-                  <input
-                    aria-label="IdP SSO URL"
-                    className="input-field"
-                    onChange={(e) =>
-                      setSsoFields({ ...ssoFields, idpSsoUrl: e.target.value })
-                    }
-                    placeholder="https://idp.example.com/sso"
-                    value={ssoFields.idpSsoUrl}
-                  />
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginBottom: 4,
-                    }}
-                  >
-                    IdP Certificate
-                  </div>
-                  <textarea
-                    aria-label="IdP certificate"
-                    className="input-field"
-                    onChange={(e) =>
-                      setSsoFields({ ...ssoFields, idpCert: e.target.value })
-                    }
-                    placeholder="Paste X.509 certificate here"
-                    rows={3}
-                    style={{
-                      resize: "vertical",
-                      fontFamily: '"Fira Code", monospace',
-                      fontSize: 12,
-                    }}
-                    value={ssoFields.idpCert}
-                  />
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Entity ID
-                  </div>
-                  <input
-                    aria-label="Entity ID"
-                    className="input-field"
-                    onChange={(e) =>
-                      setSsoFields({ ...ssoFields, entityId: e.target.value })
-                    }
-                    placeholder="urn:example:sp"
-                    value={ssoFields.entityId}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* OIDC fields */}
-            {ssoType === "oidc" && (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 12 }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Issuer URL
-                  </div>
-                  <input
-                    aria-label="OIDC issuer URL"
-                    className="input-field"
-                    onChange={(e) =>
-                      setSsoFields({ ...ssoFields, issuer: e.target.value })
-                    }
-                    placeholder="https://accounts.google.com"
-                    value={ssoFields.issuer}
-                  />
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Client ID
-                  </div>
-                  <input
-                    aria-label="Client ID"
-                    className="input-field"
-                    onChange={(e) =>
-                      setSsoFields({ ...ssoFields, clientId: e.target.value })
-                    }
-                    placeholder="your-client-id"
-                    value={ssoFields.clientId}
-                  />
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 11,
-                      color: "var(--txM)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Client Secret
-                  </div>
-                  <input
-                    aria-label="Client secret"
-                    className="input-field"
-                    onChange={(e) =>
-                      setSsoFields({
-                        ...ssoFields,
-                        clientSecret: e.target.value,
-                      })
-                    }
-                    placeholder="your-client-secret"
-                    type="password"
-                    value={ssoFields.clientSecret}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Allowed domains (shared) */}
-            <div style={{ marginTop: 12 }}>
-              <div
+            <button
+              className="btn-primary"
+              disabled={ssoSaving}
+              onClick={saveSso}
+              style={{ padding: "10px 24px", fontSize: 13 }}
+            >
+              {ssoSaving ? "Saving..." : "Save SSO Configuration"}
+            </button>
+            {ssoConfig && (
+              <span
                 style={{
                   fontFamily: "Inter, sans-serif",
-                  fontSize: 11,
-                  color: "var(--txM)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  marginBottom: 4,
+                  fontSize: 12,
+                  color: "var(--green)",
                 }}
               >
-                Allowed Email Domains
-              </div>
-              <input
-                aria-label="Allowed email domains"
-                className="input-field"
-                onChange={(e) =>
-                  setSsoFields({ ...ssoFields, allowedDomains: e.target.value })
-                }
-                placeholder="example.com, corp.io"
-                value={ssoFields.allowedDomains}
-              />
-            </div>
+                SSO is active
+              </span>
+            )}
+          </div>
 
-            {/* Save button */}
+          {/* SP Metadata URL */}
+          <div
+            style={{
+              marginTop: 20,
+              paddingTop: 16,
+              borderTop: "1px solid var(--bd)",
+            }}
+          >
             <div
               style={{
-                marginTop: 20,
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
+                fontFamily: "Inter, sans-serif",
+                fontSize: 11,
+                color: "var(--txM)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: 8,
               }}
             >
+              SP Metadata URL
+            </div>
+            <div className="token-box">
+              <span
+                style={{
+                  flex: 1,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {`${API_URL}/api/sso/metadata/${slug}`}
+              </span>
               <button
-                className="btn-primary"
-                disabled={ssoSaving}
-                onClick={saveSso}
-                style={{ padding: "10px 24px", fontSize: 13 }}
+                aria-label="Copy SP metadata URL"
+                className="nav-link"
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    `${API_URL}/api/sso/metadata/${slug}`
+                  )
+                }
+                style={{ fontSize: 12, padding: "4px 8px" }}
               >
-                {ssoSaving ? "Saving..." : "Save SSO Configuration"}
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  width="14"
+                >
+                  <rect height="13" rx="2" width="13" x="9" y="9" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
               </button>
-              {ssoConfig && (
-                <span
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 12,
-                    color: "var(--green)",
-                  }}
-                >
-                  SSO is active
-                </span>
-              )}
-            </div>
-
-            {/* SP Metadata URL */}
-            <div
-              style={{
-                marginTop: 20,
-                paddingTop: 16,
-                borderTop: "1px solid var(--bd)",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 11,
-                  color: "var(--txM)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  marginBottom: 8,
-                }}
-              >
-                SP Metadata URL
-              </div>
-              <div className="token-box">
-                <span
-                  style={{
-                    flex: 1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {`${API_URL}/api/sso/metadata/${slug}`}
-                </span>
-                <button
-                  aria-label="Copy SP metadata URL"
-                  className="nav-link"
-                  onClick={() =>
-                    navigator.clipboard.writeText(
-                      `${API_URL}/api/sso/metadata/${slug}`
-                    )
-                  }
-                  style={{ fontSize: 12, padding: "4px 8px" }}
-                >
-                  <svg
-                    aria-hidden="true"
-                    fill="none"
-                    height="14"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    viewBox="0 0 24 24"
-                    width="14"
-                  >
-                    <rect height="13" rx="2" width="13" x="9" y="9" />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                </button>
-              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Role Management (only if SSO configured) */}
       {ssoConfig && (
@@ -4038,510 +3966,6 @@ function ProjectDetailPage({
   );
 }
 
-// ── Billing Page ───────────────────────────────────────────
-
-function BillingPage({ token, user }: { token: string; user: User }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const plan = PLANS[user.plan] ?? PLANS.community;
-
-  // Check for checkout success/cancel in URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") === "success") {
-      setSuccess("Subscription activated! Your plan will update shortly.");
-      window.history.replaceState(null, "", `${BASE}/billing`);
-    } else if (params.get("checkout") === "cancelled") {
-      setError("Checkout was cancelled.");
-      window.history.replaceState(null, "", `${BASE}/billing`);
-    }
-  }, []);
-
-  const handleCheckout = async (planId: string) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const successUrl = `${window.location.origin}${BASE}/billing?checkout=success`;
-      const cancelUrl = `${window.location.origin}${BASE}/billing?checkout=cancelled`;
-      const data = await api<{ url: string }>("/api/billing/checkout", {
-        method: "POST",
-        body: { planId, successUrl, cancelUrl },
-        token,
-      });
-      if (!data.url) {
-        throw new Error("No checkout URL returned");
-      }
-      window.location.href = data.url;
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to start checkout. Please try again."
-      );
-      setLoading(false);
-    }
-  };
-
-  const handlePortal = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const data = await api<{ url: string }>("/api/billing/portal", {
-        method: "POST",
-        body: { returnUrl: window.location.href },
-        token,
-      });
-      if (!data.url) {
-        throw new Error("No portal URL returned");
-      }
-      window.location.href = data.url;
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to open billing portal. Please try again."
-      );
-      setLoading(false);
-    }
-  };
-
-  // Find the next tier up from current plan
-  const planKeys = Object.keys(PLANS);
-  const currentIdx = planKeys.indexOf(user.plan);
-  const nextPlanKey =
-    currentIdx >= 0 && currentIdx < planKeys.length - 1
-      ? planKeys[currentIdx + 1]
-      : null;
-  const nextPlan = nextPlanKey ? PLANS[nextPlanKey] : null;
-
-  return (
-    <div className="rv">
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h2
-          style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontWeight: 400,
-            fontStyle: "italic",
-            fontSize: 32,
-            color: "var(--tx)",
-            marginBottom: 8,
-          }}
-        >
-          Billing & Subscription
-        </h2>
-        <p
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontSize: 14,
-            color: "var(--txM)",
-          }}
-        >
-          Manage your subscription tier and billing from one central hub.
-        </p>
-      </div>
-
-      {/* Alerts */}
-      {success && (
-        <div
-          style={{
-            padding: "14px 18px",
-            marginBottom: 20,
-            background: "rgba(34,197,94,.08)",
-            border: "1px solid rgba(34,197,94,.3)",
-            borderRadius: 8,
-            fontFamily: "Inter, sans-serif",
-            fontSize: 13,
-            color: "var(--green)",
-          }}
-        >
-          {success}
-        </div>
-      )}
-      {error && (
-        <div
-          style={{
-            padding: "14px 18px",
-            marginBottom: 20,
-            background: "rgba(239,68,68,.08)",
-            border: "1px solid rgba(239,68,68,.3)",
-            borderRadius: 8,
-            fontFamily: "Inter, sans-serif",
-            fontSize: 13,
-            color: "var(--red)",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Two-column layout */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.4fr 1fr",
-          gap: 20,
-          alignItems: "start",
-        }}
-      >
-        {/* Left: Current Plan */}
-        <LiquidRing bg="var(--sf)" block radius={12}>
-          <div
-            style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: 20,
-              }}
-            >
-              <div>
-                <span
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    padding: "4px 10px",
-                    borderRadius: 4,
-                    background: "rgba(21,128,61,0.1)",
-                    color: "var(--green)",
-                  }}
-                >
-                  Active
-                </span>
-                <div
-                  style={{
-                    fontFamily: '"Cormorant Garamond", serif',
-                    fontSize: 28,
-                    fontWeight: 500,
-                    color: "var(--tx)",
-                    marginTop: 12,
-                  }}
-                >
-                  {plan.name}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div
-                  style={{ display: "flex", alignItems: "baseline", gap: 2 }}
-                >
-                  <span
-                    style={{
-                      fontFamily: '"Cormorant Garamond", serif',
-                      fontSize: 32,
-                      fontWeight: 400,
-                      color: "var(--coral)",
-                    }}
-                  >
-                    {plan.price === "Free"
-                      ? "Free"
-                      : plan.price.replace("/mo", "")}
-                  </span>
-                  {plan.price !== "Free" && (
-                    <span
-                      style={{
-                        fontFamily: "Inter, sans-serif",
-                        fontSize: 13,
-                        color: "var(--txM)",
-                      }}
-                    >
-                      /mo
-                    </span>
-                  )}
-                </div>
-                {plan.price !== "Free" && (
-                  <div
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 12,
-                      color: "var(--txM)",
-                      marginTop: 6,
-                    }}
-                  >
-                    Billed monthly
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Features */}
-            <div style={{ marginTop: 24 }}>
-              <div
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  color: "var(--txM)",
-                  marginBottom: 12,
-                }}
-              >
-                Included Features
-              </div>
-              {plan.features.map((f) => (
-                <div
-                  key={f}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "8px 0",
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 14,
-                    color: "var(--tx2)",
-                  }}
-                >
-                  <svg
-                    fill="none"
-                    height="16"
-                    stroke="var(--coral)"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    width="16"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  {f}
-                </div>
-              ))}
-            </div>
-
-            {/* Manage billing button for paid plans */}
-            {user.plan !== "community" && (
-              <div
-                style={{
-                  marginTop: 24,
-                  paddingTop: 20,
-                  borderTop: "1px solid var(--bd)",
-                }}
-              >
-                <button
-                  className="btn-ghost"
-                  disabled={loading}
-                  onClick={handlePortal}
-                  style={{
-                    fontSize: 13,
-                    padding: "10px 20px",
-                    borderRadius: 6,
-                  }}
-                >
-                  {loading ? "Redirecting..." : "Manage Billing →"}
-                </button>
-              </div>
-            )}
-          </div>
-        </LiquidRing>
-
-        {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Upgrade card (if not on highest tier) */}
-          {nextPlan && (
-            <LiquidRing bg="var(--coral)" block onAccent radius={12}>
-              <div
-                className="card-accent"
-                style={{
-                  padding: 28,
-                  background: "var(--coral)",
-                  color: "#fff",
-                  borderRadius: 12,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 12,
-                  }}
-                >
-                  <svg
-                    fill="none"
-                    height="18"
-                    stroke="#fff"
-                    strokeWidth="1.5"
-                    viewBox="0 0 24 24"
-                    width="18"
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span
-                    style={{
-                      fontFamily: '"Cormorant Garamond", serif',
-                      fontSize: 22,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {nextPlan.name}
-                  </span>
-                </div>
-                <p
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 13,
-                    opacity: 0.85,
-                    lineHeight: 1.5,
-                    marginBottom: 20,
-                  }}
-                >
-                  Unlock more with {nextPlan.name}:{" "}
-                  {nextPlan.features.slice(0, 2).join(", ")}, and more.
-                </p>
-                <button
-                  className="btn-ghost btn-on-accent"
-                  disabled={loading}
-                  onClick={() => handleCheckout(nextPlanKey!)}
-                  style={{
-                    width: "100%",
-                    padding: "12px 24px",
-                    color: "#fff",
-                    borderColor: "rgba(255,255,255,0.4)",
-                    borderRadius: 6,
-                    fontSize: 14,
-                  }}
-                >
-                  {loading
-                    ? "Redirecting..."
-                    : `Upgrade to ${nextPlan.name} · ${nextPlan.price}`}
-                </button>
-              </div>
-            </LiquidRing>
-          )}
-
-          {/* All plans comparison */}
-          <LiquidRing bg="var(--sf)" block radius={12}>
-            <div
-              style={{ padding: 28, background: "var(--sf)", borderRadius: 12 }}
-            >
-              <div
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  color: "var(--txM)",
-                  marginBottom: 16,
-                }}
-              >
-                All Plans
-              </div>
-              {Object.entries(PLANS).map(([key, p]) => (
-                <div
-                  key={key}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 0",
-                    borderBottom: "1px solid var(--bd)",
-                  }}
-                >
-                  <div>
-                    <span
-                      style={{
-                        fontFamily: "Inter, sans-serif",
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: key === user.plan ? "var(--coral)" : "var(--tx)",
-                      }}
-                    >
-                      {p.name}
-                    </span>
-                    {key === user.plan && (
-                      <span
-                        style={{
-                          fontFamily: "Inter, sans-serif",
-                          fontSize: 10,
-                          color: "var(--coral)",
-                          marginLeft: 8,
-                        }}
-                      >
-                        Current
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: '"Fira Code", monospace',
-                      fontSize: 13,
-                      color: "var(--txM)",
-                    }}
-                  >
-                    {p.price}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </LiquidRing>
-
-          {/* Billing support */}
-          <LiquidRing bg="var(--sf)" block radius={12}>
-            <div
-              style={{
-                padding: 20,
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                background: "var(--sf)",
-                borderRadius: 12,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: "var(--coralD)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <svg
-                  fill="none"
-                  height="18"
-                  stroke="var(--coral)"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                  width="18"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: "var(--tx)",
-                  }}
-                >
-                  Billing Support
-                </div>
-                <a className="action-link" href="mailto:support@tome.center">
-                  Contact support →
-                </a>
-              </div>
-            </div>
-          </LiquidRing>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Settings Page ──────────────────────────────────────────
 
 function SettingsPage({
@@ -4555,7 +3979,6 @@ function SettingsPage({
 }) {
   const [showToken, setShowToken] = useState(false);
   const [, setCopied] = useState(false);
-  const plan = PLANS[user.plan] ?? PLANS.community;
 
   const copyToken = () => {
     navigator.clipboard.writeText(token).then(() => {
@@ -4672,22 +4095,6 @@ function SettingsPage({
                   >
                     {user.name || user.email}
                   </span>
-                  <span
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      padding: "4px 10px",
-                      borderRadius: 4,
-                      background: "var(--coralD)",
-                      color: "var(--coral)",
-                      border: "1px solid var(--coral)",
-                    }}
-                  >
-                    {plan.name}
-                  </span>
                 </div>
                 {user.name && (
                   <p
@@ -4717,12 +4124,6 @@ function SettingsPage({
               <div>
                 <div style={labelStyle}>Email Address</div>
                 <div style={valueStyle}>{user.email}</div>
-              </div>
-              <div>
-                <div style={labelStyle}>Plan</div>
-                <div style={valueStyle}>
-                  {plan.name} · {plan.price}
-                </div>
               </div>
               <div>
                 <div style={labelStyle}>Member Since</div>
@@ -4842,63 +4243,8 @@ function SettingsPage({
         </LiquidRing>
       </div>
 
-      {/* Bottom row: Plan + Danger Zone */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        {/* Active Plan */}
-        <LiquidRing bg="var(--coral)" block onAccent radius={12}>
-          <div
-            className="card-accent"
-            style={{
-              padding: 28,
-              background: "var(--coral)",
-              color: "#fff",
-              borderRadius: 12,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "Inter, sans-serif",
-                fontSize: 11,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: "rgba(255,255,255,0.9)",
-                marginBottom: 8,
-              }}
-            >
-              Active Plan
-            </div>
-            <div
-              style={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontSize: 28,
-                fontWeight: 400,
-                marginBottom: 4,
-              }}
-            >
-              {plan.name}
-            </div>
-            <div
-              style={{
-                fontFamily: "Inter, sans-serif",
-                fontSize: 14,
-                opacity: 0.8,
-              }}
-            >
-              {plan.price}
-            </div>
-            <a
-              className="action-link-white"
-              href={`${BASE}/billing`}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/billing");
-              }}
-            >
-              Manage plan →
-            </a>
-          </div>
-        </LiquidRing>
-
+      {/* Bottom row: Danger Zone */}
+      <div>
         {/* Danger Zone */}
         <LiquidRing bg="var(--sf)" block radius={12}>
           <div
@@ -5051,9 +4397,6 @@ export function App() {
       content = (
         <ProjectDetailPage slug={params.slug} token={token} user={user} />
       );
-      break;
-    case "billing":
-      content = <BillingPage token={token} user={user} />;
       break;
     case "settings":
       content = (

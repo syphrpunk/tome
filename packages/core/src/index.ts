@@ -18,16 +18,6 @@ export {
   generateAnalyticsScript,
   generateSessionId,
 } from "./analytics.js";
-export type { BillingCustomer, Plan, Subscription } from "./billing.js";
-export {
-  calculateAnnualDiscount,
-  createCheckoutSession,
-  createPortalSession,
-  formatPrice,
-  getPlan,
-  getTrialDays,
-  PLANS,
-} from "./billing.js";
 export type {
   ChangelogEntry,
   ChangelogSection,

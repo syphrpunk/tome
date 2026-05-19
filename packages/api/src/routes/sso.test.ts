@@ -11,8 +11,6 @@ const mockUser: User = {
   name: "Admin",
   avatar_url: null,
   api_token: "tome_test",
-  stripe_customer_id: null,
-  plan: "team",
   created_at: "2025-01-01",
   updated_at: "2025-01-01",
 };

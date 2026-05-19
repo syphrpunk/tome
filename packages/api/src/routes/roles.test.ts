@@ -11,8 +11,6 @@ const mockOwner: User = {
   name: "Owner",
   avatar_url: null,
   api_token: "tome_owner",
-  stripe_customer_id: null,
-  plan: "team",
   created_at: "2025-01-01",
   updated_at: "2025-01-01",
 };
@@ -23,8 +21,6 @@ const mockNonOwner: User = {
   name: "Viewer",
   avatar_url: null,
   api_token: "tome_viewer",
-  stripe_customer_id: null,
-  plan: "team",
   created_at: "2025-01-01",
   updated_at: "2025-01-01",
 };

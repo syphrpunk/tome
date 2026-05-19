@@ -116,15 +116,6 @@ function mockFetch(overrides: Record<string, unknown> = {}) {
         }
       );
     }
-    if (method === "POST" && path === "/api/billing/checkout") {
-      return Response.json({
-        url: "https://checkout.stripe.com/test",
-        sessionId: "cs_test",
-      });
-    }
-    if (method === "POST" && path === "/api/billing/portal") {
-      return Response.json({ url: "https://billing.stripe.com/test" });
-    }
     return new Response(JSON.stringify({ error: "Not found" }), {
       status: 404,
     });
@@ -324,41 +315,6 @@ describe("Project Detail", () => {
   });
 });
 
-// ── Billing ────────────────────────────────────────────────
-
-describe("Billing", () => {
-  beforeEach(() => {
-    localStorage.setItem("tome_token", "tome_test123");
-    window.history.replaceState(null, "", "/dashboard/billing");
-  });
-
-  it("shows current plan", async () => {
-    vi.stubGlobal("fetch", mockFetch());
-    render(<App />);
-    await waitFor(() => {
-      // Community appears in current plan card and all plans list
-      expect(screen.getAllByText("Community").length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it("shows billing page heading", async () => {
-    vi.stubGlobal("fetch", mockFetch());
-    render(<App />);
-    await waitFor(() => {
-      expect(screen.getByText("Billing & Subscription")).toBeInTheDocument();
-    });
-  });
-
-  it("shows included features with check icons", async () => {
-    vi.stubGlobal("fetch", mockFetch());
-    render(<App />);
-    await waitFor(() => {
-      expect(screen.getByText("10 deploys/mo")).toBeInTheDocument();
-    });
-    expect(screen.getByText("Pagefind search")).toBeInTheDocument();
-  });
-});
-
 // ── Settings ───────────────────────────────────────────────
 
 describe("Settings", () => {
@@ -418,7 +374,6 @@ describe("Navigation", () => {
     await waitFor(() => {
       expect(screen.getByText("Projects")).toBeInTheDocument();
     });
-    expect(screen.getByText("Billing")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
 });

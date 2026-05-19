@@ -10,8 +10,6 @@ export interface Env {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   SSO_SESSION_SECRET: string;
-  STRIPE_SECRET_KEY: string;
-  STRIPE_WEBHOOK_SECRET: string;
   TOME_BUCKET: R2Bucket;
   TOME_DB: D1Database;
 }
@@ -23,7 +21,5 @@ export interface User {
   email: string;
   id: string;
   name: string | null;
-  plan: string;
-  stripe_customer_id: string | null;
   updated_at: string;
 }

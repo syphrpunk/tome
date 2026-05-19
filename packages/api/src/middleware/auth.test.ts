@@ -11,8 +11,6 @@ const mockUser: User = {
   name: "Test User",
   avatar_url: null,
   api_token: "tome_validtoken",
-  stripe_customer_id: null,
-  plan: "cloud",
   created_at: "2025-01-01",
   updated_at: "2025-01-01",
 };
@@ -77,7 +75,6 @@ describe("auth middleware", () => {
     const body = await res.json();
     expect(body.user.id).toBe("u1");
     expect(body.user.email).toBe("test@example.com");
-    expect(body.user.plan).toBe("cloud");
   });
 
   it("queries DB with extracted token", async () => {
