@@ -55,7 +55,7 @@ analytics.get("/summary", async (c) => {
   }
 
   // Calculate date cutoff from range
-  const days = Number.parseInt(range) || 30;
+  const days = Number.parseInt(range, 10) || 30;
   const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
 
   // Total page views

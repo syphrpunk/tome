@@ -141,7 +141,7 @@ export function recmaSandbox(options: RecmaSandboxOptions = {}) {
         const name = (node as any).name;
 
         // Skip: property names in non-computed member expressions (props.fetch is fine)
-        const parent = ancestors[ancestors.length - 1] as any;
+        const parent = ancestors.at(-1) as any;
         if (
           parent?.type === "MemberExpression" &&
           parent.property === node &&

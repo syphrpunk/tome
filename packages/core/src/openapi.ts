@@ -85,7 +85,7 @@ function buildFullUrl(
         return `${encodeURIComponent(p.name)}=${encodeURIComponent(val)}`;
       })
       .join("&");
-    url += "?" + qs;
+    url += `?${qs}`;
   }
 
   return url;

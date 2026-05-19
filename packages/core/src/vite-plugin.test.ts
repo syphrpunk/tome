@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
-import { resolve } from "path";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import tomePlugin from "./vite-plugin.js";
 
@@ -61,7 +61,7 @@ async function createPlugin(
   writeFixture(tmpRoot, files);
 
   const plugins = tomePlugin({ root: tmpRoot, pagesDir: "pages" });
-  const corePlugin = plugins[plugins.length - 1];
+  const corePlugin = plugins.at(-1);
 
   if (typeof corePlugin.configResolved === "function") {
     await (corePlugin.configResolved as Function)({ command: "build" });

@@ -3,8 +3,8 @@
  * Auto-generates social preview cards at build time using satori + resvg.
  */
 
-import { mkdirSync, writeFileSync } from "fs";
-import { join } from "path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { TomeConfig } from "./config.js";
 import type { PageRoute } from "./routes.js";
 
@@ -125,11 +125,11 @@ export function generateOgSvg(
   } = config;
 
   // Truncate title if too long
-  const displayTitle = title.length > 60 ? title.slice(0, 57) + "..." : title;
+  const displayTitle = title.length > 60 ? `${title.slice(0, 57)}...` : title;
   // Truncate description if too long
   const displayDesc = description
     ? description.length > 120
-      ? description.slice(0, 117) + "..."
+      ? `${description.slice(0, 117)}...`
       : description
     : "";
 
@@ -176,10 +176,10 @@ export function buildOgTemplate(
     showBranding,
   } = config;
 
-  const displayTitle = title.length > 70 ? title.slice(0, 67) + "..." : title;
+  const displayTitle = title.length > 70 ? `${title.slice(0, 67)}...` : title;
   const displayDesc = description
     ? description.length > 140
-      ? description.slice(0, 137) + "..."
+      ? `${description.slice(0, 137)}...`
       : description
     : undefined;
 

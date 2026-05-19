@@ -5,9 +5,9 @@ import {
   readFileSync,
   rmSync,
   writeFileSync,
-} from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   collectBuildFiles,
@@ -253,7 +253,7 @@ describe("deployToCloud", () => {
     expect(headers["X-Deployment-Id"]).toBe("deploy-abc123");
     expect(headers["X-File-Path"]).toBe("page.html");
     expect(headers["X-File-Hash"]).toBeTruthy();
-    expect(headers["Authorization"]).toBe("Bearer test-token");
+    expect(headers.Authorization).toBe("Bearer test-token");
   });
 
   it("skips unchanged files when server says none needed", async () => {

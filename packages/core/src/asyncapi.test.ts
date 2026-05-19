@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AsyncApiChannel, AsyncApiServer } from "./asyncapi.js";
 import {
@@ -431,7 +431,7 @@ describe("$ref resolution", () => {
       components: { schemas: { Name: { type: "string" } } },
     };
     const arr = [{ $ref: "#/components/schemas/Name" }, { type: "number" }];
-    const result = resolveRef(arr, root) as Array<Record<string, unknown>>;
+    const result = resolveRef(arr, root) as Record<string, unknown>[];
     expect(result[0].type).toBe("string");
     expect(result[1].type).toBe("number");
   });

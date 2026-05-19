@@ -14,32 +14,32 @@ import {
   readFileSync,
   statSync,
   writeFileSync,
-} from "fs";
+} from "node:fs";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import matter from "gray-matter";
-import { basename, dirname, extname, join, relative, resolve } from "path";
 import yaml from "yaml";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type NavigationGroup = {
+export interface NavigationGroup {
   group: string;
   pages: (string | NavigationGroup)[];
-};
+}
 
-export type MigrationResult = {
+export interface MigrationResult {
+  convertedFiles: string[];
   pages: number;
   redirects: number;
   warnings: string[];
-  convertedFiles: string[];
-};
+}
 
-type GitbookConfig = {
+interface GitbookConfig {
+  redirects: Array<{ from: string; to: string }>;
   root?: string;
   summaryPath?: string;
-  redirects: Array<{ from: string; to: string }>;
-};
+}
 
 // ---------------------------------------------------------------------------
 // SUMMARY.md parser
@@ -96,7 +96,7 @@ export function parseSummaryNavigation(
         currentGroup.pages.push(pageId);
       } else {
         // Nested page: attach to the most recent sub-group or create one.
-        const lastEntry = currentGroup.pages[currentGroup.pages.length - 1];
+        const lastEntry = currentGroup.pages.at(-1);
         if (typeof lastEntry === "object" && lastEntry !== null) {
           (lastEntry as NavigationGroup).pages.push(pageId);
         } else {

@@ -1,6 +1,6 @@
-import { existsSync } from "fs";
-import { resolve } from "path";
-import { pathToFileURL } from "url";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { z } from "zod";
 
 // ── CONFIG SCHEMA ────────────────────────────────────────
@@ -41,10 +41,10 @@ export const ThemeSchema = z
   })
   .default({ preset: "amber" as const, mode: "auto" as const });
 
-type NavigationGroup = {
+interface NavigationGroup {
   group: string;
   pages: Array<string | NavigationGroup>;
-};
+}
 
 export const NavigationGroupSchema: z.ZodType<NavigationGroup> = z.object({
   group: z.string(),
@@ -282,8 +282,8 @@ export type TomeConfig = z.infer<typeof TomeConfigSchema>;
 // ── PLUGIN INTERFACE ────────────────────────────────────
 export interface TomePlugin {
   hooks?: {
-    configResolved?: (config: TomeConfig) => TomeConfig | void;
-    routesResolved?: (routes: PageRoute[]) => PageRoute[] | void;
+    configResolved?: (config: TomeConfig) => TomeConfig | undefined;
+    routesResolved?: (routes: PageRoute[]) => PageRoute[] | undefined;
     headTags?: () => string[];
     buildStart?: () => void | Promise<void>;
     buildEnd?: (outputDir: string) => void | Promise<void>;

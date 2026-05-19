@@ -1,6 +1,12 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
-import { createRequire } from "module";
-import { join, resolve } from "path";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { createRequire } from "node:module";
+import { join, resolve } from "node:path";
 import type { Plugin } from "vite";
 
 const _require = createRequire(import.meta.url);
@@ -39,14 +45,14 @@ const VIRTUAL_ANALYTICS = "virtual:tome/analytics";
 const VIRTUAL_DOC_CONTEXT = "virtual:tome/doc-context";
 const VIRTUAL_OVERRIDES = "virtual:tome/overrides";
 
-const RESOLVED_CONFIG = "\0" + VIRTUAL_CONFIG;
-const RESOLVED_ROUTES = "\0" + VIRTUAL_ROUTES;
-const RESOLVED_PAGE_PREFIX = "\0" + VIRTUAL_PAGE_PREFIX;
-const RESOLVED_PAGE_LOADER = "\0" + VIRTUAL_PAGE_LOADER;
-const RESOLVED_API = "\0" + VIRTUAL_API;
-const RESOLVED_ANALYTICS = "\0" + VIRTUAL_ANALYTICS;
-const RESOLVED_DOC_CONTEXT = "\0" + VIRTUAL_DOC_CONTEXT;
-const RESOLVED_OVERRIDES = "\0" + VIRTUAL_OVERRIDES;
+const RESOLVED_CONFIG = `\0${VIRTUAL_CONFIG}`;
+const RESOLVED_ROUTES = `\0${VIRTUAL_ROUTES}`;
+const RESOLVED_PAGE_PREFIX = `\0${VIRTUAL_PAGE_PREFIX}`;
+const RESOLVED_PAGE_LOADER = `\0${VIRTUAL_PAGE_LOADER}`;
+const RESOLVED_API = `\0${VIRTUAL_API}`;
+const RESOLVED_ANALYTICS = `\0${VIRTUAL_ANALYTICS}`;
+const RESOLVED_DOC_CONTEXT = `\0${VIRTUAL_DOC_CONTEXT}`;
+const RESOLVED_OVERRIDES = `\0${VIRTUAL_OVERRIDES}`;
 
 // ── TOME PLUGIN HOOK RUNNER ──────────────────────────────
 function runPluginHook<T>(
@@ -222,7 +228,7 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         }
 
         // Write remote page to temp directory so existing pipeline can process it
-        const fileName = (page.id || "index") + "." + page.format;
+        const fileName = `${page.id || "index"}.${page.format}`;
         const filePath = join(remoteDir, fileName);
         const fileDir = join(remoteDir, ...fileName.split("/").slice(0, -1));
         mkdirSync(fileDir, { recursive: true });
@@ -450,7 +456,7 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
       // Inject AI API key from environment at build time
       if (cfg.ai?.enabled && cfg.ai?.apiKeyEnv) {
         const key = process.env[cfg.ai.apiKeyEnv] ?? "";
-        defines["__TOME_AI_API_KEY__"] = JSON.stringify(key);
+        defines.__TOME_AI_API_KEY__ = JSON.stringify(key);
       }
 
       result.define = defines;
@@ -482,7 +488,7 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
       if (pluginHeadTags.length > 0) {
         result = result.replace(
           "</head>",
-          pluginHeadTags.join("\n") + "\n</head>"
+          `${pluginHeadTags.join("\n")}\n</head>`
         );
       }
 
@@ -706,7 +712,7 @@ export default function tomePlugin(options: TomePluginOptions = {}): Plugin[] {
         return RESOLVED_OVERRIDES;
       }
       if (id.startsWith(VIRTUAL_PAGE_PREFIX)) {
-        return "\0" + id;
+        return `\0${id}`;
       }
       return null;
     },
@@ -1369,10 +1375,10 @@ export default { ${exportNames.join(", ")} };
         ...(siteUrl ? [`Sitemap: ${siteUrl}/sitemap.xml`] : []),
         "",
         "# AI/LLM Resources",
-        `# llms.txt: ${siteUrl ? siteUrl + "/llms.txt" : "/llms.txt"}`,
-        `# llms-full.txt: ${siteUrl ? siteUrl + "/llms-full.txt" : "/llms-full.txt"}`,
-        `# skill.md: ${siteUrl ? siteUrl + "/skill.md" : "/skill.md"}`,
-        `# MCP manifest: ${siteUrl ? siteUrl + "/mcp.json" : "/mcp.json"}`,
+        `# llms.txt: ${siteUrl ? `${siteUrl}/llms.txt` : "/llms.txt"}`,
+        `# llms-full.txt: ${siteUrl ? `${siteUrl}/llms-full.txt` : "/llms-full.txt"}`,
+        `# skill.md: ${siteUrl ? `${siteUrl}/skill.md` : "/skill.md"}`,
+        `# MCP manifest: ${siteUrl ? `${siteUrl}/mcp.json` : "/mcp.json"}`,
         "",
       ];
 

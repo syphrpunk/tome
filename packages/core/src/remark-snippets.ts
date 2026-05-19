@@ -9,9 +9,9 @@
  * Variables in snippet content are substituted using {{varName}} syntax.
  */
 
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Paragraph, Root, Text } from "mdast";
-import { resolve } from "path";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";

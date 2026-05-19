@@ -123,7 +123,11 @@ describe("checkLinks", () => {
     strictLinks: false,
   } as TomeConfig;
 
-  function makeRoute(id: string, filePath: string, content: string): PageRoute {
+  function makeRoute(
+    id: string,
+    filePath: string,
+    _content: string
+  ): PageRoute {
     return {
       id,
       filePath,
@@ -146,7 +150,7 @@ describe("checkLinks", () => {
   });
 
   it("reports no broken links when all links are valid", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("quickstart", "quickstart.md", ""),
@@ -169,7 +173,7 @@ describe("checkLinks", () => {
   });
 
   it("detects broken page reference", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [makeRoute("index", "index.md", "")];
 
     (readFileSync as any)
@@ -186,7 +190,7 @@ describe("checkLinks", () => {
   });
 
   it("detects broken anchor reference", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("quickstart", "quickstart.md", ""),
@@ -207,7 +211,7 @@ describe("checkLinks", () => {
   });
 
   it("validates valid anchor references", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("quickstart", "quickstart.md", ""),
@@ -224,7 +228,7 @@ describe("checkLinks", () => {
   });
 
   it("checks navigation config references", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [makeRoute("index", "index.md", "")];
 
     const configWithNav: TomeConfig = {
@@ -245,7 +249,7 @@ describe("checkLinks", () => {
   });
 
   it("handles links with leading slash", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("quickstart", "quickstart.md", ""),
@@ -262,7 +266,7 @@ describe("checkLinks", () => {
   });
 
   it("handles links with .md extension", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("quickstart", "quickstart.md", ""),
@@ -279,7 +283,7 @@ describe("checkLinks", () => {
   });
 
   it("handles links with ./ prefix", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("quickstart", "quickstart.md", ""),
@@ -296,7 +300,7 @@ describe("checkLinks", () => {
   });
 
   it("strips basePath from links before resolving", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("reference/config", "reference/config.md", ""),
@@ -321,7 +325,7 @@ describe("checkLinks", () => {
   });
 
   it("counts total links checked", async () => {
-    const { readFileSync } = await import("fs");
+    const { readFileSync } = await import("node:fs");
     const routes: PageRoute[] = [
       makeRoute("index", "index.md", ""),
       makeRoute("quickstart", "quickstart.md", ""),

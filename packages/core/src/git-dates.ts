@@ -1,5 +1,5 @@
-import { execFileSync } from "child_process";
-import { dirname, isAbsolute } from "path";
+import { execFileSync } from "node:child_process";
+import { dirname, isAbsolute } from "node:path";
 
 /**
  * Get the last git commit date for a file.
@@ -59,7 +59,7 @@ export function formatRelativeDate(isoDate: string): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
 
-  if (isNaN(diffMs)) {
+  if (Number.isNaN(diffMs)) {
     return "";
   }
 

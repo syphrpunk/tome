@@ -117,7 +117,7 @@ export function detectBranch(): string | null {
 
   // Fall back to git command
   try {
-    const { execSync } = require("child_process");
+    const { execSync } = require("node:child_process");
     const branch = execSync("git rev-parse --abbrev-ref HEAD", {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -143,7 +143,7 @@ export function detectCommitSha(): string | null {
   }
 
   try {
-    const { execSync } = require("child_process");
+    const { execSync } = require("node:child_process");
     return execSync("git rev-parse HEAD", {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -186,7 +186,7 @@ export function detectPrNumber(): number | null {
  */
 export function generatePreviewBanner(
   branch: string,
-  previewUrl: string,
+  _previewUrl: string,
   expiresAt: string
 ): string {
   const expiryDate = new Date(expiresAt);

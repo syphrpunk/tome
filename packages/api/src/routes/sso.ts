@@ -66,7 +66,7 @@ sso.get("/sites/:slug/initiate", async (c) => {
     .bind(slug)
     .first<SsoConfig & { sso_config_id: string }>();
 
-  if (!(project && project.sso_config_id)) {
+  if (!project?.sso_config_id) {
     return c.json({ error: "SSO not configured for this site" }, 404);
   }
 
@@ -245,8 +245,7 @@ sso.get("/sites/:slug/oidc/callback", async (c) => {
 
   if (
     !(
-      project &&
-      project.oidc_issuer &&
+      project?.oidc_issuer &&
       project.oidc_client_id &&
       project.oidc_client_secret
     )

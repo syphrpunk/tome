@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { Plugin } from "vite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import tomePlugin from "./vite-plugin.js";
@@ -1375,7 +1375,7 @@ describe("TomePlugin — hook runner unit tests", () => {
     };
     const tags = collectHeadTags([plugin]);
     const html = "<html><head><title>T</title></head><body></body></html>";
-    const result = html.replace("</head>", tags.join("\n") + "\n</head>");
+    const result = html.replace("</head>", `${tags.join("\n")}\n</head>`);
     expect(result).toContain('<script src="analytics.js"></script>\n</head>');
   });
 
@@ -1420,7 +1420,7 @@ describe("TomePlugin — hook runner unit tests", () => {
       hooks: {
         configResolved: (config) => {
           order.push("a");
-          return { ...config, name: config.name + "-A" } as TomeConfig;
+          return { ...config, name: `${config.name}-A` } as TomeConfig;
         },
       },
     };
@@ -1429,7 +1429,7 @@ describe("TomePlugin — hook runner unit tests", () => {
       hooks: {
         configResolved: (config) => {
           order.push("b");
-          return { ...config, name: config.name + "-B" } as TomeConfig;
+          return { ...config, name: `${config.name}-B` } as TomeConfig;
         },
       },
     };

@@ -170,27 +170,27 @@ const FrontmatterSchema = z.object({
     .optional(),
 });
 
-export type PageFrontmatter = {
-  title: string;
-  description?: string;
-  icon?: string;
-  sidebarTitle?: string;
-  hidden?: boolean;
-  tags?: string[];
-  toc?: boolean;
-  lastUpdated?: string;
-  type?: "page" | "changelog";
-  ogImage?: string;
-  redirect_from?: string[];
+export interface PageFrontmatter {
+  access?: "viewer" | "editor" | "admin" | "owner";
   badge?:
     | string
     | {
         text: string;
         variant?: "info" | "success" | "warning" | "danger" | "default";
       };
+  description?: string;
   draft?: boolean;
-  access?: "viewer" | "editor" | "admin" | "owner";
-};
+  hidden?: boolean;
+  icon?: string;
+  lastUpdated?: string;
+  ogImage?: string;
+  redirect_from?: string[];
+  sidebarTitle?: string;
+  tags?: string[];
+  title: string;
+  toc?: boolean;
+  type?: "page" | "changelog";
+}
 
 function validateFrontmatter(
   raw: Record<string, unknown>,
@@ -279,7 +279,7 @@ function extractHeadings(
   while ((match = regex.exec(html)) !== null) {
     const text = stripHtmlTags(match[3]).trim();
     headings.push({
-      depth: Number.parseInt(match[1]),
+      depth: Number.parseInt(match[1], 10),
       text,
       id: match[2],
     });
@@ -324,7 +324,7 @@ export interface CodeMeta {
 export function parseCodeMeta(info: string): CodeMeta {
   const meta: CodeMeta = { lang: "text" };
 
-  if (!(info && info.trim())) {
+  if (!info?.trim()) {
     return meta;
   }
 
@@ -353,14 +353,14 @@ export function parseCodeMeta(info: string): CodeMeta {
       const trimmed = part.trim();
       const rangeMatch = trimmed.match(/^(\d+)-(\d+)$/);
       if (rangeMatch) {
-        const start = Number.parseInt(rangeMatch[1]);
-        const end = Number.parseInt(rangeMatch[2]);
+        const start = Number.parseInt(rangeMatch[1], 10);
+        const end = Number.parseInt(rangeMatch[2], 10);
         for (let i = start; i <= end; i++) {
           lines.push(i);
         }
       } else {
-        const num = Number.parseInt(trimmed);
-        if (!isNaN(num)) {
+        const num = Number.parseInt(trimmed, 10);
+        if (!Number.isNaN(num)) {
           lines.push(num);
         }
       }
@@ -434,11 +434,11 @@ export function enhanceCodeBlock(html: string, meta: CodeMeta): string {
 
   // Process diff language lines (+ and - prefixes)
   if (meta.diffEnabled) {
-    let lineIndex = 0;
+    let _lineIndex = 0;
     result = result.replace(
       /<span class="line">((?:<span[^>]*>[^<]*<\/span>|[^<])*)<\/span>/g,
       (match, inner: string) => {
-        lineIndex++;
+        _lineIndex++;
         const text = stripHtmlTags(inner);
         if (text.startsWith("+")) {
           return `<span class="line tome-line-added">${inner}</span>`;
@@ -582,7 +582,7 @@ function createCodeBlockTransformer(
         }
 
         // Parse code fence meta info
-        const meta = parseCodeMeta(lang + (metaStr ? " " + metaStr : ""));
+        const meta = parseCodeMeta(lang + (metaStr ? ` ${metaStr}` : ""));
 
         try {
           // Build transformers array — include twoslash when requested and available
@@ -613,9 +613,9 @@ function createCodeBlockTransformer(
 // ── PLUGIN TYPES (TOM-57) ────────────────────────────────
 export interface MarkdownPluginOptions {
   /** Custom rehype plugins to add after built-in rehype plugins */
-  rehypePlugins?: Array<[any, ...any[]]>;
+  rehypePlugins?: [any, ...any[]][];
   /** Custom remark plugins to add after built-in remark plugins */
-  remarkPlugins?: Array<[any, ...any[]]>;
+  remarkPlugins?: [any, ...any[]][];
 }
 
 // ── MAIN PROCESSOR ───────────────────────────────────────
@@ -759,7 +759,7 @@ export async function processMarkdown(
 export async function processMarkdownFile(
   filePath: string
 ): Promise<ProcessedPage> {
-  const { readFileSync } = await import("fs");
+  const { readFileSync } = await import("node:fs");
   const source = readFileSync(filePath, "utf-8");
   return processMarkdown(source, filePath);
 }

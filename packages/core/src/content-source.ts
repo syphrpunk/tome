@@ -53,7 +53,7 @@ export function githubSource(options: GitHubSourceOptions): ContentSource {
         Accept: "application/vnd.github.v3+json",
       };
       if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+        headers.Authorization = `Bearer ${token}`;
       }
 
       // Use GitHub Trees API to list all files recursively
@@ -66,7 +66,7 @@ export function githubSource(options: GitHubSourceOptions): ContentSource {
       const data = (await res.json()) as {
         tree: Array<{ path: string; type: string }>;
       };
-      const prefix = path.endsWith("/") ? path : path + "/";
+      const prefix = path.endsWith("/") ? path : `${path}/`;
 
       const mdFiles = data.tree.filter(
         (f) =>
@@ -168,7 +168,7 @@ export function notionBlocksToMarkdown(title: string, blocks: any[]): string {
   for (const block of blocks) {
     switch (block.type) {
       case "paragraph":
-        md += richTextToMd(block.paragraph.rich_text) + "\n\n";
+        md += `${richTextToMd(block.paragraph.rich_text)}\n\n`;
         break;
       case "heading_1":
         md += `## ${richTextToMd(block.heading_1.rich_text)}\n\n`;

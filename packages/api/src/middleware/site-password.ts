@@ -8,9 +8,9 @@ import { createMiddleware } from "hono/factory";
 import { validateSessionToken } from "../password.js";
 import type { Env } from "../types.js";
 
-type SitePasswordEnv = {
+interface SitePasswordEnv {
   Bindings: Env;
-};
+}
 
 /**
  * Check if a project is password-protected by querying D1.

@@ -1,5 +1,5 @@
-import { mkdirSync, writeFileSync } from "fs";
-import { join, resolve } from "path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import ts from "typescript";
 
 // ── TYPES ───────────────────────────────────────────────
@@ -254,7 +254,7 @@ export function extractDocEntriesFromSource(
 function visitNode(
   node: ts.Node,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  _checker: ts.TypeChecker
 ): DocEntry | null {
   const exported = isExported(node);
 

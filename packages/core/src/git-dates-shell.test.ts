@@ -5,7 +5,7 @@ vi.mock("child_process", () => ({
   execFileSync: vi.fn().mockReturnValue("2024-01-15T10:30:00Z\n"),
 }));
 
-import { execFileSync } from "child_process";
+import { execFileSync } from "node:child_process";
 import { getGitLastUpdated } from "./git-dates.js";
 
 const mockedExecFileSync = vi.mocked(execFileSync);

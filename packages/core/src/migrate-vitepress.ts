@@ -14,40 +14,40 @@ import {
   readFileSync,
   statSync,
   writeFileSync,
-} from "fs";
+} from "node:fs";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import matter from "gray-matter";
-import { basename, dirname, extname, join, relative, resolve } from "path";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type NavigationGroup = {
+export interface NavigationGroup {
   group: string;
   pages: (string | NavigationGroup)[];
-};
+}
 
-export type MigrationResult = {
+export interface MigrationResult {
+  convertedFiles: string[];
   pages: number;
   redirects: number;
   warnings: string[];
-  convertedFiles: string[];
-};
+}
 
-type VitepressConfig = {
-  title?: string;
+interface VitepressConfig {
   description?: string;
-  sidebar: VitepressSidebarItem[] | Record<string, VitepressSidebarItem[]>;
   nav: Array<{ text: string; link: string }>;
+  sidebar: VitepressSidebarItem[] | Record<string, VitepressSidebarItem[]>;
   socialLinks: Array<{ icon: string; link: string }>;
-};
+  title?: string;
+}
 
-type VitepressSidebarItem = {
-  text: string;
-  link?: string;
+interface VitepressSidebarItem {
   collapsed?: boolean;
   items?: VitepressSidebarItem[];
-};
+  link?: string;
+  text: string;
+}
 
 // ---------------------------------------------------------------------------
 // .vitepress/config parser
@@ -399,7 +399,7 @@ export function convertVitepressContent(content: string): {
         const label = fenceMatch[2] || lang;
         const code = fenceMatch[3].trimEnd();
         titles.push(label);
-        bodies.push("```" + lang + "\n" + code + "\n```");
+        bodies.push(`\`\`\`${lang}\n${code}\n\`\`\``);
       }
 
       if (titles.length > 0) {

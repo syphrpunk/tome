@@ -99,7 +99,7 @@ describe("checkParagraphLength", () => {
   });
 
   it("detects paragraphs exceeding max word count", () => {
-    const words = Array(201).fill("word").join(" ");
+    const words = new Array(201).fill("word").join(" ");
     const issues = checkParagraphLength(words, "test.md", 200);
     expect(issues).toHaveLength(1);
     expect(issues[0].rule).toBe("max-paragraph-length");
@@ -108,7 +108,7 @@ describe("checkParagraphLength", () => {
   });
 
   it("skips headings in word count", () => {
-    const content = "# Heading\n" + Array(201).fill("word").join(" ");
+    const content = `# Heading\n${new Array(201).fill("word").join(" ")}`;
     const issues = checkParagraphLength(content, "test.md", 200);
     expect(issues).toHaveLength(1);
     // The paragraph starts after the heading
@@ -116,8 +116,8 @@ describe("checkParagraphLength", () => {
   });
 
   it("counts multi-line paragraphs together", () => {
-    const line1 = Array(100).fill("word").join(" ");
-    const line2 = Array(101).fill("word").join(" ");
+    const line1 = new Array(100).fill("word").join(" ");
+    const line2 = new Array(101).fill("word").join(" ");
     const content = `${line1}\n${line2}`;
     const issues = checkParagraphLength(content, "test.md", 200);
     expect(issues).toHaveLength(1);
@@ -125,20 +125,20 @@ describe("checkParagraphLength", () => {
   });
 
   it("separates paragraphs by blank lines", () => {
-    const para1 = Array(150).fill("word").join(" ");
-    const para2 = Array(150).fill("word").join(" ");
+    const para1 = new Array(150).fill("word").join(" ");
+    const para2 = new Array(150).fill("word").join(" ");
     const content = `${para1}\n\n${para2}`;
     // Both paragraphs are 150 words (under 200 limit)
     expect(checkParagraphLength(content, "test.md", 200)).toHaveLength(0);
   });
 
   it("returns no issues when maxWords is 0 (disabled)", () => {
-    const content = Array(500).fill("word").join(" ");
+    const content = new Array(500).fill("word").join(" ");
     expect(checkParagraphLength(content, "test.md", 0)).toHaveLength(0);
   });
 
   it("skips list items", () => {
-    const content = "- " + Array(201).fill("word").join(" ");
+    const content = `- ${new Array(201).fill("word").join(" ")}`;
     expect(checkParagraphLength(content, "test.md", 200)).toHaveLength(0);
   });
 });

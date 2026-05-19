@@ -32,7 +32,7 @@ describe("defineContentSource", () => {
       async fetchPages() {
         return [];
       },
-      watch(onChange) {
+      watch(_onChange) {
         return cleanup;
       },
     });
@@ -576,7 +576,7 @@ describe("ContentSource interface", () => {
     const source: ContentSource = {
       name: "full",
       fetchPages: async () => [],
-      watch: (onChange) => () => {},
+      watch: (_onChange) => () => {},
     };
     expect(typeof source.watch).toBe("function");
     const cleanup = source.watch!(() => {});

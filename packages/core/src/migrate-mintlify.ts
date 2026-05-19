@@ -14,44 +14,44 @@ import {
   readFileSync,
   statSync,
   writeFileSync,
-} from "fs";
+} from "node:fs";
+import { dirname, extname, join, relative } from "node:path";
 import matter from "gray-matter";
-import { dirname, extname, join, relative } from "path";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type MintConfig = {
-  name?: string;
-  logo?: string | { light?: string; dark?: string };
-  favicon?: string;
+export interface MintConfig {
+  api?: { baseUrl?: string; auth?: { method?: string; name?: string } };
   colors?: {
     primary?: string;
     light?: string;
     dark?: string;
     background?: { light?: string; dark?: string };
   };
+  favicon?: string;
+  logo?: string | { light?: string; dark?: string };
+  name?: string;
   navigation?: Array<{ group: string; pages: string[] }>;
-  topbarLinks?: Array<{ name: string; url: string }>;
-  topbarCtaButton?: { name: string; url: string };
-  tabs?: Array<{ name: string; url: string }>;
-  redirects?: Array<{ source: string; destination: string }>;
   openapi?: string | string[];
-  api?: { baseUrl?: string; auth?: { method?: string; name?: string } };
-};
+  redirects?: Array<{ source: string; destination: string }>;
+  tabs?: Array<{ name: string; url: string }>;
+  topbarCtaButton?: { name: string; url: string };
+  topbarLinks?: Array<{ name: string; url: string }>;
+}
 
-export type NavigationGroup = {
+export interface NavigationGroup {
   group: string;
   pages: Array<string | NavigationGroup>;
-};
+}
 
-export type MigrationResult = {
+export interface MigrationResult {
+  convertedFiles: string[];
   pages: number;
   redirects: number;
   warnings: string[];
-  convertedFiles: string[];
-};
+}
 
 // ---------------------------------------------------------------------------
 // Config parsing

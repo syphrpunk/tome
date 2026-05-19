@@ -195,7 +195,7 @@ export async function removeDomain(
  * List domains for user's projects via Tome API.
  */
 export async function listDomains(
-  projectSlug: string,
+  _projectSlug: string,
   token: string,
   apiUrl?: string
 ): Promise<DomainStatus[]> {

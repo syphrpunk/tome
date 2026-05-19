@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { glob } from "glob";
 import matter from "gray-matter";
-import { basename, dirname, join, resolve } from "path";
 import type { TomeConfig } from "./config.js";
 import type { PageFrontmatter } from "./markdown.js";
 
@@ -333,7 +333,7 @@ export function buildNavigation(
   if (config.navigation && config.navigation.length > 0) {
     // Collect all page IDs referenced in navigation (recursively)
     function collectIds(
-      entries: Array<string | { group: string; pages: Array<unknown> }>
+      entries: Array<string | { group: string; pages: unknown[] }>
     ): string[] {
       const ids: string[] = [];
       for (const entry of entries) {
@@ -342,9 +342,7 @@ export function buildNavigation(
         } else {
           ids.push(
             ...collectIds(
-              entry.pages as Array<
-                string | { group: string; pages: Array<unknown> }
-              >
+              entry.pages as Array<string | { group: string; pages: unknown[] }>
             )
           );
         }
@@ -355,14 +353,14 @@ export function buildNavigation(
     const explicitIds = new Set(
       config.navigation.flatMap((g) =>
         collectIds(
-          g.pages as Array<string | { group: string; pages: Array<unknown> }>
+          g.pages as Array<string | { group: string; pages: unknown[] }>
         )
       )
     );
 
     // Recursively resolve config nav entries to NavigationItem | NavigationGroup
     function resolvePages(
-      entries: Array<string | { group: string; pages: Array<unknown> }>
+      entries: Array<string | { group: string; pages: unknown[] }>
     ): (NavigationItem | NavigationGroup)[] {
       const result: (NavigationItem | NavigationGroup)[] = [];
       for (const entry of entries) {
@@ -383,9 +381,7 @@ export function buildNavigation(
           });
         } else {
           const nested = resolvePages(
-            entry.pages as Array<
-              string | { group: string; pages: Array<unknown> }
-            >
+            entry.pages as Array<string | { group: string; pages: unknown[] }>
           );
           if (nested.length > 0) {
             result.push({ section: entry.group, pages: nested });
@@ -398,7 +394,7 @@ export function buildNavigation(
     const groups: NavigationGroup[] = config.navigation.map((group) => ({
       section: group.group,
       pages: resolvePages(
-        group.pages as Array<string | { group: string; pages: Array<unknown> }>
+        group.pages as Array<string | { group: string; pages: unknown[] }>
       ),
     }));
 

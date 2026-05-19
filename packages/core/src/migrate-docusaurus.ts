@@ -14,32 +14,30 @@ import {
   readFileSync,
   statSync,
   writeFileSync,
-} from "fs";
+} from "node:fs";
+import { dirname, extname, join, relative } from "node:path";
 import matter from "gray-matter";
-import { dirname, extname, join, relative } from "path";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type NavigationGroup = {
+export interface NavigationGroup {
   group: string;
   pages: Array<string | NavigationGroup>;
-};
+}
 
-export type MigrationResult = {
+export interface MigrationResult {
+  convertedFiles: string[];
   pages: number;
   redirects: number;
   warnings: string[];
-  convertedFiles: string[];
-};
+}
 
-export type DocusaurusConfig = {
-  title?: string;
-  tagline?: string;
-  url?: string;
+export interface DocusaurusConfig {
   baseUrl?: string;
   favicon?: string;
+  tagline?: string;
   themeConfig?: {
     navbar?: {
       title?: string;
@@ -63,7 +61,9 @@ export type DocusaurusConfig = {
       disableSwitch?: boolean;
     };
   };
-};
+  title?: string;
+  url?: string;
+}
 
 export type SidebarItem =
   | string
@@ -494,7 +494,7 @@ export function convertDocusaurusContent(content: string): {
       const trimmedBody = body.trimEnd();
       hasJsx = true;
 
-      if (title && title.trim()) {
+      if (title?.trim()) {
         return `<Callout type="${calloutType}" title="${title.trim()}">\n${trimmedBody}\n</Callout>`;
       }
       return `<Callout type="${calloutType}">\n${trimmedBody}\n</Callout>`;

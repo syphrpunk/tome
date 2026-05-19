@@ -223,7 +223,7 @@ export function maskUrl(url: string): string {
     const parsed = new URL(url);
     const pathParts = parsed.pathname.split("/");
     if (pathParts.length > 2) {
-      parsed.pathname = pathParts.slice(0, 2).join("/") + "/***";
+      parsed.pathname = `${pathParts.slice(0, 2).join("/")}/***`;
     }
     return parsed.toString();
   } catch {
@@ -238,7 +238,7 @@ export async function signPayload(
   payload: string,
   secret: string
 ): Promise<string> {
-  const { createHmac } = await import("crypto");
+  const { createHmac } = await import("node:crypto");
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
@@ -273,7 +273,6 @@ export async function sendWebhook(
     case "discord":
       body = formatDiscordPayload(payload);
       break;
-    case "http":
     default:
       body = formatHttpPayload(payload);
       break;

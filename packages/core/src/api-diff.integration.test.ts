@@ -3,8 +3,8 @@
  * Tests the full pipeline: parse specs → diff → changelog.
  */
 
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
-import { resolve } from "path";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import {
   diffOpenApiSpecs,

@@ -1,10 +1,10 @@
 import { createMiddleware } from "hono/factory";
 import type { Env, User } from "../types.js";
 
-type AuthEnv = {
+interface AuthEnv {
   Bindings: Env;
   Variables: { user: User };
-};
+}
 
 export const auth = createMiddleware<AuthEnv>(async (c, next) => {
   const header = c.req.header("Authorization");

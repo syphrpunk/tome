@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import matter from "gray-matter";
 import type { TomeConfig } from "./config.js";
 import { extractHeadingsFromSource } from "./markdown.js";
@@ -106,17 +106,13 @@ function extractNavigationPageIds(
 ): string[] {
   const ids: string[] = [];
 
-  function walk(
-    pages: Array<string | { group: string; pages: Array<unknown> }>
-  ) {
+  function walk(pages: Array<string | { group: string; pages: unknown[] }>) {
     for (const entry of pages) {
       if (typeof entry === "string") {
         ids.push(entry);
       } else if (entry && typeof entry === "object" && "pages" in entry) {
         walk(
-          entry.pages as Array<
-            string | { group: string; pages: Array<unknown> }
-          >
+          entry.pages as Array<string | { group: string; pages: unknown[] }>
         );
       }
     }
@@ -159,7 +155,7 @@ function resolveLink(
   // Strip basePath prefix (e.g. "docs/" from "/docs/quickstart")
   if (basePath) {
     const normalized = basePath.replace(/^\//, "").replace(/\/$/, "");
-    if (normalized && pageId.startsWith(normalized + "/")) {
+    if (normalized && pageId.startsWith(`${normalized}/`)) {
       pageId = pageId.slice(normalized.length + 1);
     } else if (normalized && pageId === normalized) {
       pageId = "index";

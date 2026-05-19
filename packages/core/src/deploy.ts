@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { readdir, readFile, stat } from "fs/promises";
-import { homedir } from "os";
-import { join, relative } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join, relative } from "node:path";
 
 // ── TYPES ───────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ export async function saveAuthToken(
   const dir = configDir ?? defaultConfigDir();
   const configFile = join(dir, "config");
   mkdirSync(dir, { recursive: true });
-  writeFileSync(configFile, JSON.stringify({ token }, null, 2) + "\n", "utf-8");
+  writeFileSync(configFile, `${JSON.stringify({ token }, null, 2)}\n`, "utf-8");
 }
 
 // ── FILE COLLECTION ─────────────────────────────────────

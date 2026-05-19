@@ -3,7 +3,7 @@
  * Validates writing style, consistency, and common mistakes.
  */
 
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import matter from "gray-matter";
 import type { PageRoute } from "./routes.js";
 
