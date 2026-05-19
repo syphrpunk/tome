@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# ── Tome Pre-Commit Biome Hook ──────────────────────────
+# Runs a Biome Format and Lint processes on staged files before every commit.
+# Blocks the commit if Biome finds any issues.
+
+set -eu
+
+if git status --short | grep --quiet '^MM'; then
+  printf '%s\n' "ERROR: Some staged files have unstaged changes" >&2
+  exit 1;
+fi
+
+pnpm dlx @biomejs/biome check --write --staged --files-ignore-unknown=true --no-errors-on-unmatched
+
+git update-index --again
