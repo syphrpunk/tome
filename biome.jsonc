@@ -4,5 +4,55 @@
     "ultracite/biome/core",
     "ultracite/biome/vitest",
     "ultracite/biome/react"
-  ]
+  ],
+  // Ultracite is intentionally strict. Many of its rules are aspirational
+  // for this codebase right now. We disable the noisiest ones and warn
+  // (rather than error) on rules we'd eventually like to satisfy.
+  // Revisit and re-enable as the ruleset stabilizes.
+  "linter": {
+    "rules": {
+      "style": {
+        "noNonNullAssertion": "off",
+        "noNestedTernary": "off",
+        "useFilenamingConvention": "off",
+        "useDefaultSwitchClause": "off",
+        "useCollapsedIf": "off",
+        "useConsistentTypeDefinitions": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "off",
+        "useAwait": "off",
+        "noEmptyBlockStatements": "off",
+        "noAssignInExpressions": "off",
+        "noBitwiseOperators": "off",
+        "noAlert": "off",
+        "noImplicitAnyLet": "warn",
+        "noEvolvingTypes": "warn",
+        "noArrayIndexKey": "warn"
+      },
+      "complexity": {
+        "noBannedTypes": "off",
+        "noExcessiveCognitiveComplexity": "off"
+      },
+      "performance": {
+        "useTopLevelRegex": "off",
+        "noDelete": "off",
+        "noBarrelFile": "off"
+      },
+      "correctness": {
+        "useImageSize": "warn",
+        "noUnusedFunctionParameters": "warn"
+      },
+      // A11y rules surface real accessibility gaps in the dashboard UI but
+      // most are pre-existing. Surface as warnings until an a11y sweep.
+      "a11y": {
+        "useButtonType": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithMouseEvents": "warn",
+        "useKeyWithClickEvents": "warn",
+        "noStaticElementInteractions": "warn",
+        "noNoninteractiveElementInteractions": "warn"
+      }
+    }
+  }
 }
